@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output
+out/
+dist/
+.cache/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# AI-OS session & metadata
+.ai-os/STATE.md
+.ai-os/context-snapshot.md
+.ai-os/codebase-map.md
+.ai-os/lanes/*/STATE.md
+.ai-os/lanes/*/context-snapshot.md
+.ai-os/lanes/*/codebase-map.md
+.ai-os/framework.toml
+.ai-os/managed-files.tsv
+# IDE integration files (CLAUDE.md, GEMINI.md, .cursor/) are team-shareable — do NOT gitignore them

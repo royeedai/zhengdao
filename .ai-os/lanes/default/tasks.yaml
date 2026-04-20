@@ -1,0 +1,237 @@
+version: 4
+baseline_id: "CR-20260420-232439-open-source-release-hardening"
+scope:
+  mode: "change"
+  focus: "oss-release"
+  baseline_source: "MISSION.md + specs/example.spec.md"
+  quality_tier: "standard"
+
+milestones:
+  - id: M1
+    title: "OSS Baseline Locked"
+    goal: "开源发布、版本治理和 GitHub 首发要求已落到工件"
+    scope: "Mission / spec / acceptance / release-plan / baseline-log / state"
+    acceptance_goal: "设计确认门与逻辑确认门通过"
+    target_window: "2026-04-20"
+  - id: M2
+    title: "OSS Repo Hardened"
+    goal: "仓库文档、模板、版本治理脚本和发布 skill 已实现并完成最小验证"
+    scope: "repo-docs / scripts / workflow / skill / tests"
+    acceptance_goal: "实现质量门通过，交付质量门具备放行证据"
+    target_window: "2026-04-20"
+  - id: M3
+    title: "GitHub First Release"
+    goal: "Git 仓库已初始化，远端 GitHub 仓库与首版 Release 已完成或明确 blocker 已收口"
+    scope: "git / github / release artifacts"
+    acceptance_goal: "交付质量门具备远端证据或 blocker 证据"
+    target_window: "2026-04-20"
+
+tasks:
+  - id: TASK-AI-OSS-001
+    title: "同步开源发布与版本治理变更基线"
+    milestone: M1
+    parent: null
+    status: done
+    owner: AI
+    risk: medium
+    priority: P1
+    wave: 1
+    execution_role: "design_mapper"
+    approval_required: "user_confirmed_change"
+    depends_on: []
+    requirement_refs:
+      - "REQ-OSS-001"
+      - "REQ-OSS-002"
+      - "REQ-OSS-003"
+      - "REQ-OSS-004"
+      - "REQ-OSS-005"
+    acceptance_refs:
+      - "AC-OSS-001"
+      - "AC-OSS-002"
+      - "AC-OSS-003"
+      - "AC-OSS-004"
+      - "AC-OSS-005"
+    context_files:
+      - "MISSION.md"
+      - "specs/example.spec.md"
+      - "acceptance.yaml"
+      - "release-plan.md"
+      - "STATE.md"
+    outputs:
+      - "baseline-log/CR-20260420-232439-open-source-release-hardening.md"
+      - "MISSION.md"
+      - "specs/example.spec.md"
+      - "acceptance.yaml"
+      - "release-plan.md"
+      - "STATE.md"
+    affected_components:
+      - "baseline"
+      - "release"
+      - "docs"
+    verification_required:
+      - "validate"
+    measurable_outcome:
+      - "开源治理、版本治理、GitHub 首发与 blocker 策略已写入工件"
+    definition_of_done:
+      - "baseline_id 已切换到 OSS Release CR"
+      - "Mission / spec / acceptance / release-plan / state 与本轮目标一致"
+    evidence_required:
+      - "baseline-record"
+      - "spec-update"
+      - "release-note"
+
+  - id: TASK-AI-OSS-002
+    title: "补齐开源仓库文档、模板、仓库元数据与发布说明"
+    milestone: M2
+    parent: null
+    status: in_progress
+    owner: AI
+    risk: medium
+    priority: P0
+    wave: 2
+    execution_role: "implementer"
+    approval_required: "confirmed"
+    depends_on:
+      - "TASK-AI-OSS-001"
+    requirement_refs:
+      - "REQ-OSS-001"
+      - "REQ-OSS-005"
+    acceptance_refs:
+      - "AC-OSS-001"
+      - "AC-OSS-005"
+    context_files:
+      - "README.md"
+      - "package.json"
+      - ".github/workflows/release.yml"
+      - "electron-builder.config.ts"
+    outputs:
+      - "README.md"
+      - "LICENSE"
+      - "CHANGELOG.md"
+      - "CONTRIBUTING.md"
+      - "SECURITY.md"
+      - "CODE_OF_CONDUCT.md"
+      - "SUPPORT.md"
+      - ".github/ISSUE_TEMPLATE/*"
+      - ".github/pull_request_template.md"
+      - "package.json"
+    affected_components:
+      - "repo"
+      - "release"
+      - "docs"
+    verification_required:
+      - "build"
+      - "docs-review"
+    measurable_outcome:
+      - "仓库首页、安装入口、维护文档和公开协作模板具备开源项目可用性"
+    edge_cases:
+      - "README 不夸大未完成能力"
+      - "macOS 更新限制显式披露"
+    definition_of_done:
+      - "仓库级文档齐全"
+      - "package.json 具备仓库元数据"
+      - "GitHub 协作模板已补齐"
+    evidence_required:
+      - "repo-docs"
+      - "metadata-update"
+
+  - id: TASK-AI-OSS-003
+    title: "实现版本治理脚本与项目级 GitHub 发布 skill"
+    milestone: M2
+    parent: null
+    status: pending
+    owner: AI
+    risk: medium
+    priority: P1
+    wave: 3
+    execution_role: "implementer"
+    approval_required: "confirmed"
+    depends_on:
+      - "TASK-AI-OSS-002"
+    requirement_refs:
+      - "REQ-OSS-002"
+      - "REQ-OSS-003"
+    acceptance_refs:
+      - "AC-OSS-002"
+      - "AC-OSS-003"
+    context_files:
+      - "package.json"
+      - "electron-builder.config.ts"
+      - ".github/workflows/release.yml"
+      - ".agents/skills/"
+    outputs:
+      - "electron-builder.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/release/*"
+      - ".agents/skills/*"
+      - "tests"
+    affected_components:
+      - "release"
+      - "skill"
+      - "test"
+    verification_required:
+      - "test"
+      - "build"
+      - "script-smoke"
+    measurable_outcome:
+      - "维护者可通过统一命令自动 bump 版本、更新 changelog、提交 tag 并触发后续发布"
+    definition_of_done:
+      - "release:prepare / release:publish 可用"
+      - "项目 skill 已可指引后续一键发布"
+      - "最小脚本验证通过"
+    evidence_required:
+      - "script-log"
+      - "skill-file"
+      - "build-log"
+
+  - id: TASK-AI-OSS-004
+    title: "初始化 Git 仓库、推送 GitHub 并发布首版"
+    milestone: M3
+    parent: null
+    status: pending
+    owner: AI
+    risk: high
+    priority: P0
+    wave: 4
+    execution_role: "implementer"
+    approval_required: "confirmed"
+    depends_on:
+      - "TASK-AI-OSS-003"
+    requirement_refs:
+      - "REQ-OSS-004"
+      - "REQ-OSS-005"
+    acceptance_refs:
+      - "AC-OSS-004"
+      - "AC-OSS-005"
+    context_files:
+      - "README.md"
+      - "package.json"
+      - ".github/workflows/release.yml"
+      - "electron-builder.config.ts"
+      - "dist/"
+    outputs:
+      - "git history"
+      - "github repository"
+      - "GitHub Release v1.0.0"
+    affected_components:
+      - "git"
+      - "github"
+      - "release"
+    verification_required:
+      - "release-check"
+      - "artifact-check"
+    measurable_outcome:
+      - "远端仓库和首版 release 可被访问，用户可下载安装包并为后续应用内更新提供元数据"
+    edge_cases:
+      - "token 无效"
+      - "仓库名占用"
+      - "workflow 无法发布"
+    definition_of_done:
+      - "Git 仓库已初始化并推送默认分支"
+      - "首版 tag 已创建"
+      - "GitHub Release 已存在，或 blocker 有明确证据"
+    evidence_required:
+      - "repo-url"
+      - "tag-proof"
+      - "release-proof-or-blocker"

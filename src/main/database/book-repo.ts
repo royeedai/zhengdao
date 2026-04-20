@@ -1,0 +1,57 @@
+import { getDb } from './connection'
+import { saveConfig } from './config-repo'
+
+export function getBooks() {
+  const db = getDb()
+  const books = db.prepare(`
+    SELECT b.*, COALESCE(SUM(c.word_count), 0) as total_words
+    FROM books b
+    LEFT JOIN volumes v ON v.book_id = b.id AND v.deleted_at IS NULL
+    LEFT JOIN chapters c ON c.volume_id = v.id AND c.deleted_at IS NULL
+    GROUP BY b.id
+    ORDER BY b.updated_at DESC
+  `).all()
+  return books
+}
+
+export function createBook(data: { title: string; author: string }) {
+  const db = getDb()
+  const result = db.prepare('INSERT INTO books (title, author) VALUES (?, ?)').run(data.title, data.author)
+  const bookId = result.lastInsertRowid as number
+
+  saveConfig(bookId, {
+    genre: 'urban',
+    character_fields: [],
+    faction_labels: [],
+    status_labels: [],
+    emotion_labels: [],
+    daily_goal: 6000,
+    sensitive_list: 'default',
+    ai_api_key: '',
+    ai_api_endpoint: '',
+    ai_model: '',
+    ai_provider: 'openai'
+  })
+
+  return db.prepare('SELECT * FROM books WHERE id = ?').get(bookId)
+}
+
+export function deleteBook(id: number) {
+  const db = getDb()
+  db.prepare('DELETE FROM books WHERE id = ?').run(id)
+}
+
+export function getBookStats(bookId: number) {
+  const db = getDb()
+  const stats = db.prepare(`
+    SELECT COALESCE(SUM(c.word_count), 0) as total_words,
+           COUNT(DISTINCT c.id) as total_chapters,
+           COUNT(DISTINCT ch.id) as total_characters
+    FROM books b
+    LEFT JOIN volumes v ON v.book_id = b.id AND v.deleted_at IS NULL
+    LEFT JOIN chapters c ON c.volume_id = v.id AND c.deleted_at IS NULL
+    LEFT JOIN characters ch ON ch.book_id = b.id AND ch.deleted_at IS NULL
+    WHERE b.id = ?
+  `).get(bookId)
+  return stats
+}

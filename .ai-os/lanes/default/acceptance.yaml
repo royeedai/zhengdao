@@ -1,0 +1,86 @@
+version: 3
+baseline_id: "CR-20260420-232439-open-source-release-hardening"
+scope:
+  mode: "change"
+  focus: "oss-release"
+  baseline_source: "MISSION.md + specs/example.spec.md"
+  change_control: "all requirement changes must go through /change-request"
+  quality_tier: "standard"
+  primary_spec: "specs/example.spec.md"
+  confirmed_stack_decisions: "Electron desktop app + GitHub Releases + project release scripts + AI release skill"
+  target_runtime: "public GitHub repository with downloadable release artifacts and updater metadata"
+  dev_fallback: "local release preparation and blocker reporting when remote credentials are unavailable"
+
+required_special_reviews: []
+
+gates:
+  - id: design-confirmation
+    title: "设计确认门"
+    status: completed
+    checks:
+      - "开源仓库必需文档、版本治理、GitHub 首发和一键发布能力已纳入基线"
+      - "GitHub Releases 既作为下载入口也作为在线更新元数据源已确认"
+      - "token 无效时必须显式 blocker 报告已写入约束"
+    evidence:
+      - "CR-20260420-232439-open-source-release-hardening"
+      - "MISSION.md"
+      - "specs/example.spec.md"
+
+  - id: logic-confirmation
+    title: "逻辑确认门"
+    status: completed
+    checks:
+      - "版本号、tag 与 CHANGELOG 一致性规则已锁定"
+      - "release prepare / publish 的职责边界已明确"
+      - "README 的‘当前能力’与‘路线图’需要分区已明确"
+      - "GitHub 首发失败时的 blocker 路径已明确"
+    evidence:
+      - "specs/example.spec.md"
+      - "MISSION.md"
+
+  - id: implementation-quality
+    title: "实现质量门"
+    status: pending
+    checks:
+      - "仓库文档、模板、LICENSE 和 package 元数据已补齐"
+      - "版本治理脚本与项目级 release skill 已实现"
+      - "项目原生静态校验已完成"
+      - "最小 release 脚本验证已通过"
+    evidence:
+      - "README.md"
+      - "package.json"
+      - "scripts/release/*"
+      - ".agents/skills/*"
+
+  - id: delivery-readiness
+    title: "交付质量门"
+    status: in_progress
+    checks:
+      - "Git 仓库已初始化并具备推送条件"
+      - "GitHub 仓库与首版 Release 已存在，或远端 blocker 证据已明确"
+      - "GitHub Releases 页面能承载安装包和更新元数据"
+      - "后续发布命令与 skill 已可复用"
+      - "macOS 自动更新限制仍被显式披露"
+    evidence:
+      - ".github/workflows/release.yml"
+      - "release-plan.md"
+      - "GitHub API / push / release 证据或 blocker"
+
+  - id: parity-gate
+    title: "对照一致性门"
+    status: not_applicable
+    checks:
+      - "非 reverse-spec 任务"
+    evidence: []
+
+result:
+  design_locked: passed
+  logic_locked: passed
+  implementation_ready: pending
+  delivery_ready: pending
+  blockers:
+    - "远端 GitHub 仓库创建与首版 release 仍依赖有效 token"
+    - "macOS 自动更新正式上线仍依赖签名和 notarization"
+  advisories:
+    - "README 与 release 页面必须区分当前能力和路线图"
+  user_confirmation_blockers: []
