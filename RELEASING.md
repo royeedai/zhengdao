@@ -79,6 +79,13 @@ npm run release:publish -- patch "简短发布摘要"
 - `package.json` 版本、Git tag 和 `CHANGELOG.md` 顶部版本一致
 - Windows 打包版能正常拉到更新元数据
 
+## CI 原生模块注意事项
+
+`npm ci` 会触发 `postinstall -> electron-builder install-app-deps`，这会把 `better-sqlite3`
+重编到 Electron ABI。GitHub Actions 中测试运行在 Node.js 下，所以 release workflow 会在
+`npm ci` 后、`npm test` 前执行一次 `npm rebuild better-sqlite3`，把测试阶段恢复到 Node ABI。
+打包阶段仍由 `electron-builder` 自动重新构建 Electron ABI。
+
 ## 直接本地上传 Release
 
 如果不想依赖 tag workflow，也可以在本地配置：
