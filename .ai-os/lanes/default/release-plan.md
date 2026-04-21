@@ -49,6 +49,7 @@
 - [x] GitHub Actions `release` workflow 通过：`v1.1.5` macOS / Windows jobs 均为 success
 - [x] GitHub Release `v1.1.5` 已上传 Windows 安装包、macOS dmg/zip、blockmap、`latest.yml`、`latest-mac.yml`
 - [x] `v1.1.5` macOS zip 已下载抽检，包内 `better-sqlite3` 可被 Electron runtime 加载并完成内存 SQLite 查询
+- [x] `v1.1.5` macOS dmg 已下载并只读挂载抽检，DMG 内 app 的 `better-sqlite3` 可被 Electron runtime 加载并完成内存 SQLite 查询
 - [ ] Windows 安装版人工视觉回归完成
 - [x] fallback 证据未被误当正式结论：源码实现通过不等于正式安装包观感已放行
 
