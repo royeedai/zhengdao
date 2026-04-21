@@ -4,6 +4,8 @@ import { useBookStore } from '@/stores/book-store'
 import { useUIStore } from '@/stores/ui-store'
 import BookCard from './BookCard'
 import UpdateActionButton from '@/components/shared/UpdateActionButton'
+import AppBrand from '@/components/shared/AppBrand'
+import { getCurrentTitlebarSafeArea } from '@/utils/window-shell'
 
 type SortBy = 'updated' | 'created' | 'words' | 'title'
 
@@ -14,6 +16,7 @@ export default function BookshelfPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [sortBy, setSortBy] = useState<SortBy>('updated')
   const [searchQuery, setSearchQuery] = useState('')
+  const titlebarSafeArea = getCurrentTitlebarSafeArea()
 
   useEffect(() => {
     loadBooks()
@@ -42,21 +45,22 @@ export default function BookshelfPage() {
   )
 
   return (
-    <div className="flex flex-col h-screen bg-[#141414]">
-      {/* macOS 标题栏拖拽区域 */}
-      <div className="h-12 border-b border-[#2a2a2a] bg-[#1a1a1a] flex items-center justify-between shrink-0 drag-region">
-        <div className="flex items-center space-x-2 text-emerald-500 font-bold tracking-wide text-lg pl-20 no-drag">
-          <PenTool size={22} />
-          <span>证道</span>
-          <span className="text-[10px] text-slate-500 font-normal ml-1 border border-slate-600 rounded px-1">
-            Pro
-          </span>
+    <div className="flex flex-col h-screen bg-[var(--bg-primary)]">
+      <div
+        className="h-12 border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] flex items-center justify-between shrink-0 drag-region"
+        style={{
+          paddingLeft: `${titlebarSafeArea.leftInset}px`,
+          paddingRight: `${titlebarSafeArea.rightInset}px`
+        }}
+      >
+        <div className="no-drag">
+          <AppBrand />
         </div>
-        <div className="pr-4 no-drag flex items-center gap-2">
+        <div className="no-drag flex items-center gap-2">
           <UpdateActionButton variant="bookshelf" />
           <button
             onClick={() => openModal('help')}
-            className="p-2 text-slate-500 hover:text-emerald-400 rounded transition"
+            className="p-2 text-[var(--text-muted)] hover:text-[var(--accent-primary)] rounded transition"
             aria-label="使用帮助"
             title="使用帮助 (F1)"
           >
@@ -93,30 +97,30 @@ export default function BookshelfPage() {
                 我的作品 ({filteredBooks.length})
               </h2>
               <div className="flex items-center gap-3">
-                <div className="flex items-center bg-[#1e1e1e] border border-[#333] rounded px-2 py-1.5">
-                  <Search size={14} className="text-slate-500 mr-1.5 shrink-0" />
+                <div className="flex items-center bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded px-2 py-1.5">
+                  <Search size={14} className="text-[var(--text-muted)] mr-1.5 shrink-0" />
                   <input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="搜索作品..."
-                    className="bg-transparent border-none focus:outline-none text-xs text-slate-200 w-32"
+                    className="bg-transparent border-none focus:outline-none text-xs text-[var(--text-primary)] w-32"
                   />
                 </div>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortBy)}
-                  className="bg-[#1e1e1e] border border-[#333] rounded px-2 py-1.5 text-xs text-slate-300 focus:outline-none"
+                  className="bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded px-2 py-1.5 text-xs text-[var(--text-secondary)] focus:outline-none"
                 >
                   <option value="updated">最近编辑</option>
                   <option value="created">创建时间</option>
                   <option value="words">总字数</option>
                   <option value="title">书名</option>
                 </select>
-                <div className="flex border border-[#333] rounded overflow-hidden">
+                <div className="flex border border-[var(--border-secondary)] rounded overflow-hidden">
                   <button
                     type="button"
                     onClick={() => setViewMode('grid')}
-                    className={`p-1.5 ${viewMode === 'grid' ? 'bg-emerald-600/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`p-1.5 ${viewMode === 'grid' ? 'bg-emerald-600/20 text-emerald-400' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
                     aria-label="网格视图"
                   >
                     <LayoutGrid size={14} />
@@ -124,7 +128,7 @@ export default function BookshelfPage() {
                   <button
                     type="button"
                     onClick={() => setViewMode('list')}
-                    className={`p-1.5 ${viewMode === 'list' ? 'bg-emerald-600/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`p-1.5 ${viewMode === 'list' ? 'bg-emerald-600/20 text-emerald-400' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
                     aria-label="列表视图"
                   >
                     <List size={14} />

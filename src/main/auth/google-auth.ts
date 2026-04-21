@@ -2,6 +2,7 @@ import { BrowserWindow } from 'electron'
 import http from 'http'
 import crypto from 'crypto'
 import * as appStateRepo from '../database/app-state-repo'
+import { getAuxiliaryWindowShellOptions } from '../window-shell'
 
 const REDIRECT_PORT = 48372
 const REDIRECT_URI = `http://127.0.0.1:${REDIRECT_PORT}/callback`
@@ -114,6 +115,7 @@ export class GoogleAuth {
       width: 520,
       height: 720,
       show: true,
+      ...getAuxiliaryWindowShellOptions(process.platform, '证道 · Google 登录'),
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true

@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-- 当前公开版本：`v1.0.0`
+- 当前公开版本：见 GitHub Releases
 - 下载入口：GitHub Releases
 - 应用内更新：正式打包版会基于 GitHub Releases 后台检查和下载更新；下载完成后标题栏会出现 `更新`
 - 主要目标平台：Windows x64
@@ -47,6 +47,7 @@
 - Windows / macOS 安装包构建
 - 基于 GitHub Releases 的应用内在线更新
 - 发布后下载完成才显示标题栏 `更新` 按钮
+- Windows 正式壳层、品牌标题与安装包图标已收口
 
 ## 路线图
 

@@ -1,8 +1,8 @@
-version: 4
-baseline_id: "CR-20260420-232439-open-source-release-hardening"
+version: 5
+baseline_id: "CR-20260421-000000-windows-shell-brand-polish"
 scope:
   mode: "change"
-  focus: "oss-release"
+  focus: "windows-shell"
   baseline_source: "MISSION.md + specs/example.spec.md"
   quality_tier: "standard"
 
@@ -25,6 +25,189 @@ milestones:
     scope: "git / github / release artifacts"
     acceptance_goal: "交付质量门具备远端证据或 blocker 证据"
     target_window: "2026-04-20"
+  - id: M4
+    title: "Windows Shell Branded"
+    goal: "Windows 安装版壳层、品牌标题和正式图标已收口并完成打包验证"
+    scope: "main / renderer / resources / builder / tests"
+    acceptance_goal: "实现质量门通过，交付质量门具备 Windows 打包证据"
+    target_window: "2026-04-21"
+
+  - id: TASK-AI-SHELL-001
+    title: "同步 Windows 壳层与品牌图标变更基线"
+    milestone: M4
+    parent: null
+    status: done
+    owner: AI
+    risk: medium
+    priority: P1
+    wave: 5
+    execution_role: "design_mapper"
+    approval_required: "user_confirmed_change"
+    depends_on: []
+    requirement_refs:
+      - "REQ-SHELL-001"
+      - "REQ-SHELL-002"
+      - "REQ-SHELL-003"
+      - "REQ-SHELL-004"
+    acceptance_refs:
+      - "AC-SHELL-001"
+      - "AC-SHELL-002"
+      - "AC-SHELL-003"
+      - "AC-SHELL-004"
+    context_files:
+      - "MISSION.md"
+      - "specs/example.spec.md"
+      - "acceptance.yaml"
+      - "release-plan.md"
+      - "STATE.md"
+    outputs:
+      - "baseline-log/CR-20260421-000000-windows-shell-brand-polish.md"
+      - "MISSION.md"
+      - "specs/example.spec.md"
+      - "acceptance.yaml"
+      - "release-plan.md"
+      - "STATE.md"
+    affected_components:
+      - "baseline"
+      - "release"
+      - "desktop-shell"
+    verification_required:
+      - "validate"
+    measurable_outcome:
+      - "Windows 壳层、图标和命名收口要求已落到工件"
+    definition_of_done:
+      - "baseline_id 已切换到 Windows Shell CR"
+    evidence_required:
+      - "baseline-record"
+
+  - id: TASK-AI-SHELL-002
+    title: "以失败测试锁定平台壳层与品牌标题规则"
+    milestone: M4
+    parent: null
+    status: pending
+    owner: AI
+    risk: medium
+    priority: P0
+    wave: 6
+    execution_role: "implementer"
+    approval_required: "confirmed"
+    depends_on:
+      - "TASK-AI-SHELL-001"
+    requirement_refs:
+      - "REQ-SHELL-001"
+      - "REQ-SHELL-002"
+    acceptance_refs:
+      - "AC-SHELL-001"
+      - "AC-SHELL-002"
+    context_files:
+      - "src/main/index.ts"
+      - "src/renderer/index.html"
+    outputs:
+      - "tests"
+    affected_components:
+      - "main"
+      - "shared"
+      - "test"
+    verification_required:
+      - "test-red"
+      - "test-green"
+    measurable_outcome:
+      - "Windows 壳层配置、菜单移除策略和标题命名规则具备自动化测试"
+    definition_of_done:
+      - "先看到失败测试"
+      - "再通过最小实现使测试转绿"
+    evidence_required:
+      - "red-log"
+      - "green-log"
+
+  - id: TASK-AI-SHELL-003
+    title: "实现主窗口壳层、菜单移除和顶栏视觉收口"
+    milestone: M4
+    parent: null
+    status: pending
+    owner: AI
+    risk: medium
+    priority: P0
+    wave: 7
+    execution_role: "implementer"
+    approval_required: "confirmed"
+    depends_on:
+      - "TASK-AI-SHELL-002"
+    requirement_refs:
+      - "REQ-SHELL-001"
+      - "REQ-SHELL-002"
+      - "REQ-SHELL-003"
+    acceptance_refs:
+      - "AC-SHELL-001"
+      - "AC-SHELL-002"
+      - "AC-SHELL-003"
+    context_files:
+      - "src/main/index.ts"
+      - "src/main/ipc-handlers.ts"
+      - "src/renderer/src/components/layout/TopBar.tsx"
+      - "src/renderer/src/components/bookshelf/BookshelfPage.tsx"
+      - "src/renderer/index.html"
+    outputs:
+      - "main"
+      - "renderer"
+    affected_components:
+      - "main"
+      - "renderer"
+      - "shell"
+    verification_required:
+      - "test"
+      - "build"
+    measurable_outcome:
+      - "Windows 主窗口去菜单并收口为正式客户端顶栏，标题统一为证道"
+    definition_of_done:
+      - "Windows 主窗口不再显示默认菜单"
+      - "品牌头不再出现 Pro"
+      - "Windows 顶栏为原生按钮预留安全区"
+    evidence_required:
+      - "build-log"
+      - "ui-impl"
+
+  - id: TASK-AI-SHELL-004
+    title: "生成正式图标资源并接入 builder 与打包 smoke"
+    milestone: M4
+    parent: null
+    status: pending
+    owner: AI
+    risk: medium
+    priority: P1
+    wave: 8
+    execution_role: "implementer"
+    approval_required: "confirmed"
+    depends_on:
+      - "TASK-AI-SHELL-003"
+    requirement_refs:
+      - "REQ-SHELL-004"
+    acceptance_refs:
+      - "AC-SHELL-004"
+    context_files:
+      - "resources/"
+      - "electron-builder.config.ts"
+    outputs:
+      - "resources/icon.svg"
+      - "resources/icon.ico"
+      - "resources/icon.icns"
+      - "electron-builder.config.ts"
+    affected_components:
+      - "resources"
+      - "release"
+      - "builder"
+    verification_required:
+      - "build"
+      - "package-smoke"
+    measurable_outcome:
+      - "Windows 任务栏 / 快捷方式 / 安装器与 macOS 包均接入正式图标"
+    definition_of_done:
+      - "ico 和 icns 已生成"
+      - "builder 已接入正式图标"
+      - "最小打包 smoke 通过"
+    evidence_required:
+      - "artifact-proof"
+      - "package-smoke"
 
 tasks:
   - id: TASK-AI-OSS-001

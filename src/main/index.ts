@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { initDatabase } from './database/connection'
 import { registerIpcHandlers } from './ipc-handlers'
 import { attachUpdaterWindow } from './updater/service'
+import { applyDesktopWindowShell, getMainWindowShellOptions } from './window-shell'
 
 process.on('uncaughtException', (error) => {
   console.error('[Main] Uncaught exception:', error)
@@ -23,10 +24,7 @@ function createWindow(): void {
     minWidth: 1024,
     minHeight: 700,
     show: false,
-    backgroundColor: '#141414',
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 16, y: 16 },
-    title: '证道',
+    ...getMainWindowShellOptions(process.platform),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false, // required for better-sqlite3 native module access via preload
@@ -68,6 +66,7 @@ app.whenReady().then(() => {
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
+    applyDesktopWindowShell(window, process.platform)
   })
 
   initDatabase()

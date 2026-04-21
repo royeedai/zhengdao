@@ -1,15 +1,15 @@
-version: 3
-baseline_id: "CR-20260420-232439-open-source-release-hardening"
+version: 4
+baseline_id: "CR-20260421-000000-windows-shell-brand-polish"
 scope:
   mode: "change"
-  focus: "oss-release"
+  focus: "windows-shell"
   baseline_source: "MISSION.md + specs/example.spec.md"
   change_control: "all requirement changes must go through /change-request"
   quality_tier: "standard"
   primary_spec: "specs/example.spec.md"
-  confirmed_stack_decisions: "Electron desktop app + GitHub Releases + project release scripts + AI release skill"
-  target_runtime: "public GitHub repository with downloadable release artifacts and updater metadata"
-  dev_fallback: "local release preparation and blocker reporting when remote credentials are unavailable"
+  confirmed_stack_decisions: "Electron desktop app + Windows hidden title bar shell + packaged icon resources"
+  target_runtime: "packaged Windows desktop app with formal shell and brand icon"
+  dev_fallback: "local build and package smoke"
 
 required_special_reviews: []
 
@@ -18,9 +18,9 @@ gates:
     title: "设计确认门"
     status: completed
     checks:
-      - "开源仓库必需文档、版本治理、GitHub 首发和一键发布能力已纳入基线"
-      - "GitHub Releases 既作为下载入口也作为在线更新元数据源已确认"
-      - "token 无效时必须显式 blocker 报告已写入约束"
+      - "Windows 壳层、品牌命名和正式图标已纳入基线"
+      - "Windows 走隐藏标题栏，不走裸 frame:false 已确认"
+      - "macOS 只同步图标和命名，不重做窗口壳层"
     evidence:
       - "CR-20260420-232439-open-source-release-hardening"
       - "MISSION.md"
@@ -30,10 +30,10 @@ gates:
     title: "逻辑确认门"
     status: completed
     checks:
-      - "版本号、tag 与 CHANGELOG 一致性规则已锁定"
-      - "release prepare / publish 的职责边界已明确"
-      - "README 的‘当前能力’与‘路线图’需要分区已明确"
-      - "GitHub 首发失败时的 blocker 路径已明确"
+      - "Windows / Linux 菜单移除、macOS 保留菜单的策略已锁定"
+      - "品牌标题统一为证道已锁定"
+      - "图标资源必须补齐 ico / icns 已锁定"
+      - "Windows 顶栏需要为原生按钮留白已确认"
     evidence:
       - "specs/example.spec.md"
       - "MISSION.md"
@@ -42,31 +42,31 @@ gates:
     title: "实现质量门"
     status: completed
     checks:
-      - "仓库文档、模板、LICENSE 和 package 元数据已补齐"
-      - "版本治理脚本与项目级 release skill 已实现"
+      - "Windows 壳层配置和品牌标题规则具备自动化测试"
+      - "主窗口壳层、菜单移除和顶栏视觉已实现"
+      - "图标资源与 builder 接入已完成"
       - "项目原生静态校验已完成"
-      - "最小 release 脚本验证已通过"
+      - "最小打包 smoke 已通过"
     evidence:
       - "npm test"
       - "npm run build"
-      - "README.md"
-      - "package.json"
-      - "scripts/release/*"
-      - ".agents/skills/*"
+      - "src/main/index.ts"
+      - "src/renderer/src/components/layout/TopBar.tsx"
+      - "resources/icon.ico"
 
   - id: delivery-readiness
     title: "交付质量门"
     status: in_progress
     checks:
-      - "Git 仓库已初始化并具备推送条件"
-      - "GitHub 仓库与首版 Release 已存在，或远端 blocker 证据已明确"
-      - "GitHub Releases 页面能承载安装包和更新元数据"
-      - "后续发布命令与 skill 已可复用"
-      - "macOS 自动更新限制仍被显式披露"
+      - "Windows 安装版启动后不再出现默认菜单"
+      - "Windows 窗口标题已统一为证道"
+      - "Windows 安装器与任务栏图标已替换"
+      - "macOS 窗口行为未回退"
+      - "顶栏按钮与原生窗口按钮无冲突"
     evidence:
-      - ".github/workflows/release.yml"
+      - "windows package smoke"
       - "release-plan.md"
-      - "GitHub API / push / release 证据或 blocker"
+      - "artifact proof"
 
   - id: parity-gate
     title: "对照一致性门"
@@ -81,8 +81,7 @@ result:
   implementation_ready: passed
   delivery_ready: pending
   blockers:
-    - "远端 GitHub 仓库创建与首版 release 仍依赖有效 token"
-    - "macOS 自动更新正式上线仍依赖签名和 notarization"
+    - "Windows 安装版视觉与图标仍待新的打包验证"
   advisories:
-    - "README 与 release 页面必须区分当前能力和路线图"
+    - "macOS 只同步图标与命名，不改变当前窗口交互"
   user_confirmation_blockers: []

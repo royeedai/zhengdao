@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  PenTool,
   PanelLeftClose,
   PanelLeft,
   PanelRightClose,
@@ -28,8 +27,10 @@ import { useWritingSession } from '@/hooks/useWritingSession'
 import { useWritingStreak } from '@/hooks/useWritingStreak'
 import PomodoroTimer from '@/components/shared/PomodoroTimer'
 import UpdateActionButton from '@/components/shared/UpdateActionButton'
+import AppBrand from '@/components/shared/AppBrand'
 import { THEME_IDS, THEME_LABELS } from '@/utils/themes'
 import { useAuthStore } from '@/stores/auth-store'
+import { getCurrentTitlebarSafeArea } from '@/utils/window-shell'
 
 export default function TopBar() {
   const {
@@ -80,6 +81,7 @@ export default function TopBar() {
   const dailyPercent = Math.min(100, Math.round((dailyWords / dailyGoal) * 100))
   const { sessionTime } = useWritingSession(currentBookId ?? null)
   const { streak } = useWritingStreak()
+  const titlebarSafeArea = getCurrentTitlebarSafeArea()
 
   const cloudIconClass = syncing
     ? 'text-emerald-400 animate-pulse'
@@ -101,25 +103,22 @@ export default function TopBar() {
   }
 
   return (
-    <div className="h-12 border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] flex items-center justify-between shrink-0 shadow-sm z-30 drag-region gap-3">
-      {/* 左区：logo + 书名 + 面板切换，pl-20 为 macOS 红绿灯留空 */}
-      <div className="flex items-center space-x-4 pl-20 no-drag">
-        <div className="flex items-center space-x-2 text-emerald-500 font-bold tracking-wide">
-          <PenTool size={18} />
-          <span>
-            证道{' '}
-            <span className="text-[10px] text-slate-500 font-normal ml-1 border border-slate-600 rounded px-1">
-              Pro
-            </span>
-          </span>
-        </div>
-        <div className="h-4 w-px bg-slate-700" />
+    <div
+      className="h-12 border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] flex items-center justify-between shrink-0 shadow-sm z-30 drag-region gap-3"
+      style={{
+        paddingLeft: `${titlebarSafeArea.leftInset}px`,
+        paddingRight: `${titlebarSafeArea.rightInset}px`
+      }}
+    >
+      <div className="flex items-center space-x-3 no-drag min-w-0">
+        <AppBrand compact />
+        <div className="h-4 w-px bg-[var(--border-secondary)]" />
         <button
           onClick={closeBook}
           title="返回书架"
-          className="text-sm font-medium text-[var(--text-primary)] hover:text-emerald-400 transition flex items-center gap-1"
+          className="text-sm font-medium text-[var(--text-primary)] hover:text-emerald-400 transition flex items-center gap-1 min-w-0"
         >
-          《{currentBook?.title || '未命名'}》
+          <span className="truncate">《{currentBook?.title || '未命名'}》</span>
           <ArrowUpRight size={12} className="text-[var(--text-muted)]" />
         </button>
         <button
@@ -131,7 +130,7 @@ export default function TopBar() {
           <LayoutDashboard size={14} />
           总览
         </button>
-        <div className="flex items-center space-x-1 ml-4 text-[var(--text-muted)]">
+        <div className="flex items-center space-x-1 ml-2 text-[var(--text-muted)]">
           <button
             onClick={toggleLeftPanel}
             aria-label={leftPanelOpen ? '收起目录' : '展开目录'}
@@ -153,7 +152,7 @@ export default function TopBar() {
         </div>
       </div>
 
-      <div className="topbar-tools no-drag flex flex-1 min-w-0 items-center justify-center px-2 overflow-x-auto">
+      <div className="topbar-tools no-drag flex flex-1 min-w-0 items-center justify-center px-3 overflow-x-auto">
         <div className="flex min-w-max items-center gap-2 whitespace-nowrap py-1">
           <button
             onClick={() => openModal('fullCharacters')}
@@ -207,7 +206,7 @@ export default function TopBar() {
         </div>
       </div>
 
-      <div className="flex items-center space-x-4 text-[var(--text-secondary)] pr-4 no-drag shrink-0">
+      <div className="flex items-center space-x-4 text-[var(--text-secondary)] no-drag shrink-0">
         <div className="flex items-center space-x-3 text-xs w-56">
           <span className="text-[var(--text-secondary)] font-medium shrink-0">日更:</span>
           <div className="flex-1 bg-[var(--bg-tertiary)] h-2.5 rounded-full overflow-hidden relative border border-[var(--border-primary)]">

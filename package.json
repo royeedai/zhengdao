@@ -3,7 +3,16 @@
   "version": "1.0.0",
   "productName": "证道",
   "description": "证道 - 沉浸式桌面端网文创作软件",
+  "author": "royeedai",
   "license": "MIT",
+  "homepage": "https://github.com/royeedai/zhengdao",
+  "bugs": {
+    "url": "https://github.com/royeedai/zhengdao/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/royeedai/zhengdao.git"
+  },
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -12,6 +21,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "assets:icons": "bash scripts/assets/generate-icons.sh",
     "lint": "eslint src/",
     "format": "prettier --write src/",
     "release:prepare": "node scripts/release/prepare-release.mjs",

@@ -8,6 +8,7 @@ import WorkspaceLayout from '@/components/layout/WorkspaceLayout'
 import ToastContainer from '@/components/shared/ToastContainer'
 import UpdateBootstrap from '@/components/shared/UpdateBootstrap'
 import ModalManager from '@/components/modals/ModalManager'
+import { APP_DISPLAY_NAME } from '../../shared/window-shell'
 
 export default function App(): JSX.Element {
   const currentBookId = useBookStore((s) => s.currentBookId)
@@ -22,6 +23,10 @@ export default function App(): JSX.Element {
   useEffect(() => {
     document.documentElement.dataset.theme = theme
   }, [theme])
+
+  useEffect(() => {
+    document.title = APP_DISPLAY_NAME
+  }, [])
 
   return (
     <>

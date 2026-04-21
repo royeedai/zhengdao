@@ -1,116 +1,112 @@
-# 开源发布与版本治理 Spec
+# Windows 安装版桌面壳层与品牌图标 Spec
 
 ## 1. 模块概述
 
-- **模块目标**：将证道整理为可公开托管、可下载、可持续发布并兼容应用内更新的开源桌面项目
+- **模块目标**：把 Windows 安装版证道从默认 Electron 外观收口为正式客户端，并补齐正式品牌图标资源
 - **所属阶段**：build / verify / ship
-- **关联 Mission / Design**：`MISSION.md` 当前基线 `CR-20260420-232439-open-source-release-hardening`
+- **关联 Mission / Design**：`MISSION.md` 当前基线 `CR-20260421-000000-windows-shell-brand-polish`
 - **关联需求点 ID / 标题**：
-  - `REQ-OSS-001` 开源仓库文档与模板
-  - `REQ-OSS-002` 自动版本号与 CHANGELOG 治理
-  - `REQ-OSS-003` 项目级 GitHub 发布 skill
-  - `REQ-OSS-004` GitHub 仓库首发
-  - `REQ-OSS-005` 下载与应用内更新说明
+  - `REQ-SHELL-001` Windows 主窗口壳层与菜单移除
+  - `REQ-SHELL-002` 品牌标题统一
+  - `REQ-SHELL-003` 顶栏视觉收口
+  - `REQ-SHELL-004` 图标与打包资源接入
 
 ## 2. 业务规则与目标
 
 - **核心规则**：
-  - README 只写“当前已实现能力”与“后续路线图”，两者必须显式分区
-  - 后续发布必须通过统一脚本推进版本号、更新 changelog、创建 `v<version>` tag
-  - GitHub Releases 继续作为安装包下载入口与在线更新元数据源
-  - 首发版本默认使用当前应用版本 `1.0.0`
-  - 若 GitHub token 无效或权限不足，必须以 blocker 形式报告，而不是写成已发布
-- **必须优先保证的正确性**：仓库地址正确、版本号 / tag / changelog 一致、文档不夸大功能、Release 产物兼容自动更新
-- **允许延后处理的细节**：发布徽章美化、品牌素材、beta / alpha 渠道、自动生成详细 release notes
-- **本轮非目标 / 禁止越界项**：不重构主业务功能，不补全 macOS 签名 / notarization 全流程，不处理 Linux 发布
+  - Windows 主窗口不再显示 `File / Edit / View / Window / Help`
+  - Windows 顶栏视觉改由应用自己承接，但必须保留原生窗口行为
+  - 应用对外名称统一为 `证道`
+  - 品牌图标必须产出 `svg + ico + icns`
+  - macOS 只同步图标和命名，不改现有 `hiddenInset` 方案
+- **必须优先保证的正确性**：Windows 窗口行为不回退、安装后图标生效、顶栏操作区不与原生窗口按钮冲突
+- **允许延后处理的细节**：更完整品牌体系、Linux 自定义标题栏、官网宣传素材
+- **本轮非目标 / 禁止越界项**：不做裸 `frame:false` 无边框实现，不改业务交互逻辑
 
 ## 3. 界面 / 接口 / 命令清单
 
-- **交互模式**：repository-governed + release-script-driven
-- **推荐模式理由**：文档、版本治理和 GitHub 发布应可重复执行，不能依赖一次性手工操作
-- **拒绝的交互模式**：手动只改 `package.json` 版本、不更新 changelog 就发布；只在聊天里说明 release 步骤而不沉淀仓库脚本 / skill
+- **交互模式**：native-window + app-owned title chrome
+- **推荐模式理由**：保持 Windows 原生窗口行为，同时把标题栏视觉交给应用统一控制
+- **拒绝的交互模式**：裸 `frame:false` 自己重造整套窗口系统
 
 | 编号 | 类型 | 名称 | 描述 | 验收点 |
 |------|------|------|------|--------|
-| I-OSS-001 | 仓库元数据 | `README.md` | 项目简介、功能、安装、下载、应用内更新、开发与贡献说明 | AC-OSS-001 / AC-OSS-005 |
-| I-OSS-002 | 仓库文档 | `LICENSE` / `CHANGELOG.md` / `CONTRIBUTING.md` / `SECURITY.md` / `CODE_OF_CONDUCT.md` / `SUPPORT.md` | 开源治理与协作基线 | AC-OSS-001 |
-| I-OSS-003 | 仓库模板 | `.github/ISSUE_TEMPLATE/*` / `.github/pull_request_template.md` | 公开协作入口模板 | AC-OSS-001 |
-| I-OSS-004 | 版本脚本 | `scripts/release/*.mjs` | 自动 bump 版本、预置 changelog、校验 git 状态、推送 tag / 分支 | AC-OSS-002 |
-| I-OSS-005 | npm scripts | `release:prepare` / `release:publish` | 维护者执行统一发布命令 | AC-OSS-002 |
-| I-OSS-006 | 项目 skill | `.agents/skills/*` | 指导 AI 使用仓库发布脚本、变更 changelog、推送 GitHub 并验证 release | AC-OSS-003 |
-| I-OSS-007 | 发布链路 | `.github/workflows/release.yml` + `electron-builder.config.ts` | tag 触发 GitHub Release 构建与自动更新元数据上传 | AC-OSS-004 / AC-OSS-005 |
-| I-OSS-008 | 仓库托管 | Git 仓库 + GitHub 远端 | 首版代码、tag 与 release 发布目标 | AC-OSS-004 |
+| I-SHELL-001 | 主进程窗口配置 | main window options | Windows 使用隐藏标题栏与 overlay，macOS 保持 `hiddenInset` | AC-SHELL-001 |
+| I-SHELL-002 | 菜单策略 | application menu removal | Windows / Linux 移除默认菜单，macOS 保留 | AC-SHELL-001 |
+| I-SHELL-003 | UI | 书架页 / 工作区顶栏 | 正式品牌头、Windows 原生按钮留白、无 `Pro` 标识 | AC-SHELL-003 |
+| I-SHELL-004 | 命名 | `title` / HTML title / productName | 应用对外名称统一为 `证道` | AC-SHELL-002 |
+| I-SHELL-005 | 打包资源 | `icon.svg` / `icon.ico` / `icon.icns` | 正式品牌图标资源 | AC-SHELL-004 |
+| I-SHELL-006 | Builder 配置 | `electron-builder.config.ts` | 应用、安装器、卸载器与快捷方式图标统一 | AC-SHELL-004 |
 
 ## 4. 关键流程与状态流转
 
-1. 维护者执行 `npm run release:prepare -- <patch|minor|major> "<summary>"`，脚本自动推进版本号并在 `CHANGELOG.md` 顶部插入新版本条目
-2. 维护者审阅 changelog 后执行 `npm run release:publish -- <patch|minor|major> "<summary>"` 或由 skill 代执行
-3. 发布脚本在 clean git 状态下运行测试 / 构建，提交 release commit，创建 `v<version>` tag，并推送当前分支与 tag
-4. GitHub Actions 监听 `v*` tag，构建 Windows x64 与 macOS 产物，并通过 `electron-builder` 上传到 GitHub Releases
-5. Release 页面承载安装包、`latest.yml`、`latest-mac.yml` 等自动更新元数据
-6. 已安装客户端根据既有 updater service 检查 Release 元数据并完成后续在线更新
-7. 若远端创建、push 或 release 任一步因无效凭据失败，则流程停止，保留本地工件并报告 blocker
+1. 主进程根据平台生成主窗口壳层配置
+2. Windows 主窗口使用隐藏标题栏与 overlay，让 renderer 顶栏承接视觉 chrome
+3. 应用创建窗口时，在 Windows / Linux 统一移除默认应用菜单
+4. renderer 顶栏根据平台给左 / 右留白，避免与 mac 红绿灯或 Windows 系统按钮冲突
+5. 书架页和工作区品牌头统一为正式品牌头，去掉 `Pro`
+6. 打包前生成 `svg + ico + icns` 图标资源，`electron-builder` 与 BrowserWindow 同步接入
+7. 构建正式产物后验证窗口标题、菜单和图标都已生效
 
 ## 5. 数据与契约
 
 - **契约基准**：
-  - 版本号遵循 `semver`
-  - tag 命名固定为 `v<version>`
-  - CHANGELOG 条目结构：`## vX.Y.Z - YYYY-MM-DD` + `Added / Changed / Fixed / Docs / Release`
+  - 应用名：`证道`
+  - Windows 主窗口菜单：隐藏
+  - 图标资源：`resources/icon.svg`、`resources/icon.ico`、`resources/icon.icns`
 - **输入**：
-  - 当前 `package.json` 版本
-  - 发布类型：`patch | minor | major`
-  - 发布摘要或 notes
-  - GitHub 仓库配置与有效凭据
+  - 当前平台
+  - 主窗口 preload 路径
+  - 图标资源路径
 - **输出**：
-  - 更新后的 `package.json` / `package-lock.json`
-  - `CHANGELOG.md` 顶部新版本条目
-  - release commit 与 `v<version>` tag
-  - GitHub Releases 安装包与更新元数据
+  - 平台化主窗口壳层配置
+  - 顶栏留白规则
+  - 安装包与应用图标资源
 - **关键字段 / 状态枚举**：
-  - `version`: semver
-  - `releaseType`: `patch | minor | major`
-  - `repo`: `owner/name`
+  - `platform`: `darwin | win32 | linux`
+  - `title`: `证道`
+  - `stripNativeMenu`: boolean
 - **字段映射/适配说明**：
-  - Release tag 必须与 `package.json.version` 一致
-  - GitHub Releases 继续作为 `electron-updater` 的发布源
+  - Windows：`titleBarStyle: hidden` + overlay
+  - macOS：`titleBarStyle: hiddenInset`
+  - Linux：保留原生窗口，但移除应用菜单
 - **共享层 / 包装层副作用审计**：
-  - 仅扩展仓库元数据、发布脚本和 GitHub workflow，不改线上业务协议
-  - README 会显式承接现有 updater 能力，但不改变客户端运行逻辑
+  - 不新增业务 IPC
+  - 只扩展窗口配置与 renderer 顶栏留白逻辑
 - **集成触点**：
-  - `package.json`
+  - `src/main/index.ts`
+  - `src/main/ipc-handlers.ts`
+  - `src/renderer/src/components/layout/TopBar.tsx`
+  - `src/renderer/src/components/bookshelf/BookshelfPage.tsx`
+  - `src/renderer/index.html`
   - `electron-builder.config.ts`
-  - `.github/workflows/release.yml`
-  - `.agents/skills/*`
-  - 仓库级文档文件
-- **路由 / 入口契约对照**：无新增应用页面；变更集中在仓库与发布入口
+- **路由 / 入口契约对照**：无新增页面路由
 - **Schema / 存储一致性说明**：不新增数据库 schema
-- **持久化 / 外部依赖**：GitHub API、GitHub Releases、GitHub Actions、有效 GitHub token、签名 / notarization secrets
-- **受影响模块 / 文件边界**：仓库根目录元数据、发布配置、工作流、维护者说明、项目 skill
+- **持久化 / 外部依赖**：本地图像处理命令、Electron 平台窗口能力
+- **受影响模块 / 文件边界**：主进程窗口配置、renderer 顶栏、打包资源、builder 配置
 
 ## 6. 边界条件与异常处理
 
-- GitHub token 无效：停止远端创建 / push / release，报告 blocker
-- 远端仓库名占用：优先回退到候选仓库名，而不是覆盖现有仓库
-- 工作区不干净：发布脚本拒绝直接继续，避免把临时改动带进 release
-- 构建失败：不创建 release tag 或在失败后停止推送后续步骤
-- macOS 未签名/未公证：README 与 release 文档显式提示限制，不把自动更新写成完全可用
-- Windows 产物仍需保证文件名带 `arch`，避免更新元数据指向错误安装包
+- Windows overlay 顶栏若留白不足：顶栏按钮会被原生窗口按钮覆盖
+- 只移除主窗口菜单：辅助窗口仍可能露出开发味菜单
+- 只替换 HTML 标题不替换窗口 title：任务栏与窗口标题不一致
+- 只替换 SVG 不生成 `ico/icns`：安装后仍显示默认 Electron 图标
+- macOS：只同步命名和图标，不改变现有窗口交互
 
 ## 7. 验收与证据
 
 - **关键用户任务 / 运营任务验证**：
-  - GitHub 仓库首页可被新用户理解并找到下载入口
-  - 维护者可通过统一命令或 skill 推进版本和发布
-  - GitHub Release 可提供安装包与应用内更新元数据
-- **设计一致性证据**：README 与 SUPPORT / SECURITY / CONTRIBUTING 文档口径一致，不冲突
-- **逻辑正确性证据**：版本脚本测试或最小 CLI 验证、release 输入校验、tag/version/changelog 一致性检查
+  - Windows 安装版启动后不再显示默认应用菜单
+  - 窗口顶部不再出现白色系统菜单条与深色内容区割裂
+  - 任务栏 / 快捷方式 / 安装器显示正式品牌图标
+- **设计一致性证据**：书架页和工作区顶栏品牌头一致，无 `Pro` 标识
+- **逻辑正确性证据**：平台壳层配置测试、菜单移除测试、品牌标题与 inset 规则测试
 - **工程质量证据**：`npm test`、`npm run build`
-- **运行态证据**：发布脚本 dry-run/prepare 验证、GitHub Release 实际产物或明确 blocker 证据
-- **异常/空数据证据**：无效 token、脏工作区、无 changelog summary、构建失败
+- **运行态证据**：Windows / macOS 最小打包 smoke
+- **异常/空数据证据**：Windows / macOS 平台差异、无图标资源、窗口按钮留白冲突
 - **最小验证步骤**：
   - `npm test`
   - `npm run build`
-  - `node scripts/release/prepare-release.mjs patch "..." --dry-run`
-  - 若凭据有效：GitHub API 创建仓库 + `git push` + 首版 Release 构建
-- **回归范围**：`package.json` 版本治理、workflow 发布路径、在线更新文档口径
+  - Windows 打包 smoke
+  - macOS 打包 smoke
+- **回归范围**：主窗口创建、辅助窗口菜单、顶栏交互、打包图标资源

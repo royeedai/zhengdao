@@ -1,108 +1,101 @@
 # 证道 Mission
 
-> 当前 lane 记录的是“证道桌面端稳定性与交付能力增强”这条交付线。本轮在既有交互修复、正式安装包与在线更新能力基础上，进一步补齐开源发布治理、GitHub 首发与后续版本管理。
+> 当前 lane 记录的是“证道桌面端稳定性与交付能力增强”这条交付线。本轮在既有交互修复、正式安装包与在线更新能力基础上，进一步收口 Windows 安装版桌面壳层与品牌图标。
 
 ## 1. 交付基线摘要
 
 - **宿主项目 / 系统**：证道 Electron 桌面端创作软件
-- **当前交付主题**：开源项目治理、GitHub Releases 首发与持续版本管理
-- **当前交付目标**：将当前代码库整理为可公开托管、可下载、可后续持续发布的开源桌面项目，补齐开源文档、版本/更新日志策略、GitHub 发布自动化与应用内更新使用说明，并完成首个 GitHub 仓库推送与首版 Release
+- **当前交付主题**：Windows 安装版桌面壳层与品牌图标收口
+- **当前交付目标**：把 Windows 正式安装版从默认 Electron 外观收口为正式客户端，移除默认菜单栏与突兀白色标题栏感，统一应用对外名称，并补齐 Windows/macOS 正式图标资源
 - **成功标准**：
-  - 仓库具备公开开源项目的最低完整工件：README、LICENSE、CHANGELOG、贡献/安全/支持/行为准则文档与 issue / PR 模板
-  - `package.json`、发布脚本和构建配置包含完整仓库元数据与后续 release 所需信息
-  - 后续发布可以通过统一脚本 / skill 自动推进版本号、更新 changelog、推送 tag 并触发 GitHub Release
-  - GitHub Releases 页面能够承载正式安装包与在线更新元数据，便于用户下载和应用内更新
-  - 首个 GitHub 仓库已创建并推送首版代码；若凭据无效，则必须明确报告 blocker，而不是虚报已发布
+  - Windows 安装版启动后不再出现 `File / Edit / View / Window / Help`
+  - Windows 顶部不再出现白色原生菜单条与深色内容区的割裂结构
+  - 应用窗口标题统一为 `证道`，不再出现 `Path to God`
+  - Windows 任务栏、开始菜单、桌面快捷方式和安装器都使用正式品牌图标
+  - macOS 保持现有窗口行为，仅同步正式图标资源与品牌命名
 - **项目模式**：change
 - **当前交付档位**：standard
 - **当前治理档位**：P1
-- **当前基线 ID**：CR-20260420-232439-open-source-release-hardening
+- **当前基线 ID**：CR-20260421-000000-windows-shell-brand-polish
 
 ## 2. 用户与闭环场景
 
 - **目标用户**：
-  - 公开仓库访问者和潜在贡献者
-  - 下载安装证道桌面端的作者用户
-  - 后续负责持续发布版本的维护者
+  - 安装 Windows 正式版证道桌面端的作者用户
+  - 维护桌面端打包与发布外观的维护者
 - **关键场景**：
-  - 新用户打开 GitHub 仓库后，能快速理解项目定位、当前能力、安装方式和平台限制
-  - 维护者可以通过统一流程自动 bump 版本号、维护 changelog、推送 tag 并触发 Release
-  - 用户可以从 GitHub Releases 下载 Windows/macOS 安装包，并理解应用内更新的工作方式与约束
-  - 应用安装后，后续版本仍通过 GitHub Releases 供在线更新消费
-- **目标市场 / 使用环境**：GitHub 开源仓库 + Windows x64 优先正式发布；macOS 产物继续提供，但自动更新对外可用仍取决于签名与 notarization
-- **当前最小可行闭环**：仓库元数据完善 + 版本治理脚本 / skill + GitHub 仓库首发 + GitHub Release 安装包 / 更新元数据
-- **明确后续迭代项**：品牌图标补齐、macOS 签名/公证全自动化、beta/alpha 渠道、Linux 发布、更新日志专用弹窗
+  - 用户安装 Windows 正式版后，看到的是正式客户端壳层，而不是默认 Electron 菜单和白边
+  - 用户从桌面、开始菜单、任务栏与安装器看到一致的品牌图标与应用名称
+  - macOS 安装包继续保留当前交互行为，但对外图标和名称与 Windows 保持一致
+- **目标市场 / 使用环境**：Windows x64 正式安装包优先；macOS 仅同步图标资源和命名
+- **当前最小可行闭环**：Windows 主窗口壳层 + 菜单移除 + 品牌命名统一 + 图标资源接入 + 打包 smoke
+- **明确后续迭代项**：更完整的品牌官网 / 落地页、签名与 notarization 全自动化、Linux 正式客户端壳层
 
 ## 3. 已确认约束与关键决策
 
 - **已确认技术栈与关键选型**：
   - Electron + electron-vite
-  - `electron-builder` + GitHub Releases
-  - `electron-updater`
-  - 项目内 release script + AI skill 共同承载后续一键发布
+  - `electron-builder`
+  - Windows 使用隐藏标题栏能力和应用自有顶栏，不走高风险裸 `frame:false`
 - **已确认目标运行态 / 部署约束**：
-  - GitHub Releases 是对外下载入口和在线更新元数据源
-  - 客户端只在 `app.isPackaged` 下启用自动更新
-  - Windows 目标为 NSIS；macOS 继续产出 `dmg + zip`
-  - 后续发布必须自动推进版本号和 changelog，不允许人工只改其中一部分
-- **已确认质量优先级**：可公开理解 > 发布可复用 > 版本一致性 > 自动更新兼容性
+  - Windows 正式版优先解决桌面壳层和图标观感
+  - Windows / Linux 主窗口移除默认应用菜单；macOS 保留系统级菜单
+  - macOS 继续维持 `hiddenInset` 窗口行为
+- **已确认质量优先级**：正式客户端观感 > 原生窗口行为稳定 > 品牌一致性 > 打包兼容性
 - **必须保持的宿主项目约束**：
-  - 不夸大 README 中的功能完成度；路线图与当前可用能力必须区分
-  - 不因发布脚本引入版本号、tag、CHANGELOG 不一致
-  - 在线更新仍保持现有“下载完成后再显示 `更新`”语义
+  - 不破坏 Windows 的拖拽、最大化、吸附、缩放和系统窗口按钮行为
+  - 不新增对业务层暴露的公共 IPC
+  - 在线更新按钮、帮助、新建作品等现有顶部操作保持可用
 - **已确认核心设计决策**：
-  - 仓库名优先采用 `zhengdao`，若远端占用则回退到 `zhengdao-desktop`
-  - 后续版本发布采用“本地准备版本 + 推送 tag 触发 GitHub Actions 发布”模式
-  - 版本号遵循 semver；tag 统一为 `v<version>`
-  - CHANGELOG 采用“版本 + 日期 + 分类条目”结构，由发布脚本自动预置新条目
+  - Windows 主窗口使用隐藏标题栏 + 自定义顶栏承接应用 chrome
+  - 顶栏品牌头去掉 `Pro` 样机标识，书架页和工作区统一为正式品牌头
+  - 对外应用名统一为 `证道`
+  - 图标风格采用“笔尖印章”
 - **已确认核心逻辑决策**：
-  - 版本 bump 必须同步 `package.json` 与 `package-lock.json`
-  - 首版公开发布默认为 `v1.0.0`
-  - 若 GitHub token 无效或权限不足，允许本地完成全部首发准备，但不得伪造“已推送 / 已发布”
+  - 所有用户可见窗口在 Windows / Linux 下移除开发味原生菜单
+  - 图标资源必须补齐 `icon.ico`、`icon.icns` 与矢量母稿
+  - BrowserWindow 与 `electron-builder` 同步接入正式图标资源
 
 ### 已确认非功能性约束
-- 远端仓库创建与 release 依赖有效的 GitHub token
-- macOS 自动更新正式可用仍依赖签名与 notarization
-- 当前图标资源仍不完整，不在本轮补齐品牌资源
+- macOS 窗口行为不在本轮重构
+- 不引入新的联网依赖来生成图标资源
 
 ## 4. 范围边界与非目标
 
 ### 范围内
-- 开源仓库必需文档与模板
-- README 重写与安装 / 更新 / 发布说明
-- LICENSE、CHANGELOG、CONTRIBUTING、SECURITY、CODE_OF_CONDUCT、SUPPORT
-- 版本治理脚本、发布脚本和项目级 release skill
-- Git 仓库初始化、远端仓库创建、首版推送与 Release 首发
-- 发布链路与应用内更新的衔接说明
+- 主窗口壳层配置
+- 原生菜单移除策略
+- 窗口标题与品牌命名统一
+- 书架页与工作区顶栏视觉收口
+- 正式图标资源生成与 builder 接入
+- Windows 打包 smoke
 
 ### 范围外
-- 品牌官网、博客、宣传素材
-- Linux 正式发布
-- macOS 证书申请与 notarization 实操闭环
-- 全量 CI 质量门重构
+- 仓库公开发布流程
+- GitHub token / GitHub Release blocker 处理
+- macOS 窗口壳层重做
+- Linux 自定义标题栏
 
 ### 非目标
-- 不在本轮重构现有业务代码或 UI 功能
-- 不承诺当前 lint 历史问题在本轮全部收敛
-- 不把未验证的高级能力写入“已完成能力”列表
+- 不做高风险裸 `frame:false` 无边框方案
+- 不顺手重构业务逻辑或全站视觉体系
+- 不在本轮补品牌官网或营销素材
 
 ### 核心需求清单
 | 需求 ID | 需求点 | 来源 | 验收入口 |
 |---------|--------|------|----------|
-| REQ-OSS-001 | 补齐公开开源仓库所需核心文档与模板 | 用户需求 | AC-OSS-001 |
-| REQ-OSS-002 | 建立自动推进版本号与 CHANGELOG 的发布治理脚本 | 用户需求 | AC-OSS-002 |
-| REQ-OSS-003 | 提供可复用的项目级 GitHub 发布 skill，支持后续一键式发布流程 | 用户需求 | AC-OSS-003 |
-| REQ-OSS-004 | 初始化并推送 GitHub 仓库，完成首个公开版本发布 | 用户需求 | AC-OSS-004 |
-| REQ-OSS-005 | 在仓库文档中明确用户下载入口、应用内更新机制与平台限制 | 用户需求 | AC-OSS-005 |
+| REQ-SHELL-001 | Windows 安装版移除默认应用菜单并收口桌面壳层 | 用户需求 | AC-SHELL-001 |
+| REQ-SHELL-002 | 对外窗口标题与应用名称统一为 `证道` | 用户需求 | AC-SHELL-002 |
+| REQ-SHELL-003 | 书架页与工作区顶栏改成更像正式客户端的品牌头 | 用户需求 | AC-SHELL-003 |
+| REQ-SHELL-004 | 补齐正式图标资源并接入打包配置 | 用户需求 | AC-SHELL-004 |
 
 ## 5. 稳定风险与外部依赖
 
-- **外部依赖**：GitHub API、有效 GitHub token、GitHub Actions、`GH_OWNER` / `GH_REPO` / `GH_TOKEN`、Apple 签名 / 公证 secrets
+- **外部依赖**：本地图像处理工具链、Electron 平台窗口能力、`electron-builder`
 - **稳定风险**：
-  - token 无效会阻塞远端仓库创建、push 与 Release 首发
-  - 版本号、tag 和 CHANGELOG 若失配，会直接破坏后续自动更新与发布可信度
-  - README 若混写“当前能力”和“规划能力”，会误导用户下载预期
-  - macOS 未签名 / 未公证时仍不能把自动更新写成完全可用能力
-- **高风险触发因素**：错误公开仓库地址、错误 tag 与版本映射、发布产物缺失 `latest*.yml`、带着无效凭据宣称已成功发布
-- **影响范围摘要**：仓库元数据、README 与维护文档、版本脚本、GitHub Release workflow、应用内更新对外说明
-- **审批点**：若首发过程中需要公开暴露未签名 macOS 自动更新能力，必须先显式提示限制并经用户确认
+  - Windows 隐藏标题栏后若留白处理不当，系统按钮会压到应用按钮
+  - 菜单移除若只做主窗口，辅助窗口仍会露出开发味菜单
+  - 图标若只替换 SVG 不生成 `ico/icns`，安装后仍会显示默认 Electron 图标
+- **高风险触发因素**：高风险裸无边框实现、图标资源格式不完整、窗口标题与安装名称不一致
+- **影响范围摘要**：主进程窗口配置、renderer 顶栏、HTML 标题、打包资源与 installer 配置
+- **审批点**：无

@@ -525,7 +525,7 @@ export default function HelpModal() {
             <Compass size={12} />
             重新引导
           </button>
-          <span className="text-slate-600">证道 Pro · 按 F1 或 ? 打开帮助</span>
+          <span className="text-slate-600">证道 · 按 F1 或 ? 打开帮助</span>
         </div>
       </div>
     </div>
