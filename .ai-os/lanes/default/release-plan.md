@@ -22,7 +22,6 @@
   - 应用命名统一
   - 正式图标资源与打包配置
 - 本次明确不包含：
-  - GitHub 远端发布 blocker 处理
   - Linux 自定义标题栏
   - macOS 窗口壳层重做
   - 品牌官网 / 宣传素材
@@ -38,7 +37,8 @@
 3. [AI 已执行] 收口书架页和工作区顶栏品牌头
 4. [AI 已执行] 生成并接入正式图标资源
 5. [AI 已执行] 执行 `npm test`、`npm run build` 与打包 smoke
-6. [需人工执行] 在真实 Windows 安装版上人工确认任务栏、开始菜单和安装器图标显示
+6. [AI 已执行] 发布 `v1.1.3` 到 GitHub Releases，并确认 Windows / macOS 构建 job 通过
+7. [需人工执行] 在真实 Windows 安装版上人工确认任务栏、开始菜单和安装器图标显示
 
 ## 4. 运行态验证
 
@@ -46,6 +46,8 @@
 - [x] `npm run build` 通过
 - [x] Windows 壳层配置测试通过
 - [x] Windows / macOS 打包 smoke 通过
+- [x] GitHub Actions `release` workflow 通过：`v1.1.3` macOS / Windows jobs 均为 success
+- [x] GitHub Release `v1.1.3` 已上传 Windows 安装包、macOS dmg/zip、blockmap、`latest.yml`、`latest-mac.yml`
 - [ ] Windows 安装版人工视觉回归完成
 - [x] fallback 证据未被误当正式结论：源码实现通过不等于正式安装包观感已放行
 
@@ -60,9 +62,12 @@
 
 - AI 已完成：
   - 在线更新和正式打包能力已具备
+  - GitHub Release `v1.1.3` 已发布，下载包和自动更新元数据已上传
 - AI 待完成：
   - 等待真实 Windows 安装环境人工视觉确认
 - 需人工执行：
   - 在真实 Windows 安装版上确认任务栏 / 开始菜单 / 桌面快捷方式图标
 - 已知风险和后续待办：
   - macOS 仍只同步图标与命名，不调整当前窗口壳层
+  - macOS 自动更新正式上线仍需要签名与公证链路
+  - 早期失败 tag / release（`v1.1.0`、`v1.1.1`、`v1.1.2`）如需清理，应单独确认后再删除
