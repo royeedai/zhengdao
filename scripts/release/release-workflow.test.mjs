@@ -55,4 +55,11 @@ describe('release workflow native module ABI handling', () => {
       )
     })
   }
+
+  it('updates the GitHub Release body after platform artifacts are published', () => {
+    const commands = extractJobCommands('publish-release-notes')
+
+    expect(workflow).toContain('needs: [build-macos, build-windows]')
+    expect(commands).toContain('node scripts/release/update-github-release-notes.mjs')
+  })
 })

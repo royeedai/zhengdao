@@ -3,6 +3,7 @@
 本仓库的发布目标是：
 
 - 让版本号、tag、`CHANGELOG.md`、GitHub Release 保持一致
+- 让 GitHub Release 正文包含本版本更新日志和必要发布说明
 - 让 GitHub Releases 继续作为应用内更新的数据源
 - 避免靠手工改版本号和手工上传安装包
 
@@ -60,6 +61,8 @@ npm run release:publish -- patch "简短发布摘要"
 7. 推送当前分支和 tag
 
 推送 tag 后，`.github/workflows/release.yml` 会自动构建并上传安装包到 GitHub Releases。
+两个平台构建都完成后，workflow 会自动把 `CHANGELOG.md` 中对应版本条目同步到 GitHub
+Release 正文；如果正文缺少更新日志，本次发布不算完成。
 
 ## 版本号规则
 
@@ -78,9 +81,24 @@ npm run release:publish -- patch "简短发布摘要"
 发布后至少确认：
 
 - GitHub Release 存在且不是 draft
+- GitHub Release 正文包含本版本更新日志，不能只有 tag、commit message 或自动生成占位内容
 - Release 中能看到安装包和 `latest*.yml`
 - `package.json` 版本、Git tag 和 `CHANGELOG.md` 顶部版本一致
 - Windows 打包版能正常拉到更新元数据
+
+## GitHub Release 正文必要内容
+
+每个正式 Release 的正文至少包含：
+
+- 本版本面向用户的更新日志，来源于 `CHANGELOG.md` 对应版本条目
+- 安装包清单：macOS DMG / ZIP、Windows installer
+- 自动更新元数据：`latest-mac.yml`、`latest.yml` 和对应 `.blockmap`
+- 发布注意事项：macOS 签名 / 公证状态、兼容性或已知限制
+- 验证状态：release workflow、安装包、更新元数据和 Release 正文四项是否完成
+- 回滚提示：发现启动、数据库 ABI、更新元数据或安装包问题时回退到上一条已验证 Release
+
+`scripts/release/update-github-release-notes.mjs` 负责把这些内容写入 GitHub Release 正文。
+不要把只有 tag、commit message 或空泛摘要的 Release 标记为已完成。
 
 ## CI 原生模块注意事项
 
