@@ -9,24 +9,39 @@ const electronVersion = require('electron/package.json').version
 const rebuildCli = require.resolve('@electron/rebuild/lib/cli.js')
 const arch = process.argv[2] || process.arch
 
-console.log(`Rebuilding native modules for Electron ${electronVersion} (${arch})`)
-
-execFileSync(
-  process.execPath,
-  [
+export function buildElectronRebuildArgs({ rebuildCli, electronVersion, arch, moduleDir }) {
+  return [
     rebuildCli,
     '--force',
-    '--which-module',
+    '--only',
     'better-sqlite3',
     '--version',
     electronVersion,
     '--arch',
     arch,
     '--module-dir',
-    repoRoot
-  ],
-  {
+    moduleDir
+  ]
+}
+
+export function rebuildElectronNative(targetArch = arch) {
+  console.log(`Rebuilding native modules for Electron ${electronVersion} (${targetArch})`)
+
+  execFileSync(process.execPath, buildElectronRebuildArgs({
+    rebuildCli,
+    electronVersion,
+    arch: targetArch,
+    moduleDir: repoRoot
+  }), {
     cwd: repoRoot,
     stdio: 'inherit'
-  }
-)
+  })
+}
+
+function isEntrypoint() {
+  return process.argv[1] === fileURLToPath(import.meta.url)
+}
+
+if (isEntrypoint()) {
+  rebuildElectronNative()
+}

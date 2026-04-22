@@ -98,6 +98,10 @@ GitHub Actions 中测试运行在 Node.js 下，所以 workflow 随后会在 `np
 实际加载 `better-sqlite3` 并跑一次内存库查询。否则 DMG / NSIS 中可能打入 Node ABI 模块，
 安装后启动时会报 `NODE_MODULE_VERSION` 不匹配。
 
+`scripts/release/rebuild-electron-native.mjs` 必须用 `@electron/rebuild --only better-sqlite3`。
+不要改回 `--which-module`，否则 `@google/gemini-cli` 依赖树中的 `node-pty` 也会被扫描并在
+GitHub runner 的 Python 环境中触发 `distutils` / `node-gyp` 失败。
+
 ## 直接本地上传 Release
 
 如果不想依赖 tag workflow，也可以在本地配置：
