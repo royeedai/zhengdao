@@ -15,10 +15,10 @@
 - [x] `npm run build` 已通过
 - [x] `npm run lint` 已通过
 - [x] `git diff --check` 已通过
-- [ ] Git commit 已创建
-- [ ] `v1.2.4` tag 已创建并推送
-- [ ] GitHub Actions release workflow 已通过
-- [ ] GitHub Release 正文和 8 个发布资产已远端复核
+- [x] Git commit 已创建：`e0e57c3 release: v1.2.4`
+- [x] `v1.2.4` tag 已创建并推送
+- [x] GitHub Actions release workflow 已通过：`build-macos`、`build-windows`、`publish-release-notes`
+- [x] GitHub Release 正文和 8 个发布资产已远端复核
 
 ### 2. 本次发布范围
 
@@ -36,10 +36,26 @@
 3. [AI 已执行] 更新 `package.json`、`package-lock.json`、`CHANGELOG.md` 到 `v1.2.4`。
 4. [AI 已执行] 运行 `npm test` 与 `npm run build`。
 5. [AI 已执行] 运行 `npm run lint` 与 `git diff --check`。
-6. [AI 待执行] 提交 `release: v1.2.4`。
-7. [AI 待执行] 创建并推送 `v1.2.4` tag。
-8. [AI 待执行] 等待 GitHub Actions release workflow 产出安装包与自动更新元数据。
-9. [AI 待执行] 复核 GitHub Release 正文和资产清单。
+6. [AI 已执行] 提交 `release: v1.2.4`。
+7. [AI 已执行] 创建并推送 `v1.2.4` tag。
+8. [AI 已执行] 等待 GitHub Actions release workflow 产出安装包与自动更新元数据。
+9. [AI 已执行] 复核 GitHub Release 正文和资产清单。
+
+### 6. 发布后远端证据
+
+- Release URL: `https://github.com/royeedai/zhengdao/releases/tag/v1.2.4`
+- Actions run: `https://github.com/royeedai/zhengdao/actions/runs/24789432868`
+- Release 正文：`bodyLength=1956`，`hasRequiredBody=true`
+- 资产复核：`assetsComplete=true`
+- 资产清单：
+  - `zhengdao-1.2.4-x64-setup.exe`
+  - `zhengdao-1.2.4-x64-setup.exe.blockmap`
+  - `zhengdao-1.2.4-arm64.dmg`
+  - `zhengdao-1.2.4-arm64.dmg.blockmap`
+  - `zhengdao-1.2.4-arm64.zip`
+  - `zhengdao-1.2.4-arm64.zip.blockmap`
+  - `latest.yml`
+  - `latest-mac.yml`
 
 ### 4. 回滚触发条件
 

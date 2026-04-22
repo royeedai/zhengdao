@@ -423,7 +423,7 @@ tasks:
     title: "发布 v1.2.4 并补齐 Release 必要环节"
     milestone: M3
     parent: null
-    status: in_progress
+    status: done
     owner: AI
     risk: high
     priority: P0
