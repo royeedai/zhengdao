@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The project follows Semantic Versioning for release numbers. Release entries use a simple `Added / Changed / Fixed / Docs / Release` structure so the app package, Git tag, GitHub Release and changelog can stay aligned.
 
+## v1.2.0 - 2026-04-22
+
+### Release
+
+- Add AI creative assistant and Gemini CLI workflow
+
+### Added
+
+- Add the bottom-right AI creative assistant with normal chat, skill cards, conversation history, stream rendering, draggable/resizable panel controls and draft-basket confirmation before writing into novel assets.
+- Add global AI account management for Gemini CLI/API-compatible providers and work-level AI profiles for writing prompts, context policy and asset-generation rules.
+- Add Gemini CLI login, status detection and default Gemini 3 Pro model routing for CLI-based conversations.
+
+### Changed
+
+- Replace older scattered AI entry buttons with the unified AI assistant and AI capability/profile configuration flow.
+- Render structured AI drafts as readable cards for chapters, characters, wiki entries, plot nodes and foreshadowing instead of exposing raw JSON.
+
+### Fixed
+
+- Harden Gemini CLI stream handling for empty/partial stream-json responses and synchronous bridge cleanup.
+- Rebuild and verify `better-sqlite3` against the Electron ABI before packaging checks.
+
+### Docs
+
+- Document the AGPL-3.0 license change and AI/Gemini CLI release scope.
+
 ## v1.1.5 - 2026-04-21
 
 ### Release
