@@ -45,3 +45,4 @@
 - 发布前必须提交所有功能改动，让 `release:publish` 的 clean worktree 检查通过。
 - 2026-04-22 发布后检查发现 `v1.2.0` 首次 release workflow 在 macOS / Windows 的 `npm ci` 步骤失败，仅生成 Source code 资产；修复策略为 CI 固定 npm `10.9.8`、改用 `npm ci --ignore-scripts`，并显式执行 `npm rebuild electron` / `npm rebuild better-sqlite3`，后续需重新触发 tag workflow 或改发补丁版本。
 - 2026-04-22 `v1.2.1` release workflow 通过安装、测试和构建后，在 `rebuild-electron-native` 步骤失败；根因为 `@electron/rebuild --which-module better-sqlite3` 仍扫描 Gemini CLI 依赖树中的 `node-pty`，并触发 Python `distutils` 缺失错误。修复策略为改用 `--only better-sqlite3` 并补发布脚本参数测试，改发 `v1.2.2`。
+- 2026-04-22 `v1.2.2` release workflow 通过受控 native rebuild 与 ABI verify 后，在 electron-builder 发布步骤失败；根因为 electron-builder 默认 `npmRebuild: true` 会在打包前再次扫描所有 native 依赖，绕过受控 rebuild 策略并重新触发 `node-pty` rebuild。修复策略为在 `electron-builder.config.ts` 显式设置 `npmRebuild: false`，由 release workflow 负责唯一 native rebuild 流程，改发后续 patch 版本。

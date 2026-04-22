@@ -19,6 +19,7 @@ const config: Configuration = {
       to: 'icon.png'
     }
   ],
+  npmRebuild: false,
   files: [
     '!**/.vscode/*',
     '!src/*',

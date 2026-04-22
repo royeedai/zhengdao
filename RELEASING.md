@@ -102,6 +102,10 @@ GitHub Actions 中测试运行在 Node.js 下，所以 workflow 随后会在 `np
 不要改回 `--which-module`，否则 `@google/gemini-cli` 依赖树中的 `node-pty` 也会被扫描并在
 GitHub runner 的 Python 环境中触发 `distutils` / `node-gyp` 失败。
 
+`electron-builder.config.ts` 必须保持 `npmRebuild: false`。release workflow 已经在打包前
+显式完成并验证了 `better-sqlite3` 的 Electron ABI；如果让 electron-builder 默认再次 rebuild，
+它会重新扫描所有 native 依赖，并在 CI 中再次触发 `node-pty` rebuild。
+
 ## 直接本地上传 Release
 
 如果不想依赖 tag workflow，也可以在本地配置：
