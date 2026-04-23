@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import type { Character, CharacterRelation } from '@/types'
 import { relationColor } from '@/constants/relation-types'
 
@@ -148,6 +148,16 @@ export default function RelationGraph({
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
+    const theme = getComputedStyle(document.documentElement)
+    const palette = {
+      canvasBg: theme.getPropertyValue('--bg-primary').trim() || '#11161d',
+      surface: theme.getPropertyValue('--surface-secondary').trim() || '#1f2937',
+      border: theme.getPropertyValue('--border-secondary').trim() || '#475569',
+      accentSurface: theme.getPropertyValue('--accent-surface').trim() || '#334155',
+      accent: theme.getPropertyValue('--accent-primary').trim() || '#60a5fa',
+      textPrimary: theme.getPropertyValue('--text-primary').trim() || '#f8fafc',
+      textSecondary: theme.getPropertyValue('--text-secondary').trim() || '#cbd5e1'
+    }
     const dpr = window.devicePixelRatio || 1
     const w = size.w
     const h = size.h
@@ -157,7 +167,7 @@ export default function RelationGraph({
     canvas.style.height = `${h}px`
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, w, h)
-    ctx.fillStyle = '#0f0f12'
+    ctx.fillStyle = palette.canvasBg
     ctx.fillRect(0, 0, w, h)
 
     const nodes = nodesRef.current
@@ -181,10 +191,10 @@ export default function RelationGraph({
       const text = rel.label?.trim() || ''
       if (text) {
         ctx.font = '11px ui-sans-serif, system-ui, sans-serif'
-        ctx.fillStyle = '#cbd5e1'
+        ctx.fillStyle = palette.textSecondary
         ctx.textAlign = 'center'
         ctx.textBaseline = 'bottom'
-        ctx.strokeStyle = '#0f0f12'
+        ctx.strokeStyle = palette.canvasBg
         ctx.lineWidth = 4
         ctx.strokeText(text, mx, my - 4)
         ctx.fillText(text, mx, my - 4)
@@ -196,17 +206,17 @@ export default function RelationGraph({
       const sel = n.id === selectedId
       ctx.beginPath()
       ctx.arc(n.x, n.y, nr + (sel ? 4 : 0), 0, Math.PI * 2)
-      ctx.fillStyle = sel ? '#312e81' : '#1e293b'
-      ctx.strokeStyle = sel ? '#818cf8' : '#475569'
+      ctx.fillStyle = sel ? palette.accentSurface : palette.surface
+      ctx.strokeStyle = sel ? palette.accent : palette.border
       ctx.lineWidth = sel ? 3 : 1.5
       ctx.fill()
       ctx.stroke()
       ctx.beginPath()
       ctx.arc(n.x, n.y, nr, 0, Math.PI * 2)
-      ctx.fillStyle = '#334155'
+      ctx.fillStyle = palette.surface
       ctx.fill()
       ctx.font = '12px ui-sans-serif, system-ui, sans-serif'
-      ctx.fillStyle = '#f1f5f9'
+      ctx.fillStyle = palette.textPrimary
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       const label = n.name.length > 8 ? `${n.name.slice(0, 7)}…` : n.name
@@ -228,7 +238,7 @@ export default function RelationGraph({
     return null
   }
 
-  const onMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const onMouseDown = (e: ReactMouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()
@@ -244,7 +254,7 @@ export default function RelationGraph({
     }
   }
 
-  const onMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const onMouseMove = (e: ReactMouseEvent<HTMLCanvasElement>) => {
     const drag = dragRef.current
     if (!drag) return
     const canvas = canvasRef.current
@@ -266,12 +276,12 @@ export default function RelationGraph({
 
   if (characters.length === 0) {
     return (
-      <div className="rounded-lg border border-[#333] bg-[#111] p-8 text-center text-sm text-slate-500">暂无角色</div>
+      <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-8 text-center text-sm text-[var(--text-muted)]">暂无角色</div>
     )
   }
 
   return (
-    <div ref={containerRef} className="relative w-full h-[420px] rounded-lg border border-[#333] overflow-hidden">
+    <div ref={containerRef} className="relative h-[420px] w-full overflow-hidden rounded-lg border border-[var(--border-primary)]">
       <canvas
         ref={canvasRef}
         className="absolute inset-0 block w-full h-full cursor-grab active:cursor-grabbing"

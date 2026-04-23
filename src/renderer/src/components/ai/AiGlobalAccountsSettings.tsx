@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useToastStore } from '@/stores/toast-store'
 import { getAiAccountProviderUiMeta } from '@/utils/ai/account-provider'
+import { buildAiGlobalAccountStatusRequest } from '@/utils/ai/global-account-status'
 
 type AiAccount = {
   id: number
@@ -73,7 +74,8 @@ export default function AiGlobalAccountsSettings() {
   const refreshAccountProviderStatus = async (probe = false) => {
     setAccountProviderStatusLoading(true)
     try {
-      const status = (await window.api.aiGetProviderStatus(accountDraft.provider, { probe })) as AiProviderStatus
+      const request = buildAiGlobalAccountStatusRequest(accountDraft, probe)
+      const status = (await window.api.aiGetProviderStatus(request.provider, request.options)) as AiProviderStatus
       setAccountProviderStatus(status)
     } finally {
       setAccountProviderStatusLoading(false)
@@ -87,7 +89,8 @@ export default function AiGlobalAccountsSettings() {
     const loadProviderStatus = async () => {
       setAccountProviderStatusLoading(true)
       try {
-        const status = (await window.api.aiGetProviderStatus(accountDraft.provider, { probe: false })) as AiProviderStatus
+        const request = buildAiGlobalAccountStatusRequest(accountDraft, false)
+        const status = (await window.api.aiGetProviderStatus(request.provider, request.options)) as AiProviderStatus
         if (!cancelled) setAccountProviderStatus(status)
       } finally {
         if (!cancelled) setAccountProviderStatusLoading(false)

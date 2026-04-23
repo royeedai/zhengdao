@@ -2,37 +2,66 @@ import {
   AlertTriangle,
   CheckCircle,
   Cloud,
+  Database,
   Download,
   ExternalLink,
   Info,
+  Keyboard,
   KeyRound,
   Monitor,
   Palette,
   RefreshCw,
-  Settings,
+  SlidersHorizontal,
+  Target,
   X
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import AiGlobalAccountsSettings from '@/components/ai/AiGlobalAccountsSettings'
+import BackupMigrationSettingsPanel from '@/components/settings/BackupMigrationSettingsPanel'
+import GenreTemplatesSettingsPanel from '@/components/settings/GenreTemplatesSettingsPanel'
+import ShortcutSettingsPanel from '@/components/settings/ShortcutSettingsPanel'
+import SystemDailyGoalSettingsPanel from '@/components/settings/SystemDailyGoalSettingsPanel'
 import AppBrand from '@/components/shared/AppBrand'
 import { AccountSyncSettings } from '@/components/modals/LoginModal'
+import { useSettingsStore } from '@/stores/settings-store'
 import { useUIStore } from '@/stores/ui-store'
 import { useUpdateStore } from '@/stores/update-store'
 import { buildManualUpdateMessage, shouldUseManualUpdate } from '@/utils/update-prompt'
 import { THEME_IDS, THEME_LABELS, THEME_TOKENS, resolveThemeMode, type ThemeId } from '@/utils/themes'
 import type { UpdateStatus } from '../../../../shared/update'
 
-type AppSettingsTab = 'appearance' | 'account' | 'aiAccounts' | 'updates'
+type AppSettingsTab =
+  | 'appearance'
+  | 'genreTemplates'
+  | 'dailyDefaults'
+  | 'aiAccounts'
+  | 'account'
+  | 'shortcuts'
+  | 'backup'
+  | 'updates'
 
 const SETTINGS_TABS: Array<{ id: AppSettingsTab; label: string; icon: typeof Palette }> = [
   { id: 'appearance', label: '外观', icon: Palette },
-  { id: 'account', label: '账号与云同步', icon: Cloud },
+  { id: 'genreTemplates', label: '题材模板', icon: SlidersHorizontal },
+  { id: 'dailyDefaults', label: '日更默认', icon: Target },
   { id: 'aiAccounts', label: 'AI 全局账号', icon: KeyRound },
+  { id: 'account', label: '账号与云同步', icon: Cloud },
+  { id: 'shortcuts', label: '快捷键', icon: Keyboard },
+  { id: 'backup', label: '备份与迁移', icon: Database },
   { id: 'updates', label: '更新与关于', icon: Info }
 ]
 
 function isAppSettingsTab(value: unknown): value is AppSettingsTab {
-  return value === 'appearance' || value === 'account' || value === 'aiAccounts' || value === 'updates'
+  return (
+    value === 'appearance' ||
+    value === 'genreTemplates' ||
+    value === 'dailyDefaults' ||
+    value === 'aiAccounts' ||
+    value === 'account' ||
+    value === 'shortcuts' ||
+    value === 'backup' ||
+    value === 'updates'
+  )
 }
 
 function formatReleaseDate(value: string | null): string {
@@ -122,6 +151,7 @@ export default function AppSettingsModal() {
   const modalData = useUIStore((s) => s.modalData) as { tab?: unknown } | null
   const theme = useUIStore((s) => s.theme)
   const setTheme = useUIStore((s) => s.setTheme)
+  const loadSettings = useSettingsStore((s) => s.loadSettings)
   const appVersion = useUpdateStore((s) => s.appVersion)
   const snapshot = useUpdateStore((s) => s.snapshot)
   const checkForUpdates = useUpdateStore((s) => s.checkForUpdates)
@@ -134,6 +164,10 @@ export default function AppSettingsModal() {
   useEffect(() => {
     if (isAppSettingsTab(modalData?.tab)) setTab(modalData.tab)
   }, [modalData?.tab])
+
+  useEffect(() => {
+    void loadSettings()
+  }, [loadSettings])
 
   const closeDisabled = snapshot.status === 'installing'
   const actionBusy =
@@ -255,7 +289,7 @@ export default function AppSettingsModal() {
       <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-secondary)] shadow-2xl">
         <div className="flex h-12 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-5 shrink-0">
           <div className="flex items-center gap-2 text-[var(--text-primary)]">
-            <Settings size={18} />
+            <SlidersHorizontal size={18} />
             <span className="text-sm font-bold">应用设置</span>
           </div>
           <button
@@ -340,9 +374,17 @@ export default function AppSettingsModal() {
               </div>
             )}
 
+            {tab === 'genreTemplates' && <GenreTemplatesSettingsPanel />}
+
+            {tab === 'dailyDefaults' && <SystemDailyGoalSettingsPanel />}
+
             {tab === 'account' && <AccountSyncSettings />}
 
             {tab === 'aiAccounts' && <AiGlobalAccountsSettings />}
+
+            {tab === 'shortcuts' && <ShortcutSettingsPanel />}
+
+            {tab === 'backup' && <BackupMigrationSettingsPanel />}
 
             {tab === 'updates' && (
               <div className="flex min-h-full flex-col">

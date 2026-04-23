@@ -1,0 +1,74 @@
+version: 1
+baseline_id: "CR-20260423-203543-settings-workspace-polish"
+scope:
+  mode: "change"
+  focus: "settings-workspace-polish"
+  quality_tier: "standard"
+
+tasks:
+  - id: TASK-SWP-001
+    title: "建立 settings-workspace-polish lane 工件"
+    status: done
+    owner: AI
+    risk: medium
+    priority: P1
+    approval_required: "confirmed"
+    requirement_refs:
+      - "REQ-SWP-001"
+      - "REQ-SWP-002"
+      - "REQ-SWP-003"
+      - "REQ-SWP-004"
+      - "REQ-SWP-005"
+      - "REQ-SWP-006"
+    verification_required:
+      - "artifact-review"
+
+  - id: TASK-SWP-002
+    title: "实现题材模板持久化、系统默认值与日更继承模型"
+    status: done
+    owner: AI
+    risk: medium
+    priority: P0
+    approval_required: "confirmed"
+    affected_components:
+      - "sqlite-schema"
+      - "migrations"
+      - "ipc-preload"
+      - "renderer-types"
+    verification_required:
+      - "npm test"
+      - "npm run build"
+
+  - id: TASK-SWP-003
+    title: "重构应用设置、作品设置、新建作品与顶部入口"
+    status: done
+    owner: AI
+    risk: medium
+    priority: P0
+    approval_required: "confirmed"
+    affected_components:
+      - "app-settings"
+      - "project-settings"
+      - "new-book-wizard"
+      - "topbar"
+      - "bookshelf"
+    verification_required:
+      - "npm run build"
+      - "ui-review"
+
+  - id: TASK-SWP-004
+    title: "收口灵感数量、创世沙盘交互与旧样式主题统一"
+    status: done
+    owner: AI
+    risk: medium
+    priority: P0
+    approval_required: "confirmed"
+    affected_components:
+      - "notes-store"
+      - "right-panel"
+      - "bottom-panel"
+      - "legacy-modals"
+    verification_required:
+      - "npm test or targeted tests"
+      - "npm run build"
+      - "grep review"

@@ -1,0 +1,6 @@
+id = "settings-workspace-polish"
+title = "系统/作品设置拆分与工作区统一收口"
+status = "active"
+baseline_id = "CR-20260423-203543-settings-workspace-polish"
+quality_tier = "standard"
+risk_tier = "medium"

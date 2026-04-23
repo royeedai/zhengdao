@@ -1,0 +1,41 @@
+impact_rules:
+  - when: "settings-workspace-polish"
+    run:
+      - "npm test"
+      - "npm run build"
+      - "git diff --check"
+      - "code review: app vs project settings separation"
+      - "code review: legacy hard-coded colors grep"
+
+failure_modes:
+  - id: FM-SWP-001
+    scenario: "Editing a system genre template mutates existing works retroactively"
+    expected: "Existing works keep their stored config snapshot until manually re-applied"
+    guard: "template apply flow review plus config persistence review"
+  - id: FM-SWP-002
+    scenario: "History books lose custom daily goals after daily_goal_mode migration"
+    expected: "Non-default historical goals remain custom; default 6000 follows system"
+    guard: "migration tests"
+  - id: FM-SWP-003
+    scenario: "New-book wizard cannot proceed when no default template exists even though templates are available"
+    expected: "User can explicitly choose a template and continue"
+    guard: "wizard state review"
+  - id: FM-SWP-004
+    scenario: "Title bar double-click works only on the logo area"
+    expected: "Any non-interactive title bar background supports maximize/restore"
+    guard: "topbar and bookshelf chrome review plus manual smoke"
+  - id: FM-SWP-005
+    scenario: "First plot node at chapter 1 is still clipped to the left edge"
+    expected: "Sandbox timeline has left padding and the first node remains visible"
+    guard: "bottom panel coordinate review and manual smoke"
+  - id: FM-SWP-006
+    scenario: "Notes badge count and note list diverge after add/delete"
+    expected: "Badge count updates immediately from a shared note source"
+    guard: "shared note store review"
+  - id: FM-SWP-007
+    scenario: "Legacy modals keep hard-coded dark/purple/green skins after theme unification"
+    expected: "Legacy pages use current theme variables or token-derived canvas colors"
+    guard: "grep review plus build"
+
+guards:
+  - ".ai-os/lanes/settings-workspace-polish/evals/theme-settings-workspace-polish.md"

@@ -18,6 +18,7 @@ import * as statsRepo from './database/stats-repo'
 import * as sessionRepo from './database/session-repo'
 import * as achievementRepo from './database/achievement-repo'
 import * as notesRepo from './database/notes-repo'
+import * as genreTemplateRepo from './database/genre-template-repo'
 import * as appStateRepo from './database/app-state-repo'
 import * as annotationRepo from './database/annotation-repo'
 import { SearchRepo } from './database/search-repo'
@@ -151,6 +152,11 @@ export function registerIpcHandlers(): void {
   // Config
   ipcMain.handle('db:getConfig', (_, bookId) => configRepo.getConfig(bookId))
   ipcMain.handle('db:saveConfig', (_, bookId, config) => configRepo.saveConfig(bookId, config))
+  ipcMain.handle('db:getGenreTemplates', () => genreTemplateRepo.getGenreTemplates())
+  ipcMain.handle('db:createGenreTemplate', (_, data) => genreTemplateRepo.createGenreTemplate(data))
+  ipcMain.handle('db:updateGenreTemplate', (_, id: number, updates) => genreTemplateRepo.updateGenreTemplate(id, updates))
+  ipcMain.handle('db:copyGenreTemplate', (_, id: number) => genreTemplateRepo.copyGenreTemplate(id))
+  ipcMain.handle('db:deleteGenreTemplate', (_, id: number) => genreTemplateRepo.deleteGenreTemplate(id))
   ipcMain.handle('db:getCustomShortcuts', () => shortcutRepo.getAllCustomShortcuts())
   ipcMain.handle('db:setCustomShortcut', (_, action: string, keys: string) => {
     shortcutRepo.upsertCustomShortcut(action, keys)
@@ -474,6 +480,17 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('window:isFullScreen', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     return win ? win.isFullScreen() : false
+  })
+  ipcMain.handle('window:isMaximized', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    return win ? win.isMaximized() : false
+  })
+  ipcMain.handle('window:toggleMaximize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return false
+    if (win.isMaximized()) win.unmaximize()
+    else win.maximize()
+    return win.isMaximized()
   })
 
   // Dialog

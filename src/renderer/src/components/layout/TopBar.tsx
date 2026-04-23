@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import {
+  PanelBottomClose,
+  PanelBottomOpen,
   PanelLeftClose,
   PanelLeft,
   PanelRightClose,
@@ -27,14 +29,18 @@ import { useWritingStreak } from '@/hooks/useWritingStreak'
 import PomodoroTimer from '@/components/shared/PomodoroTimer'
 import AppBrand from '@/components/shared/AppBrand'
 import { useAuthStore } from '@/stores/auth-store'
+import { useSettingsStore } from '@/stores/settings-store'
+import { resolveProjectDailyGoal } from '@/utils/daily-goal'
 import { getCurrentTitlebarSafeArea } from '@/utils/window-shell'
 
 export default function TopBar() {
   const {
     leftPanelOpen,
     rightPanelOpen,
+    bottomPanelOpen,
     toggleLeftPanel,
     toggleRightPanel,
+    toggleBottomPanel,
     openModal,
     topbarToolsCollapsed,
     toggleTopbarToolsCollapsed
@@ -67,9 +73,10 @@ export default function TopBar() {
     return () => document.removeEventListener('mousedown', close)
   }, [toolMenuOpen])
   const config = useConfigStore((s) => s.config)
+  const systemDailyGoal = useSettingsStore((s) => s.systemDailyGoal)
   const warningCount = useForeshadowStore((s) => s.getWarningCount())
   const currentBook = books.find((b) => b.id === currentBookId)
-  const dailyGoal = config?.daily_goal || 6000
+  const dailyGoal = resolveProjectDailyGoal(config, systemDailyGoal)
   const { todayWords: dailyWords } = useDailyStats()
   const dailyPercent = Math.min(100, Math.round((dailyWords / dailyGoal) * 100))
   const { sessionTime } = useWritingSession(currentBookId ?? null)
@@ -94,12 +101,24 @@ export default function TopBar() {
     openModal(modal)
   }
 
+  const handleTitlebarDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const target = event.target
+    if (!(target instanceof HTMLElement)) return
+    if (
+      target.closest('button, input, select, textarea, a, [role="menu"], [role="menuitem"], [data-no-titlebar-toggle]')
+    ) {
+      return
+    }
+    void window.api.toggleMaximize()
+  }
+
   const toolButtonClass =
     'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold border border-[var(--border-secondary)] bg-[var(--surface-secondary)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] hover:bg-[var(--accent-surface)] hover:text-[var(--accent-secondary)] transition shrink-0 min-h-8'
 
   return (
     <div
       className="h-12 border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] flex items-center justify-between shrink-0 shadow-sm z-30 drag-region gap-3"
+      onDoubleClick={handleTitlebarDoubleClick}
       style={{
         paddingLeft: `${titlebarSafeArea.leftInset}px`,
         paddingRight: `${titlebarSafeArea.rightInset}px`
@@ -144,6 +163,15 @@ export default function TopBar() {
           >
             {rightPanelOpen ? <PanelRightClose size={16} /> : <PanelRight size={16} />}
           </button>
+          <button
+            onClick={toggleBottomPanel}
+            aria-label={bottomPanelOpen ? '收起底栏' : '展开底栏'}
+            aria-expanded={bottomPanelOpen}
+            title={bottomPanelOpen ? '收起底栏' : '展开底栏'}
+            className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] rounded transition min-h-8 min-w-8"
+          >
+            {bottomPanelOpen ? <PanelBottomClose size={16} /> : <PanelBottomOpen size={16} />}
+          </button>
         </div>
       </div>
 
@@ -178,37 +206,13 @@ export default function TopBar() {
           </button>
           <button
             type="button"
-            onClick={() => openModal('appSettings')}
-            aria-label="应用设置"
-            className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] rounded transition shrink-0 min-h-8 min-w-8"
-            title="应用设置"
-          >
-            <Info size={16} />
-          </button>
-          <button
-            onClick={() => openModal('help')}
-            aria-label="使用帮助"
-            className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-primary)] rounded transition shrink-0 min-h-8 min-w-8"
-            title="使用帮助 (F1)"
-          >
-            <HelpCircle size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={() => openModal('trash')}
-            aria-label="回收站"
-            title="回收站"
-            className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--warning-primary)] rounded transition text-[var(--text-muted)] shrink-0 min-h-8 min-w-8"
-          >
-            <ArchiveRestore size={16} />
-          </button>
-          <button
             onClick={() => openModal('projectSettings')}
-            aria-label="项目设置"
-            title="项目设置"
-            className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] rounded transition shrink-0 min-h-8 min-w-8"
+            aria-label="作品设置"
+            title="作品设置"
+            className="hidden xl:inline-flex items-center gap-1.5 rounded-md border border-[var(--accent-border)] bg-[var(--accent-surface)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent-secondary)] transition hover:border-[var(--accent-primary)] hover:bg-[var(--bg-tertiary)]"
           >
-            <Settings size={16} />
+            <Settings size={14} />
+            作品设置
           </button>
         </div>
       </div>
@@ -233,6 +237,17 @@ export default function TopBar() {
             role="menu"
             className="absolute right-0 top-full z-50 mt-1 min-w-[196px] rounded-lg border border-[var(--border-primary)] bg-[var(--surface-elevated)] py-1 shadow-xl"
           >
+            <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              当前作品
+            </div>
+            <button
+              role="menuitem"
+              type="button"
+              onClick={() => closeToolsAndOpenModal('bookOverview')}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+            >
+              <LayoutDashboard size={14} /> 总览
+            </button>
             <button
               role="menuitem"
               type="button"
@@ -260,14 +275,6 @@ export default function TopBar() {
             <button
               role="menuitem"
               type="button"
-              onClick={() => closeToolsAndOpenModal('appSettings')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
-            >
-              <Info size={14} /> 应用设置
-            </button>
-            <button
-              role="menuitem"
-              type="button"
               onClick={() => closeToolsAndOpenModal('trash')}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
             >
@@ -279,7 +286,27 @@ export default function TopBar() {
               onClick={() => closeToolsAndOpenModal('projectSettings')}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
             >
-              <Settings size={14} /> 项目设置
+              <Settings size={14} /> 作品设置
+            </button>
+            <div className="my-1 border-t border-[var(--border-primary)]" />
+            <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              应用
+            </div>
+            <button
+              role="menuitem"
+              type="button"
+              onClick={() => closeToolsAndOpenModal('appSettings')}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+            >
+              <Info size={14} /> 应用设置
+            </button>
+            <button
+              role="menuitem"
+              type="button"
+              onClick={() => closeToolsAndOpenModal('help')}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+            >
+              <HelpCircle size={14} /> 使用帮助
             </button>
             <div className="my-1 border-t border-[var(--border-primary)]" />
             <button
@@ -296,6 +323,16 @@ export default function TopBar() {
       </div>
 
       <div className="flex items-center gap-2 xl:gap-3 text-[var(--text-secondary)] no-drag shrink-0">
+        <button
+          type="button"
+          onClick={() => openModal('appSettings')}
+          aria-label="应用设置"
+          title="应用设置"
+          className="hidden xl:inline-flex items-center gap-1.5 rounded-md border border-[var(--border-secondary)] bg-[var(--surface-secondary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--accent-border)] hover:bg-[var(--accent-surface)] hover:text-[var(--accent-secondary)]"
+        >
+          <Info size={14} />
+          应用设置
+        </button>
         <div className="hidden lg:flex items-center space-x-3 text-xs w-48 xl:w-56">
           <span className="text-[var(--text-secondary)] font-medium shrink-0">日更:</span>
           <div className="flex-1 bg-[var(--bg-tertiary)] h-2.5 rounded-full overflow-hidden relative border border-[var(--border-primary)]">
@@ -332,6 +369,26 @@ export default function TopBar() {
         >
           <Cloud size={18} className={cloudIconClass} strokeWidth={2} />
         </span>
+        <button
+          type="button"
+          onClick={() => openModal('help')}
+          aria-label="使用帮助"
+          className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-primary)] rounded transition shrink-0 min-h-8 min-w-8"
+          title="使用帮助 (F1)"
+          data-no-titlebar-toggle
+        >
+          <HelpCircle size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={() => openModal('trash')}
+          aria-label="回收站"
+          title="回收站"
+          className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--warning-primary)] rounded transition text-[var(--text-muted)] shrink-0 min-h-8 min-w-8"
+          data-no-titlebar-toggle
+        >
+          <ArchiveRestore size={16} />
+        </button>
       </div>
     </div>
   )

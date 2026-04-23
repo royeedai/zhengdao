@@ -5,6 +5,9 @@ import {
   createDefaultAiAssistantLauncherPosition,
   createDefaultAiAssistantPanelRect,
   translateAiAssistantLauncherPosition,
+  resizeAiAssistantPanelRectFromLeftEdge,
+  resizeAiAssistantPanelRectFromRightEdge,
+  resizeAiAssistantPanelRectFromTopLeft,
   resizeAiAssistantPanelRect,
   translateAiAssistantPanelRect
 } from '../panel-layout'
@@ -106,6 +109,61 @@ describe('resizeAiAssistantPanelRect', () => {
       y: 160,
       width: 404,
       height: 644
+    })
+  })
+})
+
+describe('resizeAiAssistantPanelRectFromTopLeft', () => {
+  it('resizes from the top-left handle while keeping the bottom-right anchor stable', () => {
+    expect(
+      resizeAiAssistantPanelRectFromTopLeft(
+        { x: 860, y: 160, width: 360, height: 520 },
+        -200,
+        -180,
+        1280,
+        820
+      )
+    ).toEqual({
+      x: 660,
+      y: 16,
+      width: 560,
+      height: 664
+    })
+  })
+})
+
+describe('resizeAiAssistantPanelRectFromLeftEdge', () => {
+  it('resizes horizontally from the left edge while keeping the right edge stable', () => {
+    expect(
+      resizeAiAssistantPanelRectFromLeftEdge(
+        { x: 860, y: 160, width: 360, height: 520 },
+        -200,
+        1280,
+        820
+      )
+    ).toEqual({
+      x: 660,
+      y: 160,
+      width: 560,
+      height: 520
+    })
+  })
+})
+
+describe('resizeAiAssistantPanelRectFromRightEdge', () => {
+  it('resizes horizontally from the right edge while preserving height', () => {
+    expect(
+      resizeAiAssistantPanelRectFromRightEdge(
+        { x: 860, y: 160, width: 360, height: 520 },
+        300,
+        1280,
+        820
+      )
+    ).toEqual({
+      x: 860,
+      y: 160,
+      width: 404,
+      height: 520
     })
   })
 })

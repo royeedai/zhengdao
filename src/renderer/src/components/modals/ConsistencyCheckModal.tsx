@@ -99,24 +99,28 @@ export default function ConsistencyCheckModal() {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-      <div className="bg-[#1a1a1a] border border-[#333] w-full max-w-[640px] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-        <div className="h-12 border-b border-[#2a2a2a] bg-[#141414] flex items-center justify-between px-5 shrink-0">
-          <div className="flex items-center space-x-2 text-amber-400 font-bold">
+      <div className="flex max-h-[85vh] w-full max-w-[640px] flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--surface-elevated)] shadow-2xl">
+        <div className="flex h-12 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-5 shrink-0">
+          <div className="flex items-center space-x-2 font-bold text-[var(--warning-primary)]">
             <ShieldAlert size={18} />
             <span>角色一致性检查</span>
           </div>
-          <button type="button" onClick={closeModal} className="text-slate-500 hover:text-slate-300 transition">
+          <button
+            type="button"
+            onClick={closeModal}
+            className="text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
+          >
             <X size={20} />
           </button>
         </div>
 
         <div className="p-5 space-y-4 overflow-y-auto flex-1">
           <div>
-            <label className="block text-[11px] text-slate-500 uppercase mb-1">选择角色</label>
+            <label className="mb-1 block text-[11px] uppercase text-[var(--text-muted)]">选择角色</label>
             <select
               value={characterId === '' ? '' : String(characterId)}
               onChange={(e) => setCharacterId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full bg-[#111] border border-[#333] rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-500 text-sm"
+              className="w-full rounded border border-[var(--border-primary)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--warning-primary)] focus:outline-none"
             >
               <option value="">请选择</option>
               {characters.map((c) => (
@@ -129,13 +133,13 @@ export default function ConsistencyCheckModal() {
             type="button"
             disabled={characterId === '' || loading}
             onClick={() => void checkConsistency()}
-            className="w-full py-2 text-sm font-bold rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-white transition"
+            className="w-full rounded-lg bg-[var(--warning-primary)] py-2 text-sm font-bold text-[var(--warning-contrast)] transition hover:brightness-105 disabled:opacity-40"
           >
             {loading ? '分析中…' : '开始检查'}
           </button>
 
           {result && (
-            <div className="rounded-lg border border-[#333] bg-[#111] p-4 text-sm text-slate-300 whitespace-pre-wrap leading-relaxed font-sans">
+            <div className="whitespace-pre-wrap rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-4 font-sans text-sm leading-relaxed text-[var(--text-secondary)]">
               {result}
             </div>
           )}

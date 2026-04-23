@@ -1,7 +1,9 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { AlertCircle, Lightbulb, Users } from 'lucide-react'
+import { useBookStore } from '@/stores/book-store'
 import { useForeshadowStore } from '@/stores/foreshadow-store'
 import { useCharacterStore } from '@/stores/character-store'
+import { useNoteStore } from '@/stores/note-store'
 import { useUIStore } from '@/stores/ui-store'
 import type { RightPanelTab } from '@/utils/workspace-layout'
 import ForeshadowBoard from './ForeshadowBoard'
@@ -49,8 +51,21 @@ function ContextTabButton({
 export default function RightPanel() {
   const rightPanelTab = useUIStore((s) => s.rightPanelTab)
   const setRightPanelTab = useUIStore((s) => s.setRightPanelTab)
+  const currentBookId = useBookStore((s) => s.currentBookId)
   const warningCount = useForeshadowStore((s) => s.getWarningCount())
   const characterCount = useCharacterStore((s) => s.characters.length)
+  const noteBookId = useNoteStore((s) => s.bookId)
+  const noteCount = useNoteStore((s) => s.notes.length)
+  const loadNotes = useNoteStore((s) => s.loadNotes)
+  const resetNotes = useNoteStore((s) => s.reset)
+
+  useEffect(() => {
+    if (!currentBookId) {
+      resetNotes()
+      return
+    }
+    void loadNotes(currentBookId)
+  }, [currentBookId, loadNotes, resetNotes])
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -75,6 +90,7 @@ export default function RightPanel() {
           tab="notes"
           active={rightPanelTab === 'notes'}
           label="灵感"
+          count={noteBookId === currentBookId ? noteCount : 0}
           icon={<Lightbulb size={13} />}
           onClick={setRightPanelTab}
         />

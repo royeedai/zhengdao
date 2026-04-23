@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3'
+import { SEED_GENRE_TEMPLATES } from '../../shared/genre-template-seeds'
 
 interface Migration {
   version: number
@@ -527,6 +528,70 @@ const migrations: Migration[] = [
             AND account.credential_ref LIKE 'legacy-project-config:%'
         );
       `)
+    }
+  },
+  {
+    version: 17,
+    description: 'Genre templates library and project daily goal mode',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS genre_templates (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          slug TEXT NOT NULL UNIQUE,
+          name TEXT NOT NULL,
+          character_fields TEXT NOT NULL DEFAULT '[]',
+          faction_labels TEXT NOT NULL DEFAULT '[]',
+          status_labels TEXT NOT NULL DEFAULT '[]',
+          emotion_labels TEXT NOT NULL DEFAULT '[]',
+          is_seed INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_genre_templates_seed_slug ON genre_templates(is_seed, slug);
+      `)
+
+      const projectConfigColumns = db.prepare('PRAGMA table_info(project_config)').all() as { name: string }[]
+      if (!projectConfigColumns.some((column) => column.name === 'daily_goal_mode')) {
+        db.exec(`ALTER TABLE project_config ADD COLUMN daily_goal_mode TEXT NOT NULL DEFAULT 'follow_system'`)
+      }
+
+      db.exec(`
+        UPDATE project_config
+        SET daily_goal_mode = CASE
+          WHEN COALESCE(daily_goal, 6000) = 6000 THEN 'follow_system'
+          ELSE 'custom'
+        END
+      `)
+
+      const insertTemplate = db.prepare(`
+        INSERT OR IGNORE INTO genre_templates (
+          slug, name, character_fields, faction_labels, status_labels, emotion_labels, is_seed, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now','localtime'), datetime('now','localtime'))
+      `)
+
+      for (const template of SEED_GENRE_TEMPLATES) {
+        insertTemplate.run(
+          template.id,
+          template.name,
+          JSON.stringify(template.character_fields),
+          JSON.stringify(template.faction_labels),
+          JSON.stringify(template.status_labels),
+          JSON.stringify(template.emotion_labels)
+        )
+      }
+
+      db.prepare(`
+        INSERT OR IGNORE INTO app_state (key, value) VALUES ('system_default_daily_goal', '6000')
+      `).run()
+
+      const defaultTemplateRow = db
+        .prepare("SELECT id FROM genre_templates WHERE slug = 'urban' LIMIT 1")
+        .get() as { id: number } | undefined
+      if (defaultTemplateRow) {
+        db.prepare(`
+          INSERT OR IGNORE INTO app_state (key, value) VALUES ('system_default_genre_template_id', ?)
+        `).run(String(defaultTemplateRow.id))
+      }
     }
   }
 ]

@@ -1,3 +1,4 @@
+import { type MouseEvent as ReactMouseEvent } from 'react'
 import { Trash2 } from 'lucide-react'
 import type { Book } from '@/types'
 import { useBookStore } from '@/stores/book-store'
@@ -7,7 +8,7 @@ export default function BookCard({ book }: { book: Book }) {
   const openBook = useBookStore((s) => s.openBook)
   const openModal = useUIStore((s) => s.openModal)
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = (e: ReactMouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     openModal('confirm', {
       title: '删除作品',

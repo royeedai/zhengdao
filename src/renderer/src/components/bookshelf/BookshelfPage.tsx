@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { PenTool, Plus, HelpCircle, Search, LayoutGrid, List, Trash2, Info } from 'lucide-react'
 import { useBookStore } from '@/stores/book-store'
 import { useUIStore } from '@/stores/ui-store'
@@ -16,6 +16,13 @@ export default function BookshelfPage() {
   const [sortBy, setSortBy] = useState<SortBy>('updated')
   const [searchQuery, setSearchQuery] = useState('')
   const titlebarSafeArea = getCurrentTitlebarSafeArea()
+
+  const handleTitlebarDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const target = event.target
+    if (!(target instanceof HTMLElement)) return
+    if (target.closest('button, input, select, textarea, a, [data-no-titlebar-toggle]')) return
+    void window.api.toggleMaximize()
+  }
 
   useEffect(() => {
     loadBooks()
@@ -47,6 +54,7 @@ export default function BookshelfPage() {
     <div className="flex flex-col h-screen bg-[var(--bg-primary)]">
       <div
         className="h-12 border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] flex items-center justify-between shrink-0 drag-region"
+        onDoubleClick={handleTitlebarDoubleClick}
         style={{
           paddingLeft: `${titlebarSafeArea.leftInset}px`,
           paddingRight: `${titlebarSafeArea.rightInset}px`
@@ -59,23 +67,26 @@ export default function BookshelfPage() {
           <button
             type="button"
             onClick={() => openModal('appSettings')}
-            className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded transition"
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-secondary)] bg-[var(--surface-secondary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--accent-border)] hover:bg-[var(--accent-surface)] hover:text-[var(--accent-secondary)]"
             aria-label="应用设置"
             title="应用设置"
           >
-            <Info size={18} />
+            <Info size={15} />
+            应用设置
           </button>
           <button
             onClick={() => openModal('help')}
             className="p-2 text-[var(--text-muted)] hover:text-[var(--accent-primary)] rounded transition"
             aria-label="使用帮助"
             title="使用帮助 (F1)"
+            data-no-titlebar-toggle
           >
             <HelpCircle size={18} />
           </button>
           <button
             onClick={() => openModal('newBook')}
             className="flex items-center px-4 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-[var(--accent-contrast)] rounded-lg text-sm font-bold transition shadow-lg shadow-[0_10px_24px_rgba(63,111,159,0.16)]"
+            data-no-titlebar-toggle
           >
             <Plus size={16} className="mr-1.5" /> 新建作品
           </button>

@@ -132,21 +132,21 @@ export default function SnapshotModal() {
               <div className="bg-[var(--bg-primary)] px-3 py-2 text-[11px] font-semibold text-[var(--text-secondary)] text-center">当前（新）</div>
             </div>
             <div className="flex-1 overflow-auto grid grid-cols-2 gap-px bg-[var(--border-primary)] min-h-[240px]">
-              <div className="bg-[#0d0d0d] overflow-auto font-mono text-[11px] leading-relaxed">
+              <div className="overflow-auto bg-[var(--bg-primary)] font-mono text-[11px] leading-relaxed">
                 {diffRows.map((row, i) => (
                   <pre
                     key={`l-${i}`}
-                    className={`whitespace-pre-wrap break-words px-2 py-0.5 border-b border-[#1f1f1f] min-h-[1.25rem] ${row.leftClass}`}
+                    className={`min-h-[1.25rem] whitespace-pre-wrap break-words border-b border-[var(--border-primary)] px-2 py-0.5 ${row.leftClass}`}
                   >
                     {row.left || '\u00a0'}
                   </pre>
                 ))}
               </div>
-              <div className="bg-[#0d0d0d] overflow-auto font-mono text-[11px] leading-relaxed">
+              <div className="overflow-auto bg-[var(--bg-primary)] font-mono text-[11px] leading-relaxed">
                 {diffRows.map((row, i) => (
                   <pre
                     key={`r-${i}`}
-                    className={`whitespace-pre-wrap break-words px-2 py-0.5 border-b border-[#1f1f1f] min-h-[1.25rem] ${row.rightClass}`}
+                    className={`min-h-[1.25rem] whitespace-pre-wrap break-words border-b border-[var(--border-primary)] px-2 py-0.5 ${row.rightClass}`}
                   >
                     {row.right || '\u00a0'}
                   </pre>
@@ -183,7 +183,7 @@ export default function SnapshotModal() {
                     <button
                       type="button"
                       onClick={() => setDiffSnapshot(snap)}
-                      className="flex items-center justify-center gap-1 text-[11px] px-3 py-1.5 rounded bg-violet-600/20 text-violet-300 border border-violet-500/30 hover:bg-violet-600/30"
+                      className="flex items-center justify-center gap-1 rounded border border-[var(--accent-border)] bg-[var(--accent-surface)] px-3 py-1.5 text-[11px] text-[var(--accent-secondary)] hover:brightness-105"
                     >
                       <GitCompare size={12} /> 对比
                     </button>

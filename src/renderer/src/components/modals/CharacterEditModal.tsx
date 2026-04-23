@@ -56,10 +56,10 @@ function MilestoneGrowthSvg({ milestones }: { milestones: CharacterMilestone[] }
   return (
     <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3 overflow-x-auto">
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="block mx-auto">
-        <text x={pad.l} y={h - 12} fill="#64748b" fontSize="10">
+        <text x={pad.l} y={h - 12} fill="var(--text-muted)" fontSize="10">
           章节
         </text>
-        <text x={8} y={pad.t + ch / 2} fill="#64748b" fontSize="10" transform={`rotate(-90 8 ${pad.t + ch / 2})`}>
+        <text x={8} y={pad.t + ch / 2} fill="var(--text-muted)" fontSize="10" transform={`rotate(-90 8 ${pad.t + ch / 2})`}>
           {useNumeric ? '数值' : '里程碑序'}
         </text>
         {sorted.map((m) => (
@@ -67,17 +67,17 @@ function MilestoneGrowthSvg({ milestones }: { milestones: CharacterMilestone[] }
             key={`tx-${m.id}`}
             x={sx(m.chapter_number)}
             y={h - 22}
-            fill="#475569"
+            fill="var(--text-secondary)"
             fontSize="9"
             textAnchor="middle"
           >
             {m.chapter_number}
           </text>
         ))}
-        <path d={pathD} fill="none" stroke="#818cf8" strokeWidth={2} strokeLinejoin="round" />
+        <path d={pathD} fill="none" stroke="var(--accent-primary)" strokeWidth={2} strokeLinejoin="round" />
         {pts.map((p, i) => (
           <g key={`n-${sorted[i].id}`}>
-            <circle cx={p.cx} cy={p.cy} r={4} fill="#a5b4fc" stroke="#312e81" strokeWidth={1} />
+            <circle cx={p.cx} cy={p.cy} r={4} fill="var(--accent-secondary)" stroke="var(--accent-border)" strokeWidth={1} />
             <title>{sorted[i].label}</title>
           </g>
         ))}
@@ -234,7 +234,7 @@ function CharacterEditModalInner({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] w-[600px] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
         <div className="h-12 border-b border-[var(--border-primary)] bg-[var(--bg-primary)] flex items-center justify-between px-5">
-          <div className="flex items-center space-x-2 text-indigo-400 font-bold">
+          <div className="flex items-center space-x-2 text-[var(--accent-secondary)] font-bold">
             <Users size={18} />
             <span>{isNew ? '建档：新出场人物' : '编辑角色档案'}</span>
           </div>
@@ -255,7 +255,7 @@ function CharacterEditModalInner({
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
-              className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition"
+              className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] transition"
               placeholder="角色名"
             />
           </div>
@@ -265,7 +265,7 @@ function CharacterEditModalInner({
               <select
                 value={faction}
                 onChange={(e) => setFaction(e.target.value)}
-                className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition"
+                className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] transition"
               >
                 {factionLabels.map((f) => (
                   <option key={f.value} value={f.value}>
@@ -279,7 +279,7 @@ function CharacterEditModalInner({
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition"
+                className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] transition"
               >
                 {statusLabels.map((s) => (
                   <option key={s.value} value={s.value}>
@@ -291,7 +291,7 @@ function CharacterEditModalInner({
           </div>
           <div className="border-t border-[var(--border-primary)] pt-4">
             <h4 className="text-xs font-bold text-[var(--text-secondary)] mb-3 flex items-center">
-              <TrendingUp size={14} className="mr-1 text-emerald-500" /> 核心数据
+              <TrendingUp size={14} className="mr-1 text-[var(--accent-secondary)]" /> 核心数据
             </h4>
             <div className="space-y-3">
               {characterFields.map((field) => (
@@ -301,7 +301,7 @@ function CharacterEditModalInner({
                     type="text"
                     value={customFields[field.key] || ''}
                     onChange={(e) => setCustomFields({ ...customFields, [field.key]: e.target.value })}
-                    className="flex-1 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-2 py-1 text-emerald-400 text-sm focus:outline-none focus:border-indigo-500"
+                    className="flex-1 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-2 py-1 text-[var(--accent-secondary)] text-sm focus:outline-none focus:border-[var(--accent-primary)]"
                   />
                 </div>
               ))}
@@ -313,7 +313,7 @@ function CharacterEditModalInner({
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[var(--text-secondary)] text-sm focus:outline-none focus:border-indigo-500 resize-none"
+              className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[var(--text-secondary)] text-sm focus:outline-none focus:border-[var(--accent-primary)] resize-none"
               placeholder="备注..."
             />
           </div>
@@ -328,7 +328,7 @@ function CharacterEditModalInner({
                     tabIndex={0}
                     onClick={() => goToChapter(a.chapter_id)}
                     onKeyDown={(e) => e.key === 'Enter' && goToChapter(a.chapter_id)}
-                    className="text-[10px] bg-[var(--bg-tertiary)] border border-[var(--border-primary)] px-2 py-0.5 rounded text-[var(--text-secondary)] cursor-pointer hover:text-emerald-400 hover:border-emerald-500/30 transition"
+                    className="cursor-pointer rounded border border-[var(--border-primary)] bg-[var(--bg-tertiary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)] transition hover:border-[var(--accent-border)] hover:text-[var(--accent-secondary)]"
                   >
                     {a.chapter_title}
                   </span>
@@ -339,7 +339,7 @@ function CharacterEditModalInner({
           {!isNew && data?.id && (
             <div className="border-t border-[var(--border-primary)] pt-4 space-y-3">
               <h4 className="text-xs font-bold text-[var(--text-secondary)] flex items-center">
-                <TrendingUp size={14} className="mr-1 text-violet-400" /> 成长记录
+                <TrendingUp size={14} className="mr-1 text-[var(--accent-secondary)]" /> 成长记录
               </h4>
               <div className="flex flex-wrap gap-2 items-end">
                 <div>
@@ -376,12 +376,12 @@ function CharacterEditModalInner({
                   type="button"
                   onClick={() => void addMilestone()}
                   disabled={!msLabel.trim() || milestoneSaving}
-                  className="px-3 py-1.5 bg-violet-700 hover:bg-violet-600 disabled:opacity-40 text-white text-xs font-bold rounded-lg shrink-0"
+                  className="shrink-0 rounded-lg bg-[var(--accent-primary)] px-3 py-1.5 text-xs font-bold text-[var(--accent-contrast)] disabled:opacity-40 hover:bg-[var(--accent-secondary)]"
                 >
                   {milestoneSaving ? '新增中...' : '新增里程碑'}
                 </button>
               </div>
-              {milestoneError && <p className="text-[11px] text-red-400">{milestoneError}</p>}
+              {milestoneError && <p className="text-[11px] text-[var(--danger-primary)]">{milestoneError}</p>}
               {milestones.length > 0 && (
                 <ul className="space-y-1.5 text-xs">
                   {milestones.map((m) => (
@@ -391,7 +391,7 @@ function CharacterEditModalInner({
                     >
                       <span className="text-[var(--text-primary)]">
                         <span className="text-[var(--text-muted)]">第{m.chapter_number}章</span> · {m.label}
-                        {m.value ? <span className="text-emerald-500/90 ml-1">{m.value}</span> : null}
+                        {m.value ? <span className="ml-1 text-[var(--accent-secondary)]">{m.value}</span> : null}
                       </span>
                       <button
                         type="button"
@@ -404,7 +404,7 @@ function CharacterEditModalInner({
                             }
                           })}
                         title="删除里程碑"
-                        className="text-[10px] text-[var(--text-muted)] hover:text-red-400 shrink-0"
+                        className="shrink-0 text-[10px] text-[var(--text-muted)] hover:text-[var(--danger-primary)]"
                       >
                         删除
                       </button>
@@ -423,7 +423,7 @@ function CharacterEditModalInner({
           <button
             onClick={handleSave}
             disabled={!name.trim()}
-            className="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded flex items-center transition shadow-lg shadow-indigo-900/20"
+            className="flex items-center rounded bg-[var(--accent-primary)] px-4 py-1.5 text-xs text-[var(--accent-contrast)] transition hover:bg-[var(--accent-secondary)] disabled:opacity-40 shadow-lg shadow-[0_12px_24px_rgba(63,111,159,0.18)]"
           >
             <Save size={14} className="mr-1" /> 保存档案
           </button>

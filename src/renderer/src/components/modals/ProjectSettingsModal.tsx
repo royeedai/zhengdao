@@ -1,240 +1,114 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-  type InputHTMLAttributes,
-  type ReactNode,
-  type SelectHTMLAttributes
-} from 'react'
-import {
-  Database,
-  FolderOpen,
-  HardDrive,
-  Keyboard,
-  RefreshCw,
-  RotateCcw,
-  Save,
-  Settings,
-  X
-} from 'lucide-react'
-import { useUIStore } from '@/stores/ui-store'
+import { useEffect, useMemo, useState } from 'react'
+import { BookTemplate, Bot, Save, Settings, Target, X } from 'lucide-react'
 import { useBookStore } from '@/stores/book-store'
 import { useConfigStore } from '@/stores/config-store'
-import { useShortcutStore } from '@/stores/shortcut-store'
-import { GENRE_PRESETS } from '@/utils/genre-presets'
-import { SHORTCUT_ACTIONS, chordFromKeyEvent } from '@/utils/shortcuts'
-import type { ShortcutAction } from '@/utils/shortcuts'
-import {
-  buildGenreConfigPayload,
-  deriveGenreEditorState,
-  type GenreEditorState
-} from '@/utils/custom-genre-config'
-import type {
-  CharacterField,
-  EmotionLabel,
-  FactionLabel,
-  GenrePreset,
-  StatusLabel
-} from '@/types'
+import { useSettingsStore } from '@/stores/settings-store'
+import { useUIStore } from '@/stores/ui-store'
+import { resolveProjectDailyGoal } from '@/utils/daily-goal'
+import { GenreTemplatePreview } from '@/components/settings/GenreTemplateEditor'
 
-type Tab = 'genre' | 'ai' | 'daily' | 'backup' | 'shortcuts'
-
-type BackupRow = { name: string; path: string; mtime: number; size: number }
+type Tab = 'genre' | 'daily' | 'ai'
 
 export default function ProjectSettingsModal() {
   const closeModal = useUIStore((s) => s.closeModal)
   const openModal = useUIStore((s) => s.openModal)
   const bookId = useBookStore((s) => s.currentBookId)!
   const { config, loadConfig, saveConfig } = useConfigStore()
-  const getChord = useShortcutStore((s) => s.getChord)
-  const setShortcut = useShortcutStore((s) => s.setChord)
+  const loadSettings = useSettingsStore((s) => s.loadSettings)
+  const templates = useSettingsStore((s) => s.templates)
+  const defaultGenreTemplateId = useSettingsStore((s) => s.defaultGenreTemplateId)
+  const systemDailyGoal = useSettingsStore((s) => s.systemDailyGoal)
+  const loadingTemplates = useSettingsStore((s) => s.loadingTemplates)
 
   const [tab, setTab] = useState<Tab>('genre')
-  const [captureId, setCaptureId] = useState<string | null>(null)
-  const [genreState, setGenreState] = useState<GenreEditorState>(() =>
-    deriveGenreEditorState(
-      {
-        genre: GENRE_PRESETS[0].id,
-        character_fields: GENRE_PRESETS[0].character_fields,
-        faction_labels: GENRE_PRESETS[0].faction_labels,
-        status_labels: GENRE_PRESETS[0].status_labels,
-        emotion_labels: GENRE_PRESETS[0].emotion_labels
-      },
-      GENRE_PRESETS
-    )
-  )
-  const [dailyGoal, setDailyGoal] = useState(6000)
-  const [sensitiveList, setSensitiveList] = useState('default')
-
-  const [backupDir, setBackupDir] = useState('')
-  const [backupHours, setBackupHours] = useState(24)
-  const [backupMax, setBackupMax] = useState(10)
-  const [backupList, setBackupList] = useState<BackupRow[]>([])
-  const [backupBusy, setBackupBusy] = useState(false)
-  const [backupNote, setBackupNote] = useState<string | null>(null)
-
-  const actionsByCategory = useMemo(() => {
-    const m: Record<string, ShortcutAction[]> = {}
-    for (const a of SHORTCUT_ACTIONS) {
-      if (!m[a.category]) m[a.category] = []
-      m[a.category].push(a)
-    }
-    return m
-  }, [])
-
-  useEffect(() => {
-    if (!captureId) return
-    const onKey = (e: KeyboardEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      if (e.key === 'Escape') {
-        setCaptureId(null)
-        return
-      }
-      if (
-        ['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)
-      )
-        return
-      const chord = chordFromKeyEvent(e)
-      if (chord.length > 0) {
-        void setShortcut(captureId, chord)
-        setCaptureId(null)
-      }
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [captureId, setShortcut])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null)
+  const [dailyGoalMode, setDailyGoalMode] = useState<'follow_system' | 'custom'>('follow_system')
+  const [customDailyGoal, setCustomDailyGoal] = useState(6000)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     void loadConfig(bookId)
-  }, [bookId, loadConfig])
+    void loadSettings()
+  }, [bookId, loadConfig, loadSettings])
 
   useEffect(() => {
     if (!config) return
-    const id = window.setTimeout(() => {
-      setGenreState(
-        deriveGenreEditorState(
-          {
-            genre: config.genre || 'urban',
-            character_fields: config.character_fields || [],
-            faction_labels: config.faction_labels || [],
-            status_labels: config.status_labels || [],
-            emotion_labels: config.emotion_labels || []
-          },
-          GENRE_PRESETS
-        )
-      )
-      setDailyGoal(config.daily_goal || 6000)
-      setSensitiveList(config.sensitive_list || 'default')
-    }, 0)
-    return () => window.clearTimeout(id)
+    setDailyGoalMode(config.daily_goal_mode || 'follow_system')
+    setCustomDailyGoal(config.daily_goal || 6000)
   }, [config])
 
   useEffect(() => {
-    void Promise.all([
-      window.api.getAppState('backup_directory'),
-      window.api.getAppState('backup_interval_hours'),
-      window.api.getAppState('backup_max_files')
-    ]).then(([d, h, m]) => {
-      setBackupDir(d || '')
-      setBackupHours(Number(h || '24'))
-      setBackupMax(Number(m || '10'))
-    })
-  }, [])
+    if (templates.length === 0) {
+      setSelectedTemplateId(null)
+      return
+    }
+    if (config?.genre) {
+      const matched = templates.find((template) => template.slug === config.genre)
+      if (matched) {
+        setSelectedTemplateId(matched.id)
+        return
+      }
+    }
+    if (defaultGenreTemplateId && templates.some((template) => template.id === defaultGenreTemplateId)) {
+      setSelectedTemplateId(defaultGenreTemplateId)
+      return
+    }
+    setSelectedTemplateId((current) => (current && templates.some((template) => template.id === current) ? current : templates[0].id))
+  }, [config?.genre, defaultGenreTemplateId, templates])
 
-  useEffect(() => {
-    if (tab !== 'backup') return
-    void window.api.backupList().then((rows) => setBackupList(rows as BackupRow[]))
-  }, [tab])
-
-  const refreshBackupList = async () => {
-    const rows = await window.api.backupList()
-    setBackupList(rows as BackupRow[])
-  }
+  const selectedTemplate = useMemo(
+    () => templates.find((template) => template.id === selectedTemplateId) || null,
+    [selectedTemplateId, templates]
+  )
+  const currentTemplate = useMemo(
+    () => templates.find((template) => template.slug === config?.genre) || null,
+    [config?.genre, templates]
+  )
+  const effectiveDailyGoal = resolveProjectDailyGoal(config, systemDailyGoal)
 
   const saveGenreConfig = async () => {
-    const payload = buildGenreConfigPayload(genreState)
+    if (!selectedTemplate) return
     await saveConfig(bookId, {
-      ...payload,
-      daily_goal: dailyGoal,
-      sensitive_list: sensitiveList
+      genre: selectedTemplate.slug,
+      character_fields: selectedTemplate.character_fields,
+      faction_labels: selectedTemplate.faction_labels,
+      status_labels: selectedTemplate.status_labels,
+      emotion_labels: selectedTemplate.emotion_labels
     })
   }
 
-  const saveAiTabSettings = async () => {
+  const saveDailyGoalConfig = async () => {
     await saveConfig(bookId, {
-      daily_goal: dailyGoal,
-      sensitive_list: sensitiveList
+      daily_goal_mode: dailyGoalMode,
+      daily_goal: dailyGoalMode === 'custom' ? customDailyGoal : systemDailyGoal
     })
-  }
-
-  const switchPreset = (preset: GenrePreset) => {
-    setGenreState(
-      deriveGenreEditorState(
-        {
-          genre: preset.id,
-          character_fields: preset.character_fields,
-          faction_labels: preset.faction_labels,
-          status_labels: preset.status_labels,
-          emotion_labels: preset.emotion_labels
-        },
-        GENRE_PRESETS
-      )
-    )
-  }
-
-  const enableCustomGenre = () => {
-    setGenreState((current) => ({
-      ...current,
-      mode: 'custom',
-      genreId:
-        current.mode === 'custom'
-          ? current.genreId
-          : current.customPreset.name.trim() || '自定义题材',
-      genreName:
-        current.mode === 'custom'
-          ? current.genreName
-          : current.customPreset.name.trim() || '自定义题材',
-      customPreset: {
-        ...current.customPreset,
-        id:
-          current.mode === 'custom'
-            ? current.customPreset.id
-            : current.customPreset.name.trim() || '自定义题材',
-        name: current.customPreset.name.trim() || '自定义题材'
-      }
-    }))
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-      <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] w-full max-w-4xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="h-12 border-b border-[var(--border-primary)] bg-[var(--bg-primary)] flex items-center justify-between px-5 shrink-0">
-          <div className="flex items-center space-x-2 text-[var(--text-primary)] font-bold">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-secondary)] shadow-2xl">
+        <div className="flex h-12 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-5 shrink-0">
+          <div className="flex items-center gap-2 font-bold text-[var(--text-primary)]">
             <Settings size={18} />
-            <span>项目设置</span>
+            <span>作品设置</span>
           </div>
           <button
             type="button"
             onClick={closeModal}
-            title="关闭项目设置"
-            aria-label="关闭项目设置"
-            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
+            title="关闭作品设置"
+            aria-label="关闭作品设置"
+            className="text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
           >
             <X size={20} />
           </button>
         </div>
 
         <div className="flex border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-2 shrink-0">
-          {(
-            [
-              ['genre', '题材模板'],
-              ['ai', 'AI 入口'],
-              ['daily', '日更目标'],
-              ['shortcuts', '快捷键'],
-              ['backup', '备份与迁移']
-            ] as const
-          ).map(([key, label]) => (
+          {([
+            ['genre', '题材应用'],
+            ['daily', '日更目标'],
+            ['ai', 'AI 作品能力']
+          ] as const).map(([key, label]) => (
             <button
               key={key}
               type="button"
@@ -245,804 +119,207 @@ export default function ProjectSettingsModal() {
                   : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
             >
-              {key === 'shortcuts' ? (
-                <span className="inline-flex items-center gap-1">
-                  <Keyboard size={12} />
-                  {label}
-                </span>
-              ) : (
-                label
-              )}
+              {label}
             </button>
           ))}
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6">
           {tab === 'genre' && (
             <div className="space-y-4">
-              <p className="text-xs text-[var(--text-muted)]">
-                题材模板只作用于当前作品。切换题材会覆盖角色字段、阵营、状态与情绪标签模板；不会改动已有章节正文。
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => switchPreset(GENRE_PRESETS.find((preset) => preset.id === genreState.builtInGenreId) || GENRE_PRESETS[0])}
-                  className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                    genreState.mode === 'preset'
-                      ? 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
-                      : 'border-[var(--border-primary)] text-[var(--text-secondary)] hover:border-[var(--accent-border)]'
-                  }`}
-                >
-                  使用内置题材
-                </button>
-                <button
-                  type="button"
-                  onClick={enableCustomGenre}
-                  className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                    genreState.mode === 'custom'
-                      ? 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
-                      : 'border-[var(--border-primary)] text-[var(--text-secondary)] hover:border-[var(--accent-border)]'
-                  }`}
-                >
-                  当前作品自定义题材
-                </button>
+              <div className="rounded-lg border border-[var(--info-border)] bg-[var(--info-surface)] p-4 text-sm text-[var(--text-primary)]">
+                <div className="flex items-center gap-2 font-semibold text-[var(--info-primary)]">
+                  <BookTemplate size={16} />
+                  当前作品只套用系统题材模板
+                </div>
+                <p className="mt-2 text-[var(--text-secondary)]">
+                  在这里为当前作品选择并套用系统模板。编辑模板内容请去“应用设置 / 题材模板”；已有作品不会因为系统模板变更而被动改写。
+                </p>
               </div>
 
-              {genreState.mode === 'preset' ? (
-                <div className="grid gap-3 lg:grid-cols-[320px_1fr]">
-                  <div className="space-y-2">
-                    <label className="block text-[11px] text-[var(--text-muted)] uppercase">题材预设</label>
-                    {GENRE_PRESETS.map((preset) => (
+              {config && !currentTemplate ? (
+                <div className="rounded-lg border border-[var(--warning-border)] bg-[var(--warning-surface)] p-4 text-sm text-[var(--text-primary)]">
+                  <div className="font-semibold text-[var(--warning-primary)]">当前作品使用历史快照</div>
+                  <p className="mt-2 text-[var(--text-secondary)]">
+                    当前 `genre` 值 `{config.genre}` 未匹配到系统模板库。作品字段快照仍会保留；如果你想切到系统模板，请在下面重新选择并保存。
+                  </p>
+                </div>
+              ) : null}
+
+              {templates.length === 0 ? (
+                <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-6 text-center">
+                  <div className="text-sm font-semibold text-[var(--text-primary)]">当前没有系统题材模板</div>
+                  <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                    先到应用设置里新建题材模板，然后再回来套用到当前作品。
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => openModal('appSettings', { tab: 'genreTemplates' })}
+                    className="mt-4 rounded border border-[var(--accent-border)] px-3 py-1.5 text-xs text-[var(--accent-secondary)] hover:bg-[var(--accent-surface)]"
+                  >
+                    打开应用设置 / 题材模板
+                  </button>
+                </div>
+              ) : (
+                <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+                  <div className="space-y-2 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-2">
+                    {loadingTemplates ? (
+                      <div className="p-3 text-sm text-[var(--text-muted)]">读取模板中…</div>
+                    ) : templates.map((template) => (
                       <button
-                        key={preset.id}
+                        key={template.id}
                         type="button"
-                        onClick={() => switchPreset(preset)}
+                        onClick={() => setSelectedTemplateId(template.id)}
                         className={`w-full rounded-lg border p-3 text-left transition ${
-                          genreState.builtInGenreId === preset.id
+                          template.id === selectedTemplateId
                             ? 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
-                            : 'border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] hover:border-[var(--border-secondary)]'
+                            : 'border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:border-[var(--border-secondary)]'
                         }`}
                       >
-                        <div className="font-bold">{preset.name}</div>
-                        <div className="mt-1 text-[11px] text-[var(--text-muted)]">{preset.id}</div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold">{template.name}</span>
+                          <div className="flex items-center gap-1">
+                            {template.is_seed ? (
+                              <span className="rounded-full border border-[var(--border-primary)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">
+                                预设
+                              </span>
+                            ) : null}
+                            {template.id === defaultGenreTemplateId ? (
+                              <span className="rounded-full border border-[var(--warning-border)] bg-[var(--warning-surface)] px-2 py-0.5 text-[10px] text-[var(--warning-primary)]">
+                                默认
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div className="mt-1 text-[11px] text-[var(--text-muted)]">{template.slug}</div>
                       </button>
                     ))}
                   </div>
-                  <GenrePresetPreview preset={genreState.customPreset} />
-                </div>
-              ) : (
-                <div className="space-y-4 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-4">
-                  <div>
-                    <label className="mb-1 block text-[11px] uppercase text-[var(--text-muted)]">题材名称</label>
-                    <input
-                      value={genreState.genreName}
-                      onChange={(event) =>
-                        setGenreState((current) => ({
-                          ...current,
-                          genreName: event.target.value,
-                          genreId: event.target.value.trim() || current.genreId,
-                          customPreset: {
-                            ...current.customPreset,
-                            id: event.target.value.trim() || current.customPreset.id,
-                            name: event.target.value
-                          }
-                        }))}
-                      className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
-                      placeholder="例如：悬疑群像"
-                    />
-                  </div>
 
-                  <EditableCharacterFields
-                    items={genreState.customPreset.character_fields}
-                    onChange={(items) =>
-                      setGenreState((current) => ({
-                        ...current,
-                        customPreset: { ...current.customPreset, character_fields: items }
-                      }))}
-                  />
-                  <EditableFactionLabels
-                    items={genreState.customPreset.faction_labels}
-                    onChange={(items) =>
-                      setGenreState((current) => ({
-                        ...current,
-                        customPreset: { ...current.customPreset, faction_labels: items }
-                      }))}
-                  />
-                  <EditableStatusLabels
-                    items={genreState.customPreset.status_labels}
-                    onChange={(items) =>
-                      setGenreState((current) => ({
-                        ...current,
-                        customPreset: { ...current.customPreset, status_labels: items }
-                      }))}
-                  />
-                  <EditableEmotionLabels
-                    items={genreState.customPreset.emotion_labels}
-                    onChange={(items) =>
-                      setGenreState((current) => ({
-                        ...current,
-                        customPreset: { ...current.customPreset, emotion_labels: items }
-                      }))}
-                  />
+                  {selectedTemplate ? (
+                    <GenreTemplatePreview
+                      template={selectedTemplate}
+                      hint="保存后会把这份模板快照写入当前作品；后续系统模板再编辑，不会反向改本作。"
+                    />
+                  ) : null}
                 </div>
               )}
+            </div>
+          )}
+
+          {tab === 'daily' && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-4">
+                <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
+                  <Target size={16} />
+                  当前作品日更目标
+                </div>
+                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                  当前生效目标：{effectiveDailyGoal.toLocaleString()} 字。你可以跟随系统默认，也可以为当前作品单独设置一个目标。
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setDailyGoalMode('follow_system')}
+                  className={`w-full rounded-lg border p-4 text-left transition ${
+                    dailyGoalMode === 'follow_system'
+                      ? 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+                      : 'border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] hover:border-[var(--border-secondary)]'
+                  }`}
+                >
+                  <div className="font-semibold">跟随系统默认</div>
+                  <div className="mt-1 text-sm text-[var(--text-secondary)]">当前系统默认：{systemDailyGoal.toLocaleString()} 字</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDailyGoalMode('custom')}
+                  className={`w-full rounded-lg border p-4 text-left transition ${
+                    dailyGoalMode === 'custom'
+                      ? 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+                      : 'border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] hover:border-[var(--border-secondary)]'
+                  }`}
+                >
+                  <div className="font-semibold">自定义本作目标</div>
+                  <div className="mt-3">
+                    <input
+                      type="number"
+                      min={100}
+                      step={100}
+                      value={customDailyGoal}
+                      onChange={(event) => setCustomDailyGoal(Number(event.target.value))}
+                      className="w-full rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-lg font-mono text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
+                    />
+                  </div>
+                </button>
+              </div>
             </div>
           )}
 
           {tab === 'ai' && (
             <div className="space-y-4">
-              <div className="rounded-lg border border-[var(--info-border)] bg-[var(--info-surface)] p-3 text-xs text-[var(--text-primary)]">
-                <div className="font-bold text-[var(--info-primary)]">AI 配置已拆分</div>
-                <p className="mt-1 text-[var(--text-secondary)]">
-                  账号、API Key、Gemini CLI 与 Ollama 属于系统级设置；提示词、上下文、写作禁区和能力卡在“AI 能力与作品配置”中管理。
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openModal('appSettings', { tab: 'aiAccounts' })}
-                    className="rounded border border-[var(--info-border)] px-3 py-1.5 text-xs font-semibold text-[var(--info-primary)] hover:bg-[var(--info-surface)]"
-                  >
-                    打开 AI 全局账号
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openModal('aiSettings')}
-                    className="rounded border border-[var(--info-border)] px-3 py-1.5 text-xs font-semibold text-[var(--info-primary)] hover:bg-[var(--info-surface)]"
-                  >
-                    打开 AI 能力与作品配置
-                  </button>
+              <div className="rounded-lg border border-[var(--info-border)] bg-[var(--info-surface)] p-4 text-sm text-[var(--text-primary)]">
+                <div className="flex items-center gap-2 font-semibold text-[var(--info-primary)]">
+                  <Bot size={16} />
+                  AI 作品能力与系统账号已拆层
                 </div>
-              </div>
-              <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3 text-xs text-[var(--text-secondary)]">
-                <div className="font-bold text-[var(--text-primary)]">旧项目级 AI Provider 表单已退场</div>
-                <p className="mt-1">
-                  当前作品不再单独保存 provider、API Key、Gemini CLI 登录或 Ollama 连接。上述能力统一在“应用设置 / AI 全局账号”中维护，这里只保留作品内的非账号设置。
+                <p className="mt-2 text-[var(--text-secondary)]">
+                  全局账号、API Key、Gemini CLI 和 Ollama 属于系统设置；作品级提示词、上下文和能力卡仍在 AI 作品能力里管理。
                 </p>
               </div>
-              <div>
-                <label className="block text-[11px] text-[var(--text-muted)] uppercase mb-1">敏感词过滤</label>
-                <select
-                  value={sensitiveList}
-                  onChange={(e) => setSensitiveList(e.target.value)}
-                  className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-primary)]"
-                >
-                  <option value="default">默认词库</option>
-                  <option value="strict">严格词库</option>
-                  <option value="loose">宽松词库</option>
-                  <option value="none">关闭过滤</option>
-                </select>
-                <p className="text-[10px] text-[var(--text-muted)] mt-1">开启后，编辑器中的敏感词会以红色波浪线标注</p>
-              </div>
-            </div>
-          )}
 
-          {tab === 'daily' && (
-            <div>
-              <label className="block text-[11px] text-[var(--text-muted)] uppercase mb-2">每日目标字数</label>
-              <input
-                type="number"
-                min={500}
-                step={100}
-                value={dailyGoal}
-                onChange={(e) => setDailyGoal(Number(e.target.value))}
-                className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[var(--accent-secondary)] font-mono text-lg focus:outline-none focus:border-[var(--accent-primary)]"
-              />
-              <p className="text-xs text-[var(--text-muted)] mt-2">用于顶部日更进度条统计（统计接入后可显示实际进度）。</p>
-            </div>
-          )}
-
-          {tab === 'shortcuts' && (
-            <div className="space-y-6">
-              <p className="text-xs text-[var(--text-muted)]">
-                点击快捷键列后按下新组合即可录制；Esc 取消录制。「恢复默认」清除自定义绑定。
-              </p>
-              {Object.entries(actionsByCategory).map(([category, actions]) => (
-                <div key={category}>
-                  <h3 className="text-[11px] font-bold text-[var(--text-muted)] uppercase mb-2">{category}</h3>
-                  <div className="rounded-lg border border-[var(--border-primary)] divide-y divide-[var(--border-primary)] overflow-hidden">
-                    {actions.map((a) => (
-                      <div
-                        key={a.id}
-                        className="flex items-center justify-between gap-2 px-3 py-2.5 bg-[var(--bg-primary)] text-xs"
-                      >
-                        <span className="text-[var(--text-primary)] font-medium">{a.label}</span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => setCaptureId(a.id)}
-                            className={`font-mono px-2 py-1 rounded border text-[11px] min-w-[120px] text-center transition ${
-                              captureId === a.id
-                                ? 'border-[var(--accent-primary)] text-[var(--accent-secondary)] animate-pulse'
-                                : 'border-[var(--border-secondary)] text-[var(--text-secondary)] hover:border-[var(--accent-border)]'
-                            }`}
-                          >
-                            {captureId === a.id ? '请按键…' : getChord(a.id)}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void setShortcut(a.id, '')}
-                            className="text-[11px] text-[var(--text-muted)] hover:text-[var(--accent-secondary)] px-2"
-                          >
-                            恢复默认
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {tab === 'backup' && (
-            <>
-              <p className="text-xs text-[var(--text-muted)]">
-                自动备份使用 SQLite 在线备份，写入时不会影响正在使用的库。更换整库后会自动刷新搜索索引；部分操作需重载界面后生效。
-              </p>
-
-              <div className="space-y-3 border border-[var(--border-primary)] rounded-lg p-4 bg-[var(--bg-primary)]">
-                <div className="flex items-center gap-2 text-[var(--text-primary)] text-sm font-bold">
-                  <HardDrive size={16} className="text-[var(--accent-primary)]" />
-                  定时备份
-                </div>
-                <div className="flex gap-2 items-start">
-                  <input
-                    readOnly
-                    value={backupDir}
-                    placeholder="默认使用应用数据目录下的 backups"
-                    className="flex-1 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded px-2 py-1.5 text-[11px] text-[var(--text-secondary)] font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const p = await window.api.openDirectory()
-                      if (p) setBackupDir(p)
-                    }}
-                    className="shrink-0 px-2 py-1.5 text-xs border border-[var(--border-secondary)] rounded text-[var(--text-primary)] hover:border-[var(--accent-border)] flex items-center gap-1"
-                  >
-                    <FolderOpen size={14} /> 选择目录
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] text-[var(--text-muted)] uppercase mb-1">间隔</label>
-                    <select
-                      value={backupHours}
-                      onChange={(e) => setBackupHours(Number(e.target.value))}
-                      className="w-full bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded px-2 py-1.5 text-sm text-[var(--text-primary)]"
-                    >
-                      <option value={1}>每 1 小时</option>
-                      <option value={6}>每 6 小时</option>
-                      <option value={12}>每 12 小时</option>
-                      <option value={24}>每 24 小时</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-[var(--text-muted)] uppercase mb-1">保留份数</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={100}
-                      value={backupMax}
-                      onChange={(e) => setBackupMax(Number(e.target.value))}
-                      className="w-full bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded px-2 py-1.5 text-sm text-[var(--text-primary)]"
-                    />
-                  </div>
-                </div>
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={backupBusy}
-                  onClick={async () => {
-                    setBackupBusy(true)
-                    setBackupNote(null)
-                    try {
-                      await window.api.backupConfigure(backupDir, backupHours, backupMax)
-                      setBackupNote('备份计划已更新')
-                      await refreshBackupList()
-                    } catch (e) {
-                      setBackupNote(e instanceof Error ? e.message : '保存失败')
-                    } finally {
-                      setBackupBusy(false)
-                    }
-                  }}
-                  className="text-xs px-3 py-1.5 bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] disabled:opacity-40 rounded text-[var(--accent-contrast)]"
+                  onClick={() => openModal('appSettings', { tab: 'aiAccounts' })}
+                  className="rounded border border-[var(--info-border)] px-3 py-1.5 text-xs font-semibold text-[var(--info-primary)] hover:bg-[var(--info-surface)]"
                 >
-                  应用备份设置
+                  打开 AI 全局账号
                 </button>
                 <button
                   type="button"
-                  disabled={backupBusy}
-                  onClick={async () => {
-                    setBackupBusy(true)
-                    setBackupNote(null)
-                    try {
-                      await window.api.backupNow()
-                      setBackupNote('已创建备份')
-                      await refreshBackupList()
-                    } catch (e) {
-                      setBackupNote(e instanceof Error ? e.message : '备份失败')
-                    } finally {
-                      setBackupBusy(false)
-                    }
-                  }}
-                  className="ml-2 text-xs px-3 py-1.5 border border-[var(--accent-border)] text-[var(--accent-secondary)] hover:bg-[var(--accent-surface)] rounded"
+                  onClick={() => openModal('aiSettings')}
+                  className="rounded border border-[var(--info-border)] px-3 py-1.5 text-xs font-semibold text-[var(--info-primary)] hover:bg-[var(--info-surface)]"
                 >
-                  立即备份
+                  打开 AI 作品能力
                 </button>
               </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] text-[var(--text-muted)] uppercase">备份记录</span>
-                <button
-                  type="button"
-                  onClick={() => void refreshBackupList()}
-                  className="text-[11px] text-[var(--accent-secondary)] flex items-center gap-1 hover:text-[var(--accent-primary)]"
-                >
-                  <RefreshCw size={12} /> 刷新
-                </button>
-              </div>
-              <div className="max-h-36 overflow-y-auto rounded-lg border border-[var(--border-primary)] divide-y divide-[var(--border-primary)] text-xs">
-                {backupList.length === 0 ? (
-                  <div className="p-3 text-[var(--text-muted)]">暂无备份文件</div>
-                ) : (
-                  backupList.map((row) => (
-                    <div key={row.path} className="flex items-center justify-between gap-2 px-3 py-2">
-                      <span className="text-[var(--text-secondary)] truncate font-mono">{row.name}</span>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!confirm('从该备份恢复将替换当前数据库，确定继续？')) return
-                          setBackupBusy(true)
-                          try {
-                            const r = await window.api.backupRestoreFrom(row.path)
-                            if (r && typeof r === 'object' && 'ok' in r && !r.ok && 'error' in r && r.error) {
-                              setBackupNote(String(r.error))
-                              return
-                            }
-                            await window.api.reloadWindow()
-                          } finally {
-                            setBackupBusy(false)
-                          }
-                        }}
-                        className="shrink-0 text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-0.5"
-                      >
-                        <RotateCcw size={12} /> 恢复
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="space-y-3 border border-[var(--border-primary)] rounded-lg p-4 bg-[var(--bg-primary)]">
-                <div className="flex items-center gap-2 text-[var(--text-primary)] text-sm font-bold">
-                  <Database size={16} className="text-[var(--accent-primary)]" />
-                  完整数据迁移
-                </div>
-                <p className="text-[11px] text-[var(--text-muted)]">
-                  导出当前 SQLite 数据库副本；导入将用所选文件整体替换本地库。
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={backupBusy}
-                    onClick={async () => {
-                      setBackupBusy(true)
-                      try {
-                        const r = await window.api.dataExportFull()
-                        if (r && typeof r === 'object' && 'canceled' in r && r.canceled) return
-                        setBackupNote('已导出数据库文件')
-                      } finally {
-                        setBackupBusy(false)
-                      }
-                    }}
-                    className="text-xs px-3 py-1.5 bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] rounded text-[var(--text-primary)] hover:border-[var(--accent-border)]"
-                  >
-                    导出数据库
-                  </button>
-                  <button
-                    type="button"
-                    disabled={backupBusy}
-                    onClick={async () => {
-                      if (!confirm('导入将覆盖当前本地全部数据，是否继续？')) return
-                      setBackupBusy(true)
-                      try {
-                        const r = await window.api.dataImportFull()
-                        if (r && typeof r === 'object' && 'canceled' in r && r.canceled) return
-                        if (r && typeof r === 'object' && 'ok' in r && !r.ok && 'error' in r && r.error) {
-                          setBackupNote(String(r.error))
-                          return
-                        }
-                        await window.api.reloadWindow()
-                      } finally {
-                        setBackupBusy(false)
-                      }
-                    }}
-                    className="text-xs px-3 py-1.5 border border-[var(--danger-border)] text-[var(--danger-primary)] rounded hover:bg-[var(--danger-surface)]"
-                  >
-                    导入数据库
-                  </button>
-                  <button
-                    type="button"
-                    disabled={backupBusy}
-                    onClick={async () => {
-                      if (!confirm('从外部 .db 文件恢复？当前未保存的更改将丢失。')) return
-                      setBackupBusy(true)
-                      try {
-                        const r = await window.api.backupRestore()
-                        if (r && typeof r === 'object' && 'canceled' in r && r.canceled) return
-                        if (r && typeof r === 'object' && 'ok' in r && !r.ok && 'error' in r && r.error) {
-                          setBackupNote(String(r.error))
-                          return
-                        }
-                        await window.api.reloadWindow()
-                      } finally {
-                        setBackupBusy(false)
-                      }
-                    }}
-                    className="text-xs px-3 py-1.5 border border-amber-500/40 text-amber-400 rounded hover:bg-amber-500/10"
-                  >
-                    从文件恢复…
-                  </button>
-                </div>
-              </div>
-
-              {backupNote && <p className="text-xs text-[var(--success-primary)]">{backupNote}</p>}
-            </>
+            </div>
           )}
         </div>
 
-        <div className="h-14 border-t border-[var(--border-primary)] bg-[var(--bg-primary)] flex items-center justify-end px-5 gap-3 shrink-0">
-          <button type="button" onClick={closeModal} className="px-4 py-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">
+        <div className="flex items-center justify-end gap-3 border-t border-[var(--border-primary)] bg-[var(--bg-primary)] px-5 py-4 shrink-0">
+          <button
+            type="button"
+            onClick={closeModal}
+            className="px-4 py-1.5 text-xs text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
+          >
             关闭
           </button>
-          {tab !== 'backup' && tab !== 'shortcuts' && (
+          {(tab === 'genre' || tab === 'daily') && (
             <button
               type="button"
+              disabled={saving || (tab === 'genre' && !selectedTemplate)}
               onClick={async () => {
-                if (tab === 'genre') await saveGenreConfig()
-                else await saveAiTabSettings()
-                closeModal()
+                setSaving(true)
+                try {
+                  if (tab === 'genre') await saveGenreConfig()
+                  if (tab === 'daily') await saveDailyGoalConfig()
+                  closeModal()
+                } finally {
+                  setSaving(false)
+                }
               }}
-              className="flex items-center gap-1 px-4 py-1.5 text-xs bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-[var(--accent-contrast)] rounded"
+              className="flex items-center gap-1 rounded bg-[var(--accent-primary)] px-4 py-1.5 text-xs text-[var(--accent-contrast)] disabled:opacity-40 hover:bg-[var(--accent-secondary)]"
             >
-              <Save size={14} /> 保存
+              <Save size={14} />
+              {saving ? '保存中…' : '保存'}
             </button>
           )}
         </div>
       </div>
     </div>
-  )
-}
-
-function SectionTitle({ children }: { children: string }) {
-  return <h3 className="text-sm font-semibold text-[var(--text-primary)]">{children}</h3>
-}
-
-function SmallHint({ children }: { children: string }) {
-  return <p className="text-[11px] text-[var(--text-muted)]">{children}</p>
-}
-
-function RowActions({
-  onAdd,
-  label
-}: {
-  onAdd: () => void
-  label: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onAdd}
-      className="rounded-md border border-dashed border-[var(--border-secondary)] px-2 py-1 text-[11px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--accent-border)] hover:text-[var(--accent-secondary)]"
-    >
-      + {label}
-    </button>
-  )
-}
-
-function FieldCard({
-  children
-}: {
-  children: ReactNode
-}) {
-  return <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-3 space-y-3">{children}</div>
-}
-
-function PlainInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className={`w-full rounded-md border border-[var(--border-primary)] bg-[var(--bg-primary)] px-2 py-1.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] ${
-        props.className || ''
-      }`}
-    />
-  )
-}
-
-function PlainSelect(props: SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select
-      {...props}
-      className={`w-full rounded-md border border-[var(--border-primary)] bg-[var(--bg-primary)] px-2 py-1.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] ${
-        props.className || ''
-      }`}
-    />
-  )
-}
-
-function RemoveButton({ onClick, title }: { onClick: () => void; title: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      aria-label={title}
-      className="rounded-md border border-[var(--danger-border)] px-2 py-1 text-[11px] text-[var(--danger-primary)] transition hover:bg-[var(--danger-surface)]"
-    >
-      删除
-    </button>
-  )
-}
-
-function GenrePresetPreview({
-  preset
-}: {
-  preset: {
-    name: string
-    character_fields: CharacterField[]
-    faction_labels: FactionLabel[]
-    status_labels: StatusLabel[]
-    emotion_labels: EmotionLabel[]
-  }
-}) {
-  return (
-    <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-4 space-y-4">
-      <div>
-        <SectionTitle>{preset.name}</SectionTitle>
-        <SmallHint>保存后会把以下模板写入当前作品配置。</SmallHint>
-      </div>
-      <div className="space-y-2">
-        <div>
-          <div className="text-[11px] font-semibold uppercase text-[var(--text-muted)]">角色字段</div>
-          <div className="mt-1 flex flex-wrap gap-2">
-            {preset.character_fields.map((field) => (
-              <span
-                key={field.key}
-                className="rounded-full border border-[var(--border-primary)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"
-              >
-                {field.label}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="text-[11px] font-semibold uppercase text-[var(--text-muted)]">阵营标签</div>
-          <div className="mt-1 flex flex-wrap gap-2">
-            {preset.faction_labels.map((label) => (
-              <span
-                key={label.value}
-                className="rounded-full border border-[var(--border-primary)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"
-              >
-                {label.label}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="text-[11px] font-semibold uppercase text-[var(--text-muted)]">状态标签</div>
-          <div className="mt-1 flex flex-wrap gap-2">
-            {preset.status_labels.map((label) => (
-              <span
-                key={label.value}
-                className="rounded-full border border-[var(--border-primary)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"
-              >
-                {label.label}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function EditableCharacterFields({
-  items,
-  onChange
-}: {
-  items: CharacterField[]
-  onChange: (items: CharacterField[]) => void
-}) {
-  return (
-    <FieldCard>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <SectionTitle>角色字段</SectionTitle>
-          <SmallHint>角色档案中的核心字段。</SmallHint>
-        </div>
-        <RowActions
-          label="新增字段"
-          onAdd={() => onChange([...items, { key: `field_${items.length + 1}`, label: '新字段', type: 'text' }])}
-        />
-      </div>
-      <div className="space-y-2">
-        {items.map((field, index) => (
-          <div key={`${field.key}-${index}`} className="grid gap-2 md:grid-cols-[1fr_1fr_120px_64px]">
-            <PlainInput
-              value={field.label}
-              placeholder="显示名"
-              onChange={(event) =>
-                onChange(items.map((item, itemIndex) => (itemIndex === index ? { ...item, label: event.target.value } : item)))
-              }
-            />
-            <PlainInput
-              value={field.key}
-              placeholder="字段 key"
-              onChange={(event) =>
-                onChange(items.map((item, itemIndex) => (itemIndex === index ? { ...item, key: event.target.value } : item)))
-              }
-            />
-            <PlainSelect
-              value={field.type}
-              onChange={(event) =>
-                onChange(
-                  items.map((item, itemIndex) =>
-                    itemIndex === index ? { ...item, type: event.target.value as CharacterField['type'] } : item
-                  )
-                )}
-            >
-              <option value="text">文本</option>
-              <option value="number">数字</option>
-              <option value="select">选项</option>
-            </PlainSelect>
-            <RemoveButton onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))} title="删除字段" />
-          </div>
-        ))}
-      </div>
-    </FieldCard>
-  )
-}
-
-function EditableFactionLabels({
-  items,
-  onChange
-}: {
-  items: FactionLabel[]
-  onChange: (items: FactionLabel[]) => void
-}) {
-  return (
-    <FieldCard>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <SectionTitle>阵营标签</SectionTitle>
-          <SmallHint>用于角色阵营分类。</SmallHint>
-        </div>
-        <RowActions
-          label="新增阵营"
-          onAdd={() =>
-            onChange([...items, { value: `faction_${items.length + 1}`, label: '新阵营', color: 'slate' }])}
-        />
-      </div>
-      <div className="space-y-2">
-        {items.map((label, index) => (
-          <div key={`${label.value}-${index}`} className="grid gap-2 md:grid-cols-[1fr_1fr_120px_64px]">
-            <PlainInput
-              value={label.label}
-              placeholder="标签名"
-              onChange={(event) =>
-                onChange(items.map((item, itemIndex) => (itemIndex === index ? { ...item, label: event.target.value } : item)))
-              }
-            />
-            <PlainInput
-              value={label.value}
-              placeholder="标签值"
-              onChange={(event) =>
-                onChange(items.map((item, itemIndex) => (itemIndex === index ? { ...item, value: event.target.value } : item)))
-              }
-            />
-            <PlainInput
-              value={label.color}
-              placeholder="颜色"
-              onChange={(event) =>
-                onChange(items.map((item, itemIndex) => (itemIndex === index ? { ...item, color: event.target.value } : item)))
-              }
-            />
-            <RemoveButton onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))} title="删除阵营标签" />
-          </div>
-        ))}
-      </div>
-    </FieldCard>
-  )
-}
-
-function EditableStatusLabels({
-  items,
-  onChange
-}: {
-  items: StatusLabel[]
-  onChange: (items: StatusLabel[]) => void
-}) {
-  return (
-    <FieldCard>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <SectionTitle>状态标签</SectionTitle>
-          <SmallHint>用于角色当前状态。</SmallHint>
-        </div>
-        <RowActions
-          label="新增状态"
-          onAdd={() => onChange([...items, { value: `status_${items.length + 1}`, label: '新状态' }])}
-        />
-      </div>
-      <div className="space-y-2">
-        {items.map((label, index) => (
-          <div key={`${label.value}-${index}`} className="grid gap-2 md:grid-cols-[1fr_1fr_64px]">
-            <PlainInput
-              value={label.label}
-              placeholder="状态名"
-              onChange={(event) =>
-                onChange(items.map((item, itemIndex) => (itemIndex === index ? { ...item, label: event.target.value } : item)))
-              }
-            />
-            <PlainInput
-              value={label.value}
-              placeholder="状态值"
-              onChange={(event) =>
-                onChange(items.map((item, itemIndex) => (itemIndex === index ? { ...item, value: event.target.value } : item)))
-              }
-            />
-            <RemoveButton onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))} title="删除状态标签" />
-          </div>
-        ))}
-      </div>
-    </FieldCard>
-  )
-}
-
-function EditableEmotionLabels({
-  items,
-  onChange
-}: {
-  items: EmotionLabel[]
-  onChange: (items: EmotionLabel[]) => void
-}) {
-  return (
-    <FieldCard>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <SectionTitle>情绪标签</SectionTitle>
-          <SmallHint>用于沙盘和爽点评分显示。</SmallHint>
-        </div>
-        <RowActions
-          label="新增情绪档位"
-          onAdd={() => onChange([...items, { score: 0, label: '新情绪' }])}
-        />
-      </div>
-      <div className="space-y-2">
-        {items.map((label, index) => (
-          <div key={`${label.score}-${index}`} className="grid gap-2 md:grid-cols-[96px_1fr_64px]">
-            <PlainInput
-              type="number"
-              value={label.score}
-              onChange={(event) =>
-                onChange(
-                  items.map((item, itemIndex) =>
-                    itemIndex === index ? { ...item, score: Number(event.target.value) || 0 } : item
-                  )
-                )}
-            />
-            <PlainInput
-              value={label.label}
-              placeholder="情绪说明"
-              onChange={(event) =>
-                onChange(items.map((item, itemIndex) => (itemIndex === index ? { ...item, label: event.target.value } : item)))
-              }
-            />
-            <RemoveButton onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))} title="删除情绪标签" />
-          </div>
-        ))}
-      </div>
-    </FieldCard>
   )
 }

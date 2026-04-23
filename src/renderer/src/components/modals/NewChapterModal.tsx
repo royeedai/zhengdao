@@ -110,7 +110,7 @@ export default function NewChapterModal() {
             <div
               className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-xs text-[var(--text-secondary)] max-h-[160px] overflow-y-auto prose prose-sm max-w-none"
               dangerouslySetInnerHTML={{
-                __html: previewContent || '<p class="text-slate-600">（空白）</p>'
+                __html: previewContent || '<p class="text-[var(--text-muted)]">（空白）</p>'
               }}
             />
           </div>

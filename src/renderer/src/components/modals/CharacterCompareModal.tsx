@@ -18,7 +18,7 @@ export default function CharacterCompareModal() {
   const [appearanceCounts, setAppearanceCounts] = useState<Record<number, number>>({})
 
   const factionLabel = (value: string) => factionLabels.find((f) => f.value === value)?.label || value
-  const factionColor = (value: string) => factionLabels.find((f) => f.value === value)?.color || '#64748b'
+  const factionColor = (value: string) => factionLabels.find((f) => f.value === value)?.color || 'var(--text-muted)'
   const statusLabel = (value: string) => statusLabels.find((s) => s.value === value)?.label || value
 
   const toggle = (id: number) => {
@@ -78,25 +78,29 @@ export default function CharacterCompareModal() {
     {
       key: 'desc',
       label: '备注',
-      render: (c) => <span className="text-slate-400 whitespace-pre-wrap">{c.description || '—'}</span>
+      render: (c) => <span className="whitespace-pre-wrap text-[var(--text-secondary)]">{c.description || '—'}</span>
     }
   ]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-      <div className="bg-[#1a1a1a] border border-[#333] w-full max-w-[960px] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="h-12 border-b border-[#2a2a2a] bg-[#141414] flex items-center justify-between px-5 shrink-0">
-          <div className="flex items-center space-x-2 text-indigo-400 font-bold">
+      <div className="flex max-h-[90vh] w-full max-w-[960px] flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--surface-elevated)] shadow-2xl">
+        <div className="flex h-12 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-5 shrink-0">
+          <div className="flex items-center space-x-2 font-bold text-[var(--accent-secondary)]">
             <Scale size={18} />
             <span>角色对比</span>
           </div>
-          <button type="button" onClick={closeModal} className="text-slate-500 hover:text-slate-300 transition">
+          <button
+            type="button"
+            onClick={closeModal}
+            className="text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
+          >
             <X size={20} />
           </button>
         </div>
 
-        <div className="p-4 border-b border-[#2a2a2a] shrink-0">
-          <p className="text-[11px] text-slate-500 mb-2">选择 2–4 名角色（点击切换）</p>
+        <div className="border-b border-[var(--border-primary)] p-4 shrink-0">
+          <p className="mb-2 text-[11px] text-[var(--text-muted)]">选择 2–4 名角色（点击切换）</p>
           <div className="flex flex-wrap gap-2">
             {characters.map((c) => {
               const on = selectedIds.includes(c.id)
@@ -107,8 +111,8 @@ export default function CharacterCompareModal() {
                   onClick={() => toggle(c.id)}
                   className={`text-xs px-2 py-1 rounded border transition ${
                     on
-                      ? 'border-indigo-500 bg-indigo-500/20 text-indigo-200'
-                      : 'border-[#333] bg-[#111] text-slate-400 hover:border-[#555]'
+                      ? 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+                      : 'border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:border-[var(--border-secondary)]'
                   }`}
                 >
                   {c.name}
@@ -120,16 +124,16 @@ export default function CharacterCompareModal() {
 
         <div className="flex-1 overflow-auto p-4">
           {selectedCharacters.length < 2 ? (
-            <p className="text-center text-slate-500 text-sm py-16">请至少选择两名角色进行对比</p>
+            <p className="py-16 text-center text-sm text-[var(--text-muted)]">请至少选择两名角色进行对比</p>
           ) : (
             <table className="w-full border-collapse text-xs">
               <thead>
                 <tr>
-                  <th className="text-left text-slate-500 font-bold border-b border-[#333] pb-2 pr-4 w-28">字段</th>
+                  <th className="w-28 border-b border-[var(--border-primary)] pb-2 pr-4 text-left font-bold text-[var(--text-muted)]">字段</th>
                   {selectedCharacters.map((c) => (
                     <th
                       key={c.id}
-                      className="text-left text-slate-200 font-bold border-b border-[#333] pb-2 px-2 min-w-[140px]"
+                      className="min-w-[140px] border-b border-[var(--border-primary)] px-2 pb-2 text-left font-bold text-[var(--text-primary)]"
                     >
                       {c.name}
                     </th>
@@ -139,9 +143,9 @@ export default function CharacterCompareModal() {
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.key}>
-                    <td className="align-top text-slate-500 py-2 pr-4 border-b border-[#2a2a2a]">{row.label}</td>
+                    <td className="border-b border-[var(--border-primary)] py-2 pr-4 align-top text-[var(--text-muted)]">{row.label}</td>
                     {selectedCharacters.map((c) => (
-                      <td key={c.id} className="align-top text-slate-300 py-2 px-2 border-b border-[#2a2a2a]">
+                      <td key={c.id} className="border-b border-[var(--border-primary)] px-2 py-2 align-top text-[var(--text-primary)]">
                         {row.render(c)}
                       </td>
                     ))}

@@ -16,22 +16,22 @@ export default function AppearanceTimeline({
   factionColor
 }: AppearanceTimelineProps) {
   if (characters.length === 0 || chapters.length === 0) {
-    return <p className="text-center text-slate-500 text-sm py-12">暂无章节或角色数据</p>
+    return <p className="py-12 text-center text-sm text-[var(--text-muted)]">暂无章节或角色数据</p>
   }
 
   return (
-    <div className="overflow-auto max-h-[calc(90vh-200px)] rounded-lg border border-[#333]">
+    <div className="max-h-[calc(90vh-200px)] overflow-auto rounded-lg border border-[var(--border-primary)]">
       <table className="w-max min-w-full border-collapse text-[10px]">
         <thead>
           <tr>
-            <th className="sticky left-0 z-10 bg-[#141414] border-b border-r border-[#333] px-2 py-1.5 text-left text-slate-500 font-bold min-w-[100px]">
+            <th className="sticky left-0 z-10 min-w-[100px] border-b border-r border-[var(--border-primary)] bg-[var(--bg-primary)] px-2 py-1.5 text-left font-bold text-[var(--text-muted)]">
               角色
             </th>
             {chapters.map((ch, i) => (
               <th
                 key={ch.id}
                 title={ch.title}
-                className="border-b border-[#333] px-1 py-1 text-slate-500 font-normal whitespace-nowrap max-w-[72px] truncate"
+                className="max-w-[72px] truncate whitespace-nowrap border-b border-[var(--border-primary)] px-1 py-1 font-normal text-[var(--text-muted)]"
               >
                 {i + 1}
               </th>
@@ -44,7 +44,7 @@ export default function AppearanceTimeline({
             const col = factionColor(c.faction)
             return (
               <tr key={c.id}>
-                <td className="sticky left-0 z-[1] bg-[#141414] border-r border-[#333] px-2 py-0.5 text-slate-300 text-[11px] whitespace-nowrap max-w-[140px] truncate font-medium">
+                <td className="sticky left-0 z-[1] max-w-[140px] truncate whitespace-nowrap border-r border-[var(--border-primary)] bg-[var(--bg-primary)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-primary)]">
                   {c.name}
                 </td>
                 {chapters.map((ch) => {
@@ -52,7 +52,7 @@ export default function AppearanceTimeline({
                   return (
                     <td
                       key={ch.id}
-                      className={`border-b border-[#2a2a2a] p-0 align-middle text-center ${hit ? 'bg-[#1a1a14]' : ''}`}
+                      className={`border-b border-[var(--border-primary)] p-0 align-middle text-center ${hit ? 'bg-[var(--accent-surface)]' : ''}`}
                     >
                       {hit ? (
                         <div

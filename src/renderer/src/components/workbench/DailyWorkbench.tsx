@@ -5,6 +5,7 @@ import { useBookStore } from '@/stores/book-store'
 import { useChapterStore } from '@/stores/chapter-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useForeshadowStore } from '@/stores/foreshadow-store'
+import { useSettingsStore } from '@/stores/settings-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useUIStore } from '@/stores/ui-store'
 import {
@@ -14,6 +15,7 @@ import {
   type BackupFileSummary,
   type WorkbenchTone
 } from '@/utils/daily-workbench'
+import { resolveProjectDailyGoal } from '@/utils/daily-goal'
 
 function toneClass(tone: WorkbenchTone): string {
   switch (tone) {
@@ -78,6 +80,7 @@ export default function DailyWorkbench() {
   const bookId = useBookStore((s) => s.currentBookId)
   const currentChapter = useChapterStore((s) => s.currentChapter)
   const config = useConfigStore((s) => s.config)
+  const systemDailyGoal = useSettingsStore((s) => s.systemDailyGoal)
   const warningCount = useForeshadowStore((s) => s.getWarningCount())
   const openModal = useUIStore((s) => s.openModal)
   const rightPanelOpen = useUIStore((s) => s.rightPanelOpen)
@@ -168,7 +171,7 @@ export default function DailyWorkbench() {
   }, [chapterSaveStatus, currentChapter])
 
   const model = buildDailyWorkbenchModel({
-    dailyGoal: config?.daily_goal ?? 0,
+    dailyGoal: resolveProjectDailyGoal(config, systemDailyGoal),
     todayWords,
     streak,
     currentChapterId: currentChapter?.id ?? null,

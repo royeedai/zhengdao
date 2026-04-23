@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ProjectConfig } from '@/types'
+import type { GenreTemplate, ProjectConfig } from '@/types'
 import { getDefaultPreset } from '@/utils/genre-presets'
 
 interface ConfigStore {
@@ -8,6 +8,7 @@ interface ConfigStore {
   loadConfig: (bookId: number) => Promise<void>
   saveConfig: (bookId: number, updates: Partial<ProjectConfig>) => Promise<void>
   initConfig: (bookId: number, genre: string) => Promise<void>
+  initConfigFromTemplate: (bookId: number, template: GenreTemplate, systemDailyGoal: number) => Promise<void>
 }
 
 export const useConfigStore = create<ConfigStore>((set, get) => ({
@@ -44,6 +45,24 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       status_labels: preset.status_labels,
       emotion_labels: preset.emotion_labels,
       daily_goal: 6000,
+      daily_goal_mode: 'follow_system',
+      sensitive_list: 'default',
+      ai_api_key: '',
+      ai_api_endpoint: '',
+      ai_model: '',
+      ai_provider: 'openai'
+    })
+  },
+
+  initConfigFromTemplate: async (bookId, template, systemDailyGoal) => {
+    await window.api.saveConfig(bookId, {
+      genre: template.slug,
+      character_fields: template.character_fields,
+      faction_labels: template.faction_labels,
+      status_labels: template.status_labels,
+      emotion_labels: template.emotion_labels,
+      daily_goal: systemDailyGoal,
+      daily_goal_mode: 'follow_system',
       sensitive_list: 'default',
       ai_api_key: '',
       ai_api_endpoint: '',

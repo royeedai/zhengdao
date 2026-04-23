@@ -14,6 +14,11 @@ const api = {
   // Config
   getConfig: (bookId: number) => ipcRenderer.invoke('db:getConfig', bookId),
   saveConfig: (bookId: number, config: Record<string, unknown>) => ipcRenderer.invoke('db:saveConfig', bookId, config),
+  getGenreTemplates: () => ipcRenderer.invoke('db:getGenreTemplates'),
+  createGenreTemplate: (data: Record<string, unknown>) => ipcRenderer.invoke('db:createGenreTemplate', data),
+  updateGenreTemplate: (id: number, updates: Record<string, unknown>) => ipcRenderer.invoke('db:updateGenreTemplate', id, updates),
+  copyGenreTemplate: (id: number) => ipcRenderer.invoke('db:copyGenreTemplate', id),
+  deleteGenreTemplate: (id: number) => ipcRenderer.invoke('db:deleteGenreTemplate', id),
   getCustomShortcuts: () => ipcRenderer.invoke('db:getCustomShortcuts'),
   setCustomShortcut: (action: string, keys: string) => ipcRenderer.invoke('db:setCustomShortcut', action, keys),
 
@@ -246,6 +251,8 @@ const api = {
   // Window controls
   setFullScreen: (flag: boolean) => ipcRenderer.invoke('window:setFullScreen', flag),
   isFullScreen: () => ipcRenderer.invoke('window:isFullScreen'),
+  isMaximized: () => ipcRenderer.invoke('window:isMaximized') as Promise<boolean>,
+  toggleMaximize: () => ipcRenderer.invoke('window:toggleMaximize') as Promise<boolean>,
 
   // Export
   showSaveDialog: (options: Record<string, unknown>) => ipcRenderer.invoke('dialog:showSave', options),

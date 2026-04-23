@@ -162,7 +162,7 @@ export default function AiSettingsModal() {
       <div className="flex h-[86vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-secondary)] shadow-2xl">
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-5">
           <div className="flex items-center gap-2 font-bold text-[var(--text-primary)]">
-            <Bot size={18} className="text-emerald-400" />
+            <Bot size={18} className="text-[var(--accent-secondary)]" />
             <span>AI 能力与作品配置</span>
           </div>
           <button
@@ -184,7 +184,7 @@ export default function AiSettingsModal() {
               onClick={() => setTab(key)}
               className={`border-b-2 px-4 py-3 text-xs font-bold transition ${
                 tab === key
-                  ? 'border-emerald-500 text-emerald-400'
+                  ? 'border-[var(--accent-primary)] text-[var(--accent-secondary)]'
                   : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -266,7 +266,7 @@ export default function AiSettingsModal() {
                     onClick={() => selectSkill(skill.key)}
                     className={`w-full rounded-lg border p-3 text-left transition ${
                       selectedSkillKey === skill.key
-                        ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300'
+                        ? 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
                         : 'border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] hover:border-[var(--border-secondary)]'
                     }`}
                   >
@@ -275,7 +275,7 @@ export default function AiSettingsModal() {
                     </div>
                     <div className="mt-1 line-clamp-2 text-[11px] text-[var(--text-muted)]">{skill.description}</div>
                     {overrides.some((override) => override.skill_key === skill.key) && (
-                      <div className="mt-2 inline-flex items-center gap-1 rounded border border-emerald-500/30 px-1.5 py-0.5 text-[10px] text-emerald-300">
+                      <div className="mt-2 inline-flex items-center gap-1 rounded border border-[var(--accent-border)] px-1.5 py-0.5 text-[10px] text-[var(--accent-secondary)]">
                         <Check size={10} /> 本作品覆盖
                       </div>
                     )}

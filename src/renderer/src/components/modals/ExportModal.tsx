@@ -168,36 +168,40 @@ export default function ExportModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-      <div className="bg-[#1a1a1a] border border-[#333] w-full max-w-xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-        <div className="h-12 border-b border-[#2a2a2a] bg-[#141414] flex items-center justify-between px-5 shrink-0">
-          <div className="flex items-center space-x-2 text-emerald-400 font-bold">
+      <div className="flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--surface-elevated)] shadow-2xl">
+        <div className="flex h-12 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-5 shrink-0">
+          <div className="flex items-center space-x-2 font-bold text-[var(--accent-secondary)]">
             <Download size={18} />
             <span>导出全书</span>
           </div>
-          <button type="button" onClick={closeModal} className="text-slate-500 hover:text-slate-300 transition">
+          <button
+            type="button"
+            onClick={closeModal}
+            className="text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
+          >
             <X size={20} />
           </button>
         </div>
 
         <div className="p-6 space-y-4 overflow-y-auto flex-1">
           {result === 'success' && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
+            <div className="flex items-center gap-2 rounded-lg border border-[var(--success-border)] bg-[var(--success-surface)] p-3 text-xs font-medium text-[var(--success-primary)]">
               导出成功！
             </div>
           )}
           {result === 'error' && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-medium">
+            <div className="rounded-lg border border-[var(--danger-border)] bg-[var(--danger-surface)] p-3 text-xs font-medium text-[var(--danger-primary)]">
               {errorMsg}
             </div>
           )}
 
           <div>
-            <label className="block text-[11px] text-slate-500 uppercase mb-2">发布平台预设（仅 TXT）</label>
+            <label className="mb-2 block text-[11px] uppercase text-[var(--text-muted)]">发布平台预设（仅 TXT）</label>
             <select
               value={presetId}
               onChange={(e) => setPresetId(e.target.value)}
               disabled={format !== 'txt'}
-              className={`w-full bg-[#111] border border-[#333] rounded px-3 py-2 text-slate-200 text-sm focus:outline-none focus:border-emerald-500 ${
+              className={`w-full rounded border border-[var(--border-primary)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--accent-primary)] focus:outline-none ${
                 format !== 'txt' ? 'opacity-40' : ''
               }`}
             >
@@ -209,7 +213,7 @@ export default function ExportModal() {
             </select>
           </div>
 
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-[var(--text-muted)]">
             选择导出格式；TXT 可使用平台排版预设。HTML 为单文件阅读排版，可用 Calibre 等转为 ePub。
           </p>
 
@@ -229,8 +233,8 @@ export default function ExportModal() {
                 onClick={() => setFormat(key)}
                 className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border text-xs font-bold transition ${
                   format === key
-                    ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
-                    : 'border-[#333] text-slate-400 hover:border-slate-500'
+                    ? 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+                    : 'border-[var(--border-primary)] text-[var(--text-secondary)] hover:border-[var(--border-secondary)]'
                 }`}
               >
                 <Icon size={14} /> {label}
@@ -240,17 +244,17 @@ export default function ExportModal() {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[11px] text-slate-500 uppercase">导出范围</label>
+              <label className="text-[11px] uppercase text-[var(--text-muted)]">导出范围</label>
               <div className="flex gap-2">
-                <button type="button" onClick={selectAll} className="text-[11px] text-emerald-500 hover:text-emerald-400">
+                <button type="button" onClick={selectAll} className="text-[11px] text-[var(--accent-secondary)] hover:text-[var(--accent-primary)]">
                   全选
                 </button>
-                <button type="button" onClick={clearAll} className="text-[11px] text-slate-500 hover:text-slate-300">
+                <button type="button" onClick={clearAll} className="text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)]">
                   取消全选
                 </button>
               </div>
             </div>
-            <div className="max-h-44 overflow-y-auto rounded-lg border border-[#333] bg-[#111] p-2 space-y-1 text-xs">
+            <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-2 text-xs">
               {volumes.map((vol) => {
                 const chs = vol.chapters || []
                 const volChecked =
@@ -262,7 +266,7 @@ export default function ExportModal() {
                       <button
                         type="button"
                         onClick={() => toggleVolExpand(vol.id)}
-                        className="text-slate-500 p-0.5"
+                        className="p-0.5 text-[var(--text-muted)]"
                       >
                         {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </button>
@@ -270,21 +274,21 @@ export default function ExportModal() {
                         type="checkbox"
                         checked={volChecked}
                         onChange={(e) => toggleVolumeAll(vol, e.target.checked)}
-                        className="rounded border-[#444]"
+                        className="rounded border-[var(--border-secondary)]"
                       />
-                      <span className="text-slate-300 font-medium truncate">{vol.title}</span>
+                      <span className="truncate font-medium text-[var(--text-primary)]">{vol.title}</span>
                     </div>
                     {expanded &&
                       chs.map((ch) => (
                         <label
                           key={ch.id}
-                          className="flex items-center gap-2 pl-8 py-0.5 text-slate-400 hover:text-slate-200 cursor-pointer"
+                          className="flex cursor-pointer items-center gap-2 py-0.5 pl-8 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                         >
                           <input
                             type="checkbox"
                             checked={selectedIds.has(ch.id)}
                             onChange={(e) => toggleChapter(ch.id, e.target.checked)}
-                            className="rounded border-[#444]"
+                            className="rounded border-[var(--border-secondary)]"
                           />
                           <span className="truncate">{ch.title}</span>
                         </label>
@@ -296,15 +300,15 @@ export default function ExportModal() {
           </div>
         </div>
 
-        <div className="h-14 border-t border-[#2a2a2a] bg-[#141414] flex items-center justify-end px-5 gap-3 shrink-0">
-          <button type="button" onClick={closeModal} className="px-4 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition">
+        <div className="flex h-14 items-center justify-end gap-3 border-t border-[var(--border-primary)] bg-[var(--bg-primary)] px-5 shrink-0">
+          <button type="button" onClick={closeModal} className="px-4 py-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">
             取消
           </button>
           <button
             type="button"
             onClick={() => void runExport()}
             disabled={busy || !currentBookId}
-            className="px-4 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white rounded flex items-center gap-1 transition"
+            className="flex items-center gap-1 rounded bg-[var(--accent-primary)] px-4 py-1.5 text-xs text-[var(--accent-contrast)] transition hover:bg-[var(--accent-secondary)] disabled:opacity-40"
           >
             <Download size={14} /> {busy ? '导出中...' : '选择路径并导出'}
           </button>

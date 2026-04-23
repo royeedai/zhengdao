@@ -85,3 +85,18 @@ tasks:
       - "npm test"
       - "npm run build"
       - "git diff --check"
+
+  - id: TASK-LAYOUT-006
+    title: "补工作区顶栏底栏显隐按钮"
+    status: done
+    owner: AI
+    risk: low
+    priority: P1
+    approval_required: "confirmed"
+    affected_components:
+      - "TopBar"
+      - "ui-store"
+      - "BottomPanel"
+    verification_required:
+      - "npm run build"
+      - "git diff --check"

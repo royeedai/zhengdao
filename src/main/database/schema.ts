@@ -20,6 +20,7 @@ export function createSchema(db: Database.Database): void {
       status_labels TEXT NOT NULL DEFAULT '[]',
       emotion_labels TEXT NOT NULL DEFAULT '[]',
       daily_goal INTEGER NOT NULL DEFAULT 6000,
+      daily_goal_mode TEXT NOT NULL DEFAULT 'follow_system' CHECK(daily_goal_mode IN ('follow_system', 'custom')),
       sensitive_list TEXT NOT NULL DEFAULT 'default',
       ai_api_key TEXT NOT NULL DEFAULT '',
       ai_api_endpoint TEXT NOT NULL DEFAULT '',
@@ -318,6 +319,19 @@ export function createSchema(db: Database.Database): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
     );
 
+    CREATE TABLE IF NOT EXISTS genre_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      character_fields TEXT NOT NULL DEFAULT '[]',
+      faction_labels TEXT NOT NULL DEFAULT '[]',
+      status_labels TEXT NOT NULL DEFAULT '[]',
+      emotion_labels TEXT NOT NULL DEFAULT '[]',
+      is_seed INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    );
+
     CREATE TABLE IF NOT EXISTS app_state (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       key TEXT NOT NULL UNIQUE,
@@ -340,6 +354,8 @@ export function createSchema(db: Database.Database): void {
     );
 
     CREATE VIRTUAL TABLE IF NOT EXISTS chapters_fts USING fts5(title, content, content='chapters', content_rowid='id');
+
+    CREATE INDEX IF NOT EXISTS idx_genre_templates_seed_slug ON genre_templates(is_seed, slug);
 
     CREATE TRIGGER IF NOT EXISTS chapters_ai AFTER INSERT ON chapters BEGIN
       INSERT INTO chapters_fts(rowid, title, content) VALUES (new.id, COALESCE(new.title, ''), COALESCE(new.content, ''));

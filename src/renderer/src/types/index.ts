@@ -17,6 +17,7 @@ export interface ProjectConfig {
   status_labels: StatusLabel[]
   emotion_labels: EmotionLabel[]
   daily_goal: number
+  daily_goal_mode: 'follow_system' | 'custom'
   sensitive_list: string
   ai_provider?: string
   ai_api_key: string
@@ -220,4 +221,17 @@ export interface GenrePreset {
   faction_labels: FactionLabel[]
   status_labels: StatusLabel[]
   emotion_labels: EmotionLabel[]
+}
+
+export interface GenreTemplate {
+  id: number
+  slug: string
+  name: string
+  character_fields: CharacterField[]
+  faction_labels: FactionLabel[]
+  status_labels: StatusLabel[]
+  emotion_labels: EmotionLabel[]
+  is_seed: number
+  created_at: string
+  updated_at: string
 }

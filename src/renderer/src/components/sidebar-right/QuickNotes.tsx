@@ -1,53 +1,25 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Lightbulb, Plus, Trash2 } from 'lucide-react'
 import { useBookStore } from '@/stores/book-store'
+import { useNoteStore } from '@/stores/note-store'
 import { useUIStore } from '@/stores/ui-store'
-
-interface NoteItem {
-  id: number
-  content: string
-  created_at: string
-}
 
 export default function QuickNotes() {
   const bookId = useBookStore((s) => s.currentBookId)!
   const pushModal = useUIStore((s) => s.pushModal)
-  const [notes, setNotes] = useState<NoteItem[]>([])
+  const notes = useNoteStore((s) => s.notes)
+  const createNote = useNoteStore((s) => s.createNote)
+  const deleteNote = useNoteStore((s) => s.deleteNote)
   const [input, setInput] = useState('')
-
-  const loadNotes = useCallback(async () => {
-    const data = await window.api.getNotes(bookId)
-    setNotes(data as NoteItem[])
-  }, [bookId])
-
-  useEffect(() => {
-    let cancelled = false
-
-    const refreshNotes = async () => {
-      try {
-        const data = await window.api.getNotes(bookId)
-        if (!cancelled) setNotes(data as NoteItem[])
-      } catch {
-        if (!cancelled) setNotes([])
-      }
-    }
-
-    void refreshNotes()
-    return () => {
-      cancelled = true
-    }
-  }, [bookId])
 
   const addNote = async () => {
     if (!input.trim()) return
-    await window.api.createNote({ book_id: bookId, content: input.trim() })
+    await createNote(bookId, input.trim())
     setInput('')
-    void loadNotes()
   }
 
   const removeNote = async (id: number) => {
-    await window.api.deleteNote(id)
-    void loadNotes()
+    await deleteNote(bookId, id)
   }
 
   return (

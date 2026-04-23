@@ -26,6 +26,7 @@ export function createBook(data: { title: string; author: string }) {
     status_labels: [],
     emotion_labels: [],
     daily_goal: 6000,
+    daily_goal_mode: 'follow_system',
     sensitive_list: 'default',
     ai_api_key: '',
     ai_api_endpoint: '',

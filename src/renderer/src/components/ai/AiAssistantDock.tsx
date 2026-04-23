@@ -33,6 +33,9 @@ import { buildDraftPreviewModel } from './draft-preview'
 import { buildAssistantMessageDisplay } from './message-display'
 import {
   resizeAiAssistantPanelRect,
+  resizeAiAssistantPanelRectFromLeftEdge,
+  resizeAiAssistantPanelRectFromRightEdge,
+  resizeAiAssistantPanelRectFromTopLeft,
   translateAiAssistantLauncherPosition,
   translateAiAssistantPanelRect
 } from './panel-layout'
@@ -802,6 +805,101 @@ export default function AiAssistantDock() {
     window.addEventListener('mouseup', cleanup)
   }
 
+  const handleTopLeftResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    const startX = event.clientX
+    const startY = event.clientY
+    const startRect = panelRectRef.current
+    const previousUserSelect = document.body.style.userSelect
+
+    const handleMove = (moveEvent: MouseEvent) => {
+      setAiAssistantPanelRect(
+        resizeAiAssistantPanelRectFromTopLeft(
+          startRect,
+          moveEvent.clientX - startX,
+          moveEvent.clientY - startY,
+          window.innerWidth,
+          window.innerHeight
+        )
+      )
+    }
+
+    const cleanup = () => {
+      document.body.style.userSelect = previousUserSelect
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', cleanup)
+      interactionCleanupRef.current = null
+    }
+
+    stopInteraction()
+    interactionCleanupRef.current = cleanup
+    document.body.style.userSelect = 'none'
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', cleanup)
+  }
+
+  const handleLeftEdgeResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    const startX = event.clientX
+    const startRect = panelRectRef.current
+    const previousUserSelect = document.body.style.userSelect
+
+    const handleMove = (moveEvent: MouseEvent) => {
+      setAiAssistantPanelRect(
+        resizeAiAssistantPanelRectFromLeftEdge(
+          startRect,
+          moveEvent.clientX - startX,
+          window.innerWidth,
+          window.innerHeight
+        )
+      )
+    }
+
+    const cleanup = () => {
+      document.body.style.userSelect = previousUserSelect
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', cleanup)
+      interactionCleanupRef.current = null
+    }
+
+    stopInteraction()
+    interactionCleanupRef.current = cleanup
+    document.body.style.userSelect = 'none'
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', cleanup)
+  }
+
+  const handleRightEdgeResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    const startX = event.clientX
+    const startRect = panelRectRef.current
+    const previousUserSelect = document.body.style.userSelect
+
+    const handleMove = (moveEvent: MouseEvent) => {
+      setAiAssistantPanelRect(
+        resizeAiAssistantPanelRectFromRightEdge(
+          startRect,
+          moveEvent.clientX - startX,
+          window.innerWidth,
+          window.innerHeight
+        )
+      )
+    }
+
+    const cleanup = () => {
+      document.body.style.userSelect = previousUserSelect
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', cleanup)
+      interactionCleanupRef.current = null
+    }
+
+    stopInteraction()
+    interactionCleanupRef.current = cleanup
+    document.body.style.userSelect = 'none'
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', cleanup)
+  }
+
   const handleLauncherDragStart = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (event.button !== 0) return
     event.preventDefault()
@@ -1197,8 +1295,28 @@ export default function AiAssistantDock() {
           </div>
 
           <div
+            onMouseDown={handleTopLeftResizeStart}
+            className="absolute left-0 top-0 z-10 h-5 w-5 cursor-nwse-resize"
+            title="拖动调整大小"
+          >
+            <div className="absolute left-1 top-1 h-2.5 w-2.5 rounded-sm border-l-2 border-t-2 border-[var(--text-muted)]" />
+          </div>
+
+          <div
+            onMouseDown={handleLeftEdgeResizeStart}
+            className="absolute left-0 top-5 bottom-5 z-10 w-3 cursor-ew-resize"
+            title="拖动调整宽度"
+          />
+
+          <div
+            onMouseDown={handleRightEdgeResizeStart}
+            className="absolute right-0 top-5 bottom-5 z-10 w-3 cursor-ew-resize"
+            title="拖动调整宽度"
+          />
+
+          <div
             onMouseDown={handleResizeStart}
-            className="absolute bottom-0 right-0 h-4 w-4 cursor-nwse-resize"
+            className="absolute bottom-0 right-0 z-10 h-5 w-5 cursor-nwse-resize"
             title="拖动调整大小"
           >
             <div className="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-sm border-r-2 border-b-2 border-[var(--text-muted)]" />

@@ -132,22 +132,26 @@ export default function StyleAnalysisModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-      <div className="bg-[#1a1a1a] border border-[#333] w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="h-12 border-b border-[#2a2a2a] bg-[#141414] flex items-center justify-between px-5 shrink-0">
-          <span className="text-purple-400 font-bold text-sm">写作风格分析</span>
-          <button type="button" onClick={closeModal} className="text-slate-500 hover:text-slate-300 transition">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--surface-elevated)] shadow-2xl">
+        <div className="flex h-12 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-5 shrink-0">
+          <span className="text-sm font-bold text-[var(--accent-secondary)]">写作风格分析</span>
+          <button
+            type="button"
+            onClick={closeModal}
+            className="text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
+          >
             <X size={20} />
           </button>
         </div>
 
-        <div className="flex border-b border-[#2a2a2a] text-[11px] font-medium shrink-0">
+        <div className="flex border-b border-[var(--border-primary)] text-[11px] font-medium shrink-0">
           <button
             type="button"
             onClick={() => setTab('chapter')}
             className={`flex-1 py-2.5 transition ${
               tab === 'chapter'
-                ? 'text-purple-400 border-b-2 border-purple-500 bg-slate-800/30'
-                : 'text-slate-500 hover:text-slate-300'
+                ? 'border-b-2 border-[var(--accent-primary)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             本章分析
@@ -157,8 +161,8 @@ export default function StyleAnalysisModal() {
             onClick={() => setTab('book')}
             className={`flex-1 py-2.5 transition ${
               tab === 'book'
-                ? 'text-purple-400 border-b-2 border-purple-500 bg-slate-800/30'
-                : 'text-slate-500 hover:text-slate-300'
+                ? 'border-b-2 border-[var(--accent-primary)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             全书分析
@@ -167,8 +171,8 @@ export default function StyleAnalysisModal() {
 
         <div className="p-5 overflow-y-auto flex-1 space-y-4">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-500">
-              <Loader2 size={28} className="animate-spin text-purple-400" />
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-[var(--text-muted)]">
+              <Loader2 size={28} className="animate-spin text-[var(--accent-secondary)]" />
               <span className="text-xs">分析中…</span>
             </div>
           ) : (
@@ -178,20 +182,20 @@ export default function StyleAnalysisModal() {
                   const score = metrics[label] ?? 5
                   return (
                     <div key={label} className="flex items-center gap-3">
-                      <span className="text-xs text-slate-400 w-24 shrink-0">{label}</span>
-                      <div className="flex-1 bg-[#222] h-3 rounded-full overflow-hidden">
+                      <span className="w-24 shrink-0 text-xs text-[var(--text-secondary)]">{label}</span>
+                      <div className="h-3 flex-1 overflow-hidden rounded-full bg-[var(--bg-tertiary)]">
                         <div
-                          className="h-full bg-emerald-500 rounded-full transition-all"
+                          className="h-full rounded-full bg-[var(--accent-primary)] transition-all"
                           style={{ width: `${score * 10}%` }}
                         />
                       </div>
-                      <span className="text-xs text-emerald-400 font-mono w-8">{score}/10</span>
+                      <span className="w-8 font-mono text-xs text-[var(--accent-secondary)]">{score}/10</span>
                     </div>
                   )
                 })}
               </div>
               {summaryText ? (
-                <div className="text-xs text-slate-400 leading-relaxed border-t border-[#2a2a2a] pt-4">
+                <div className="border-t border-[var(--border-primary)] pt-4 text-xs leading-relaxed text-[var(--text-secondary)]">
                   {summaryText}
                 </div>
               ) : null}
@@ -199,12 +203,12 @@ export default function StyleAnalysisModal() {
           )}
         </div>
 
-        <div className="border-t border-[#2a2a2a] p-3 flex justify-end shrink-0">
+        <div className="flex justify-end border-t border-[var(--border-primary)] p-3 shrink-0">
           <button
             type="button"
             onClick={() => void runAnalyze()}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs rounded bg-purple-600/80 hover:bg-purple-500 text-white transition disabled:opacity-50"
+            className="flex items-center gap-2 rounded bg-[var(--accent-primary)] px-3 py-1.5 text-xs text-[var(--accent-contrast)] transition hover:bg-[var(--accent-secondary)] disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             重新分析

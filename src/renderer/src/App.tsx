@@ -8,6 +8,7 @@ import WorkspaceLayout from '@/components/layout/WorkspaceLayout'
 import ToastContainer from '@/components/shared/ToastContainer'
 import UpdateBootstrap from '@/components/shared/UpdateBootstrap'
 import ModalManager from '@/components/modals/ModalManager'
+import { useSettingsStore } from '@/stores/settings-store'
 import { resolveThemeMode } from '@/utils/themes'
 import { APP_DISPLAY_NAME } from '../../shared/window-shell'
 
@@ -19,6 +20,10 @@ export default function App(): JSX.Element {
 
   useEffect(() => {
     void useShortcutStore.getState().load()
+  }, [])
+
+  useEffect(() => {
+    void useSettingsStore.getState().loadSettings()
   }, [])
 
   useEffect(() => {

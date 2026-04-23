@@ -88,3 +88,7 @@ tasks:
     title: "补充 focused tests 与构建验证"
     status: pending
     acceptance: ["AC-AI-016", "AC-AI-017", "AC-AI-018", "AC-AI-019", "AC-AI-020", "AC-AI-021"]
+  - id: TASK-AI-CHAT-023
+    title: "扩大 AI 面板左右横向缩放命中区"
+    status: completed
+    acceptance: ["AC-AI-010"]

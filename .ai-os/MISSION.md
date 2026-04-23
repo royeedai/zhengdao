@@ -58,3 +58,4 @@
   - `license-policy`：开源许可证收紧与授权口径统一
   - `bookshelf-entry-behavior`：作品入口与总览触发收口
   - `v13-daily-workbench`：v1.3 可信日更工作台、审稿台与发布前检查包
+  - `settings-workspace-polish`：系统/作品设置拆分、题材模板系统化与工作区交互统一

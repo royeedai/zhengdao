@@ -156,3 +156,53 @@ export function resizeAiAssistantPanelRect(
     height: clamp(round(rect.height + deltaHeight), MIN_PANEL_HEIGHT, maxHeight)
   }
 }
+
+export function resizeAiAssistantPanelRectFromRightEdge(
+  rect: AiAssistantPanelRect,
+  deltaX: number,
+  viewportWidth: number,
+  viewportHeight: number
+): AiAssistantPanelRect {
+  return resizeAiAssistantPanelRect(rect, deltaX, 0, viewportWidth, viewportHeight)
+}
+
+export function resizeAiAssistantPanelRectFromLeftEdge(
+  rect: AiAssistantPanelRect,
+  deltaX: number,
+  _viewportWidth: number,
+  viewportHeight: number
+): AiAssistantPanelRect {
+  const right = round(rect.x) + round(rect.width)
+  const maxWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, right - PANEL_MARGIN))
+  const maxHeight = Math.max(MIN_PANEL_HEIGHT, round(viewportHeight) - PANEL_MARGIN - round(rect.y))
+  const width = clamp(round(rect.width - deltaX), MIN_PANEL_WIDTH, maxWidth)
+
+  return {
+    x: right - width,
+    y: round(rect.y),
+    width,
+    height: clamp(round(rect.height), MIN_PANEL_HEIGHT, maxHeight)
+  }
+}
+
+export function resizeAiAssistantPanelRectFromTopLeft(
+  rect: AiAssistantPanelRect,
+  deltaX: number,
+  deltaY: number,
+  _viewportWidth: number,
+  _viewportHeight: number
+): AiAssistantPanelRect {
+  const right = round(rect.x) + round(rect.width)
+  const bottom = round(rect.y) + round(rect.height)
+  const maxWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, right - PANEL_MARGIN))
+  const maxHeight = Math.max(MIN_PANEL_HEIGHT, bottom - PANEL_MARGIN)
+  const width = clamp(round(rect.width - deltaX), MIN_PANEL_WIDTH, maxWidth)
+  const height = clamp(round(rect.height - deltaY), MIN_PANEL_HEIGHT, maxHeight)
+
+  return {
+    x: right - width,
+    y: bottom - height,
+    width,
+    height
+  }
+}

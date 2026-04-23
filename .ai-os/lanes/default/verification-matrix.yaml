@@ -65,6 +65,10 @@ failure_modes:
     scenario: "AI global account management remains hidden inside project-level AI configuration"
     expected: "AppSettings has an AI global account tab, while AiSettings keeps only project profile and skills"
     guard: "AppSettings / AiSettings tab review plus npm run build"
+  - id: FM-DEF-011
+    scenario: "AI global account status detection ignores the current draft token or the saved account secret and always reports API Key / Token missing"
+    expected: "Status checks forward the draft provider config and saved account id so unsaved drafts and persisted accounts can both be probed correctly"
+    guard: "src/renderer/src/utils/ai/__tests__/global-account-status.test.ts plus npm run build"
 
 guards:
   - ".ai-os/lanes/default/evals/ai-os-v9-lane-normalization.md"
