@@ -18,6 +18,7 @@ import RightPanel from '@/components/sidebar-right/RightPanel'
 import BottomPanel from '@/components/bottom-panel/BottomPanel'
 import BlackRoomMode from '@/components/editor/BlackRoomMode'
 import AiAssistantDock from '@/components/ai/AiAssistantDock'
+import DailyWorkbench from '@/components/workbench/DailyWorkbench'
 import OnboardingTour, {
   completeOnboardingStorage,
   isOnboardingDone
@@ -123,6 +124,7 @@ export default function WorkspaceLayout() {
   return (
     <div className="flex h-screen flex-col overflow-hidden relative bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans select-none">
       <TopBar />
+      <DailyWorkbench />
       <div className="flex flex-1 overflow-hidden relative z-10 min-h-0">
         <div
           className={`sidebar-left border-r border-[var(--border-primary)] bg-[var(--bg-secondary)] flex flex-col shrink-0 transition-[width] duration-300 ease-in-out relative ${

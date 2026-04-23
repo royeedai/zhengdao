@@ -38,10 +38,10 @@ export const TOUR_STEPS: TourStep[] = [
     position: 'left'
   },
   {
-    target: '.bottom-panel-trigger',
+    target: '.bottom-panel-entry',
     title: '创世沙盘',
     description:
-      '可视化的心流时间线与爽点心电图。用剧情节点管理故事节奏，避免“毒点连续”。按 Ctrl+` 展开。',
+      '可视化的心流时间线与爽点心电图。用剧情节点管理故事节奏，避免“毒点连续”。按 Ctrl+` 展开或折叠。',
     position: 'top'
   },
   {

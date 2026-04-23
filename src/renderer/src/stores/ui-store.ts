@@ -5,6 +5,7 @@ import {
   clampWorkspacePanelWidth,
   getDefaultWorkspacePanelWidth,
   isRightPanelTab,
+  resolveDefaultBottomPanelOpen,
   type RightPanelTab,
   type WorkspacePanelKind
 } from '@/utils/workspace-layout'
@@ -16,8 +17,10 @@ import {
   type AiAssistantLauncherPosition,
   type AiAssistantPanelRect
 } from '@/components/ai/panel-layout'
+import { createInitialSaveStatus, type ChapterSaveStatus } from '../utils/daily-workbench'
 
 const THEME_STORAGE_KEY = 'write-ui-theme'
+const BOTTOM_PANEL_OPEN_STORAGE_KEY = 'write-bottom-panel-open'
 const BOTTOM_PANEL_HEIGHT_STORAGE_KEY = 'write-bottom-panel-height'
 const LEFT_PANEL_WIDTH_STORAGE_KEY = 'write-left-panel-width'
 const RIGHT_PANEL_WIDTH_STORAGE_KEY = 'write-right-panel-width'
@@ -68,6 +71,22 @@ function readStoredBottomPanelHeight(): number {
     return clampBottomPanelHeight(parsed)
   } catch {
     return 320
+  }
+}
+
+function readStoredBottomPanelOpen(): boolean {
+  try {
+    return resolveDefaultBottomPanelOpen(localStorage.getItem(BOTTOM_PANEL_OPEN_STORAGE_KEY))
+  } catch {
+    return resolveDefaultBottomPanelOpen(null)
+  }
+}
+
+function persistBottomPanelOpen(open: boolean): void {
+  try {
+    localStorage.setItem(BOTTOM_PANEL_OPEN_STORAGE_KEY, String(open))
+  } catch {
+    void 0
   }
 }
 
@@ -237,6 +256,7 @@ interface UIStore {
   aiAssistantSelectionChapterId: number | null
   aiAssistantSelectionFrom: number | null
   aiAssistantSelectionTo: number | null
+  chapterSaveStatus: ChapterSaveStatus
 
   activeModal: ModalType
   modalData: Record<string, unknown> | null
@@ -247,6 +267,7 @@ interface UIStore {
   toggleRightPanel: () => void
   setRightPanelWidth: (width: number) => void
   setRightPanelTab: (tab: RightPanelTab) => void
+  setBottomPanelOpen: (open: boolean) => void
   toggleBottomPanel: () => void
   setBottomPanelHeight: (height: number) => void
   resetBottomPanelHeight: () => void
@@ -273,6 +294,11 @@ interface UIStore {
     from: number | null
     to: number | null
   }) => void
+  setChapterSaveStatus: (status: ChapterSaveStatus) => void
+  markChapterDirty: (chapterId: number) => void
+  markChapterSaving: (chapterId: number) => void
+  markChapterSaved: (chapterId: number, savedAt?: string) => void
+  markChapterSaveError: (chapterId: number, error: string) => void
 
   theme: ThemeId
   setTheme: (theme: string) => void
@@ -291,7 +317,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   rightPanelOpen: true,
   rightPanelWidth: readStoredWorkspacePanelWidth('right'),
   rightPanelTab: readStoredRightPanelTab(),
-  bottomPanelOpen: false,
+  bottomPanelOpen: readStoredBottomPanelOpen(),
   bottomPanelHeight: readStoredBottomPanelHeight(),
   topbarToolsCollapsed: readStoredTopbarToolsCollapsed(),
   blackRoomMode: false,
@@ -312,6 +338,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   aiAssistantSelectionChapterId: null,
   aiAssistantSelectionFrom: null,
   aiAssistantSelectionTo: null,
+  chapterSaveStatus: createInitialSaveStatus(),
 
   activeModal: null,
   modalData: null,
@@ -339,7 +366,16 @@ export const useUIStore = create<UIStore>((set, get) => ({
     persistRightPanelTab(tab)
     set({ rightPanelTab: tab })
   },
-  toggleBottomPanel: () => set((s) => ({ bottomPanelOpen: !s.bottomPanelOpen })),
+  setBottomPanelOpen: (open) => {
+    persistBottomPanelOpen(open)
+    set({ bottomPanelOpen: open })
+  },
+  toggleBottomPanel: () =>
+    set((s) => {
+      const next = !s.bottomPanelOpen
+      persistBottomPanelOpen(next)
+      return { bottomPanelOpen: next }
+    }),
   setBottomPanelHeight: (height) => {
     const next = clampBottomPanelHeight(height)
     try {
@@ -416,6 +452,43 @@ export const useUIStore = create<UIStore>((set, get) => ({
       aiAssistantSelectionChapterId: chapterId,
       aiAssistantSelectionFrom: from,
       aiAssistantSelectionTo: to
+    }),
+  setChapterSaveStatus: (status) => set({ chapterSaveStatus: status }),
+  markChapterDirty: (chapterId) =>
+    set({
+      chapterSaveStatus: {
+        kind: 'dirty',
+        chapterId,
+        savedAt: null,
+        error: null
+      }
+    }),
+  markChapterSaving: (chapterId) =>
+    set({
+      chapterSaveStatus: {
+        kind: 'saving',
+        chapterId,
+        savedAt: null,
+        error: null
+      }
+    }),
+  markChapterSaved: (chapterId, savedAt = new Date().toISOString()) =>
+    set({
+      chapterSaveStatus: {
+        kind: 'saved',
+        chapterId,
+        savedAt,
+        error: null
+      }
+    }),
+  markChapterSaveError: (chapterId, error) =>
+    set({
+      chapterSaveStatus: {
+        kind: 'error',
+        chapterId,
+        savedAt: null,
+        error
+      }
     }),
 
   theme: initialTheme,

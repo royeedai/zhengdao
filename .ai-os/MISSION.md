@@ -57,3 +57,4 @@
   - `ai-chat-assistant`：AI 创作助手、会话、草稿篮和 Gemini 3 Pro 流式体验
   - `license-policy`：开源许可证收紧与授权口径统一
   - `bookshelf-entry-behavior`：作品入口与总览触发收口
+  - `v13-daily-workbench`：v1.3 可信日更工作台、审稿台与发布前检查包

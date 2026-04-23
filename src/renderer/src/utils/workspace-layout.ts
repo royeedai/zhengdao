@@ -31,6 +31,12 @@ export function getDefaultWorkspacePanelWidth(kind: WorkspacePanelKind, viewport
   return clampWorkspacePanelWidth(kind, PANEL_LIMITS[kind].fallback, viewportWidth)
 }
 
+export function resolveDefaultBottomPanelOpen(storedValue: string | null | undefined): boolean {
+  if (storedValue === 'false') return false
+  if (storedValue === 'true') return true
+  return true
+}
+
 export function isRightPanelTab(value: string): value is RightPanelTab {
   return (RIGHT_PANEL_TABS as readonly string[]).includes(value)
 }

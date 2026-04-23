@@ -476,3 +476,62 @@ tasks:
       - "build-log"
       - "release-url"
       - "asset-list"
+
+  - id: TASK-AI-SETTINGS-001
+    title: "收口系统级应用设置入口"
+    milestone: M4
+    parent: null
+    status: done
+    owner: AI
+    risk: medium
+    priority: P0
+    wave: 10
+    execution_role: "implementer"
+    approval_required: "user_confirmed_plan"
+    depends_on: []
+    requirement_refs:
+      - "REQ-SETTINGS-001"
+      - "REQ-SETTINGS-002"
+      - "REQ-SETTINGS-003"
+      - "REQ-SETTINGS-004"
+    acceptance_refs:
+      - "AC-SETTINGS-001"
+      - "AC-SETTINGS-002"
+      - "AC-SETTINGS-003"
+    context_files:
+      - "src/renderer/src/components/modals/AppSettingsModal.tsx"
+      - "src/renderer/src/components/ai/AiGlobalAccountsSettings.tsx"
+      - "src/renderer/src/components/modals/AiSettingsModal.tsx"
+      - "src/renderer/src/components/modals/LoginModal.tsx"
+      - "src/renderer/src/components/layout/TopBar.tsx"
+      - "src/renderer/src/components/bookshelf/BookshelfPage.tsx"
+      - "src/renderer/src/App.tsx"
+      - ".ai-os/lanes/default/verification-matrix.yaml"
+    outputs:
+      - "app-settings-tabs"
+      - "ai-global-accounts-tab"
+      - "titlebar-entry-cleanup"
+      - "theme-resolution-fix"
+    affected_components:
+      - "renderer"
+      - "settings"
+      - "theme"
+      - "auth"
+      - "update"
+    verification_required:
+      - "npm test"
+      - "npm run build"
+      - "manual code review"
+    measurable_outcome:
+      - "书架页和工作区均可在应用设置中切换主题、管理账号并查看更新"
+    edge_cases:
+      - "system 主题跟随系统时 CSS theme token 不应丢失"
+      - "未打开作品时账号页不能手动上传当前作品"
+      - "更新自动弹窗必须直达更新页"
+    definition_of_done:
+      - "应用设置包含外观、账号与云同步、更新与关于"
+      - "标题栏不再包含主题菜单或独立登录入口"
+      - "项目设置仍可打开且不承担应用外观设置"
+    evidence_required:
+      - "test-log"
+      - "build-log"

@@ -210,6 +210,8 @@ export type ModalType =
   | 'consistencyCheck'
   | 'aiSettings'
   | 'appSettings'
+  | 'chapterReview'
+  | 'publishCheck'
 
 export interface GenrePreset {
   id: string

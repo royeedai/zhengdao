@@ -31,6 +31,6 @@ describe('update prompt helpers', () => {
         status: 'ready' as const,
         version: null
       })
-    ).toContain('应用设置 / 关于')
+    ).toContain('应用设置 / 更新与关于')
   })
 })

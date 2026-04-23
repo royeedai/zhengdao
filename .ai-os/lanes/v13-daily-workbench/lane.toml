@@ -1,0 +1,6 @@
+id = "v13-daily-workbench"
+title = "v1.3 可信日更工作台"
+status = "active"
+baseline_id = "CR-20260423-v13-daily-workbench"
+quality_tier = "standard"
+risk_tier = "medium"

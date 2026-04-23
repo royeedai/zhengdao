@@ -1,6 +1,6 @@
 import { ipcMain, dialog, BrowserWindow, app, Notification } from 'electron'
-import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync, statSync, chmodSync } from 'fs'
-import { resolve, normalize, join } from 'path'
+import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync, statSync, chmodSync, realpathSync } from 'fs'
+import { resolve, normalize, join, dirname, basename, relative, isAbsolute } from 'path'
 import { spawn } from 'child_process'
 import * as bookRepo from './database/book-repo'
 import * as chapterRepo from './database/chapter-repo'
@@ -45,6 +45,48 @@ const driveSync = new DriveSync(googleAuth)
 const searchRepo = new SearchRepo()
 let geminiCliService: ReturnType<typeof createGeminiCliService> | null = null
 const activeGeminiStreamSessions = new Map<string, { cancel: () => void }>()
+
+function resolveWritablePath(filePath: string): string {
+  const resolved = resolve(normalize(filePath))
+  try {
+    return realpathSync.native(resolved)
+  } catch {
+    try {
+      return join(realpathSync.native(dirname(resolved)), basename(resolved))
+    } catch {
+      return resolved
+    }
+  }
+}
+
+function isSameOrChildPath(target: string, root: string): boolean {
+  const rel = relative(root, target)
+  return rel === '' || (!!rel && !rel.startsWith('..') && !isAbsolute(rel))
+}
+
+function getAllowedWriteRoots(): string[] {
+  const homeDir = app.getPath('home')
+  const roots = [
+    app.getPath('userData'),
+    app.getPath('temp'),
+    resolve('/tmp'),
+    resolve('/private/tmp'),
+    resolve(homeDir, 'Desktop'),
+    resolve(homeDir, 'Documents'),
+    resolve(homeDir, 'Downloads')
+  ]
+
+  return Array.from(new Set(roots.map(resolveWritablePath)))
+}
+
+function assertAllowedWritePath(filePath: string): string {
+  const resolved = resolveWritablePath(filePath)
+  const allowed = getAllowedWriteRoots().some((root) => isSameOrChildPath(resolved, root))
+  if (!allowed) {
+    throw new Error(`Write denied: path "${resolved}" is outside allowed directories`)
+  }
+  return resolved
+}
 
 function getGeminiCliService(): ReturnType<typeof createGeminiCliService> {
   if (!geminiCliService) {
@@ -442,41 +484,9 @@ export function registerIpcHandlers(): void {
 
   // File write — restricted to user-selected paths or userData directory
   ipcMain.handle('fs:writeFile', (_, filePath: string, data: string | Buffer) => {
-    const resolved = resolve(normalize(filePath))
-    const userDataDir = app.getPath('userData')
-    const tempDir = app.getPath('temp')
-    const homeDir = app.getPath('home')
-
-    const isUnderAllowed =
-      resolved.startsWith(userDataDir) ||
-      resolved.startsWith(tempDir) ||
-      resolved.startsWith(resolve(homeDir, 'Desktop')) ||
-      resolved.startsWith(resolve(homeDir, 'Documents')) ||
-      resolved.startsWith(resolve(homeDir, 'Downloads'))
-
-    if (!isUnderAllowed) {
-      throw new Error(`Write denied: path "${resolved}" is outside allowed directories`)
-    }
-
+    const resolved = assertAllowedWritePath(filePath)
     writeFileSync(resolved, data)
   })
-
-  function assertAllowedWritePath(filePath: string): string {
-    const resolved = resolve(normalize(filePath))
-    const userDataDir = app.getPath('userData')
-    const tempDir = app.getPath('temp')
-    const homeDir = app.getPath('home')
-    const allowed =
-      resolved.startsWith(userDataDir) ||
-      resolved.startsWith(tempDir) ||
-      resolved.startsWith(resolve(homeDir, 'Desktop')) ||
-      resolved.startsWith(resolve(homeDir, 'Documents')) ||
-      resolved.startsWith(resolve(homeDir, 'Downloads'))
-    if (!allowed) {
-      throw new Error(`Write denied: path "${resolved}" is outside allowed directories`)
-    }
-    return resolved
-  }
 
   ipcMain.handle('export:pdf', async (_, html: string, savePath: string) => {
     const resolved = assertAllowedWritePath(savePath)

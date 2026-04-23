@@ -1,0 +1,104 @@
+version: 1
+baseline_id: "CR-20260423-v13-daily-workbench"
+scope:
+  mode: "change"
+  focus: "trusted-daily-writing-workbench"
+  quality_tier: "standard"
+
+tasks:
+  - id: TASK-DAILY-001
+    title: "建立 v1.3 lane 工件"
+    status: done
+    owner: AI
+    risk: medium
+    priority: P1
+    approval_required: "confirmed"
+    requirement_refs:
+      - "REQ-DAILY-001"
+      - "REQ-REVIEW-001"
+      - "REQ-PUBLISH-001"
+    verification_required:
+      - "artifact-review"
+
+  - id: TASK-DAILY-002
+    title: "实现可信日更状态区"
+    status: done
+    owner: AI
+    risk: medium
+    priority: P1
+    approval_required: "confirmed"
+    affected_components:
+      - "WorkspaceLayout"
+      - "daily workbench component"
+      - "snapshot / backup status"
+    verification_required:
+      - "unit test: daily workbench model"
+      - "npm run build"
+
+  - id: TASK-DAILY-003
+    title: "实现本章审稿台"
+    status: done
+    owner: AI
+    risk: medium
+    priority: P1
+    approval_required: "confirmed"
+    affected_components:
+      - "AI assistant"
+      - "chapter review modal"
+      - "draft confirmation flow"
+    verification_required:
+      - "unit test: review report sections"
+      - "npm test"
+
+  - id: TASK-DAILY-004
+    title: "实现发布前检查包"
+    status: done
+    owner: AI
+    risk: medium
+    priority: P1
+    approval_required: "confirmed"
+    affected_components:
+      - "publish check modal"
+      - "export utilities"
+      - "sensitive word checker"
+    verification_required:
+      - "unit test: publish check model"
+      - "npm run build"
+
+  - id: TASK-DAILY-005
+    title: "验证和交付收口"
+    status: done
+    owner: AI
+    risk: medium
+    priority: P1
+    approval_required: "confirmed"
+    verification_required:
+      - "npm test"
+      - "npm run build"
+      - "git diff --check"
+
+  - id: TASK-DAILY-006
+    title: "发布 v1.3.0 GitHub Release"
+    status: in_progress
+    owner: AI
+    risk: high
+    priority: P0
+    approval_required: "user-approved-2026-04-23"
+    affected_components:
+      - "package.json"
+      - "package-lock.json"
+      - "CHANGELOG.md"
+      - "GitHub tag"
+      - "GitHub Release"
+      - "auto-update metadata"
+    requirement_refs:
+      - "REQ-DAILY-001"
+      - "REQ-REVIEW-001"
+      - "REQ-PUBLISH-001"
+      - "REQ-PUBLISH-002"
+    verification_required:
+      - "npm test"
+      - "npm run build"
+      - "git diff --check"
+      - "GitHub Actions release workflow"
+      - "GitHub Release assets and body check"

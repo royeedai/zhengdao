@@ -25,6 +25,8 @@ import BookOverviewModal from './BookOverviewModal'
 import ConsistencyCheckModal from './ConsistencyCheckModal'
 import AiSettingsModal from './AiSettingsModal'
 import AppSettingsModal from './AppSettingsModal'
+import ChapterReviewModal from './ChapterReviewModal'
+import PublishCheckModal from './PublishCheckModal'
 
 function renderModal(type: ModalType) {
   switch (type) {
@@ -53,6 +55,8 @@ function renderModal(type: ModalType) {
     case 'consistencyCheck': return <ConsistencyCheckModal />
     case 'aiSettings': return <AiSettingsModal />
     case 'appSettings': return <AppSettingsModal />
+    case 'chapterReview': return <ChapterReviewModal />
+    case 'publishCheck': return <PublishCheckModal />
     default: return null
   }
 }

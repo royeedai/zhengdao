@@ -16,13 +16,22 @@ export default function BlackRoomMode() {
 
   const persistChapter = useCallback(
     async (chapterId: number, html: string, wordCount: number) => {
-      await updateChapterContent(chapterId, html, wordCount)
+      useUIStore.getState().markChapterSaving(chapterId)
+      try {
+        await updateChapterContent(chapterId, html, wordCount)
+      } catch (error) {
+        useUIStore
+          .getState()
+          .markChapterSaveError(chapterId, error instanceof Error ? error.message : '小黑屋保存失败')
+        throw error
+      }
       lastSavedRef.current = html
       try {
         localStorage.removeItem(`draft_${chapterId}`)
       } catch {
         return
       }
+      useUIStore.getState().markChapterSaved(chapterId)
     },
     [updateChapterContent]
   )
@@ -41,6 +50,7 @@ export default function BlackRoomMode() {
     onUpdate: ({ editor: e }) => {
       if (!currentChapter) return
       const html = e.getHTML()
+      useUIStore.getState().markChapterDirty(currentChapter.id)
       try {
         localStorage.setItem(`draft_${currentChapter.id}`, html)
       } catch {
@@ -52,7 +62,11 @@ export default function BlackRoomMode() {
         if (useChapterStore.getState().currentChapter?.id !== scheduledChapterId) return
         const text = e.getText()
         const wordCount = text.replace(/\s/g, '').length
-        await persistChapter(scheduledChapterId, html, wordCount)
+        await persistChapter(scheduledChapterId, html, wordCount).catch((error) => {
+          useUIStore
+            .getState()
+            .markChapterSaveError(scheduledChapterId, error instanceof Error ? error.message : '小黑屋自动保存失败')
+        })
       }, 800)
     }
   })

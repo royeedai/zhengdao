@@ -1,4 +1,5 @@
 import { Document, Packer, Paragraph, HeadingLevel, TextRun, TableOfContents, StyleLevel } from 'docx'
+import { htmlToPublishText } from './publish-check'
 
 interface ExportChapter {
   title: string
@@ -7,9 +8,7 @@ interface ExportChapter {
 }
 
 function htmlToPlainLines(html: string): string[] {
-  const div = document.createElement('div')
-  div.innerHTML = html || ''
-  const text = div.innerText || div.textContent || ''
+  const text = htmlToPublishText(html)
   return text.split('\n').filter((l) => l.trim())
 }
 
@@ -89,6 +88,6 @@ export async function generateDocx(
     sections: [{ children }]
   })
 
-  const buffer = await Packer.toBuffer(doc)
-  return new Uint8Array(buffer)
+  const blob = await Packer.toBlob(doc)
+  return new Uint8Array(await blob.arrayBuffer())
 }

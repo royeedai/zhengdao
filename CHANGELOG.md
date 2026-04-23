@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 The project follows Semantic Versioning for release numbers. Release entries use a simple `Added / Changed / Fixed / Docs / Release` structure so the app package, Git tag, GitHub Release and changelog can stay aligned.
 
+## v1.3.0 - 2026-04-23
+
+### Release
+
+- Publish the trusted daily writing workbench release after `v1.2.5`, including system settings IA cleanup and release-path native module hardening.
+
+### Added
+
+- Add a workspace daily status bar for today's word count, target gap, writing streak, save state, latest snapshot, local backup, cloud backup and publish readiness.
+- Add a chapter review desk with a fixed six-section report covering plot progress, character consistency, foreshadowing, reader-risk points, pacing and actionable revisions.
+- Add a platform-neutral publish check package for current-chapter and full-book checks, plain-text preview, copy-to-clipboard and TXT / DOCX / Markdown export.
+- Add an Application Settings AI global accounts tab for OpenAI-compatible accounts, Gemini API Key, Gemini CLI, Ollama and custom-compatible providers.
+
+### Changed
+
+- Move theme, Google account / cloud sync, AI global accounts, updates and about information into Application Settings.
+- Remove scattered title-bar system controls so the workspace title bar keeps only workspace actions plus one Application Settings entry.
+- Keep project AI settings focused on work-level AI profiles and capability cards while global account management lives at the app level.
+- Add `predev` and `pretest` native rebuild hooks so Electron startup and Node-based tests use the correct `better-sqlite3` ABI.
+
+### Fixed
+
+- Resolve system theme handling so the app writes resolved light / dark theme tokens instead of invalid `data-theme="system"`.
+- Fix publish-package export failures for user-selected save paths and preserve paragraphs in TXT / DOCX / Markdown output.
+- Route update prompts into Application Settings -> Updates and About.
+
+### Docs
+
+- Add v1.3 daily workbench mission, design, tasks, verification, release plan and risk register artifacts.
+- Record release guards for publish assets, update metadata and exposed-token rotation.
+
 ## v1.2.5 - 2026-04-23
 
 ### Release

@@ -8,7 +8,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Mention from '@tiptap/extension-mention'
 import tippy from 'tippy.js'
-import { Activity, ChevronDown, Crosshair, History, Palette, Search, Sparkles, X } from 'lucide-react'
+import { Crosshair, History, Palette, Search, Sparkles, X } from 'lucide-react'
 import { useChapterStore } from '@/stores/chapter-store'
 import { useCharacterStore } from '@/stores/character-store'
 import { useUIStore } from '@/stores/ui-store'
@@ -31,6 +31,7 @@ import { TextReplaceExtension } from '@/components/editor/TextReplace'
 import { collectCharacterIdsFromContent } from '@/utils/character-association'
 import { setActiveEditor } from '@/components/editor/active-editor'
 import { buildAiAssistantSelectionSnapshot } from '@/components/editor/ai-selection'
+import { getLocalDateKey } from '@/utils/daily-workbench'
 import MentionList from './MentionList'
 import type { MentionListRef } from './MentionList'
 
@@ -136,8 +137,6 @@ export default function EditorArea() {
   const { currentChapter, volumes, updateChapterContent, updateChapterSummary, getTotalWords, getCurrentChapterNumber } =
     useChapterStore()
   const {
-    bottomPanelOpen,
-    toggleBottomPanel,
     openModal,
     focusMode,
     toggleFocusMode,
@@ -190,12 +189,20 @@ export default function EditorArea() {
       editorInstance: Editor | null,
       postSave: PostSave
     ) => {
+      useUIStore.getState().markChapterSaving(chapterId)
       const delta = wordCount - prevWordCountRef.current
 
-      await updateChapterContent(chapterId, html, wordCount)
+      try {
+        await updateChapterContent(chapterId, html, wordCount)
+      } catch (error) {
+        useUIStore
+          .getState()
+          .markChapterSaveError(chapterId, error instanceof Error ? error.message : '保存失败')
+        throw error
+      }
 
       if (delta > 0) {
-        const today = new Date().toISOString().split('T')[0]
+        const today = getLocalDateKey()
         const stats = (await window.api.getDailyStats(bookId, today)) as { word_count?: number }
         await window.api.updateDailyStats(bookId, today, (stats?.word_count ?? 0) + delta)
         await refreshDailyStats()
@@ -212,6 +219,7 @@ export default function EditorArea() {
       setSavedAt(
         new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
       )
+      useUIStore.getState().markChapterSaved(chapterId)
 
       if (postSave === 'syncOnly' || postSave === 'full') {
         if (!editorInstance) return
@@ -355,6 +363,7 @@ export default function EditorArea() {
       isTypingRef.current = true
       if (!currentChapter) return
       const html = e.getHTML()
+      useUIStore.getState().markChapterDirty(currentChapter.id)
       try {
         localStorage.setItem(`draft_${currentChapter.id}`, html)
       } catch {
@@ -366,7 +375,11 @@ export default function EditorArea() {
         if (useChapterStore.getState().currentChapter?.id !== scheduledChapterId) return
         const text = e.getText()
         const wordCount = text.replace(/\s/g, '').length
-        await persistChapterRef.current(scheduledChapterId, html, wordCount, e, 'full')
+        await persistChapterRef.current(scheduledChapterId, html, wordCount, e, 'full').catch((error) => {
+          useUIStore
+            .getState()
+            .markChapterSaveError(scheduledChapterId, error instanceof Error ? error.message : '自动保存失败')
+        })
       }, 800)
     }
   })
@@ -429,6 +442,7 @@ export default function EditorArea() {
       }
       prevWordCountRef.current = ch.word_count
       prevChapterIdRef.current = ch.id
+      useUIStore.getState().markChapterSaved(ch.id, ch.updated_at)
     }
 
     if (!shouldFlush) {
@@ -447,7 +461,11 @@ export default function EditorArea() {
       const html = editor.getHTML()
       const wc = editor.getText().replace(/\s/g, '').length
       if (html !== lastSavedRef.current) {
-        await persistChapterRef.current(prevId!, html, wc, editor, 'syncOnly')
+        await persistChapterRef.current(prevId!, html, wc, editor, 'syncOnly').catch((error) => {
+          useUIStore
+            .getState()
+            .markChapterSaveError(prevId!, error instanceof Error ? error.message : '切换章节前保存失败')
+        })
       }
 
       if (cancelled) return
@@ -567,7 +585,11 @@ export default function EditorArea() {
           const html = editor.getHTML()
           const text = editor.getText()
           const wc = text.replace(/\s/g, '').length
-          void persistChapterRef.current(currentChapter.id, html, wc, editor, 'none')
+          void persistChapterRef.current(currentChapter.id, html, wc, editor, 'none').catch((error) => {
+            useUIStore
+              .getState()
+              .markChapterSaveError(currentChapter.id, error instanceof Error ? error.message : '手动保存失败')
+          })
         }
       }
     }
@@ -785,21 +807,6 @@ export default function EditorArea() {
           </button>
           <span>{savedAt ? `已保存 ${savedAt}` : '未保存'}</span>
         </div>
-      </div>
-
-      <div className="absolute bottom-10 right-6 z-20">
-        <button
-          type="button"
-          onClick={toggleBottomPanel}
-          className={`bottom-panel-trigger p-3 rounded-full shadow-xl flex items-center transition-all duration-300 border ${
-            bottomPanelOpen
-              ? 'bg-[var(--surface-elevated)] border-[var(--border-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
-              : 'bg-[var(--accent-primary)] border-[var(--accent-border)] text-[var(--accent-contrast)] hover:bg-[var(--accent-secondary)] shadow-[0_10px_24px_rgba(63,111,159,0.18)]'
-          }`}
-          title="呼出创世沙盘 (Ctrl+`)"
-        >
-          {bottomPanelOpen ? <ChevronDown size={20} /> : <Activity size={20} />}
-        </button>
       </div>
 
       {contextMenu && (

@@ -48,6 +48,13 @@
 - **来源**：用户对 v1.2.3 Release 正文缺失更新日志的反馈。
 - **日期**：2026-04-22
 
+#### PF-002: 更新日志与 Release notes 必须使用中文
+
+- **偏好**：后续 `CHANGELOG.md` 版本条目、GitHub Release 正文和发布收口说明中的更新日志应使用中文，不再默认生成英文 Added / Changed / Fixed 文案。
+- **适用范围**：release prepare、CHANGELOG、GitHub Release notes、发布后复核。
+- **来源**：用户反馈“更新日志要中文版，下次记住一下。”
+- **日期**：2026-04-23
+
 ### 4. 已知坑点
 
 #### PT-001: Electron native rebuild 容易被 node-pty 扫描污染
@@ -83,6 +90,7 @@
 | 契约 | 真理源 | 消费方 | 约束 |
 |---|---|---|---|
 | Release 正文 | `CHANGELOG.md` + release scripts | GitHub Releases、用户下载页 | 正式 Release 不能缺更新日志与资产说明。 |
+| Release 语言 | `CHANGELOG.md` + release scripts | GitHub Releases、用户下载页 | 更新日志与 Release notes 必须使用中文。 |
 | Electron ABI smoke | `scripts/release/rebuild-electron-native.mjs` / `verify-electron-native.mjs` | release workflow、ship 验证 | 打包前后必须区分 Node ABI 与 Electron ABI。 |
 | Builder rebuild policy | `electron-builder.config.ts` | GitHub Actions release job | 不允许 electron-builder 再次扫描并 rebuild 非目标 native 依赖。 |
 

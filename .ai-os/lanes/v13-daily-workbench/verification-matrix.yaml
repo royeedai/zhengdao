@@ -1,0 +1,45 @@
+version: 1
+baseline_id: "CR-20260423-v13-daily-workbench"
+guards:
+  - id: "daily-status-hidden-or-ambiguous"
+    failure_mode: "作者无法区分代码运行、正文保存、外部备份三种状态"
+    verification:
+      - "unit test: daily workbench status model"
+      - "manual smoke: saved / unsaved / no backup / backup failed"
+    evidence:
+      - "src/renderer/src/utils/__tests__/daily-workbench.test.ts"
+  - id: "ai-review-writes-without-confirmation"
+    failure_mode: "AI 审稿结果直接写入正文或资产，绕过用户确认"
+    verification:
+      - "unit test: review draft routing"
+      - "manual smoke: accept / dismiss draft"
+    evidence:
+      - "src/renderer/src/utils/__tests__/chapter-review.test.ts"
+  - id: "publish-check-needs-platform-account"
+    failure_mode: "发布前检查依赖平台账号或改变同步语义"
+    verification:
+      - "unit test: platform-neutral publish package"
+      - "manual smoke: offline copy/export"
+    evidence:
+      - "src/renderer/src/utils/__tests__/publish-check.test.ts"
+      - ".ai-os/lanes/v13-daily-workbench/evals/verification.md"
+  - id: "publish-export-rejects-user-selected-path"
+    failure_mode: "用户通过保存对话框选择的常见目录被主进程写入白名单误拒，导致发布包导出失败"
+    verification:
+      - "manual smoke: save TXT/DOCX/Markdown to /tmp"
+      - "static validation: npm test and npm run build"
+    evidence:
+      - "src/main/ipc-handlers.ts"
+      - "src/renderer/src/components/modals/PublishCheckModal.tsx"
+      - "src/renderer/src/utils/export-docx.ts"
+      - ".ai-os/lanes/v13-daily-workbench/evals/verification.md"
+  - id: "release-published-without-assets-or-update-metadata"
+    failure_mode: "GitHub Release 已创建但缺少安装包、blockmap、latest.yml 或 latest-mac.yml，导致用户下载和自动更新不可用"
+    verification:
+      - "GitHub Actions release workflow success"
+      - "GitHub Release API asset and body check"
+      - "static validation: npm test, npm run build, git diff --check"
+    evidence:
+      - ".github/workflows/release.yml"
+      - "CHANGELOG.md"
+      - ".ai-os/lanes/v13-daily-workbench/release-plan.md"

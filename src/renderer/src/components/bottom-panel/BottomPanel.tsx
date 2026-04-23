@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { Activity, Plus, Trash2 } from 'lucide-react'
+import { Activity, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import { useUIStore } from '@/stores/ui-store'
 import { useBookStore } from '@/stores/book-store'
 import { usePlotStore } from '@/stores/plot-store'
@@ -12,7 +12,7 @@ const INVISIBLE_GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAA
 const NEW_PLOTLINE_COLORS = ['#10b981', '#3b82f6', '#a855f7', '#f59e0b', '#ec4899', '#14b8a6']
 
 export default function BottomPanel() {
-  const { bottomPanelOpen, bottomPanelHeight, setBottomPanelHeight, pushModal } = useUIStore()
+  const { bottomPanelOpen, bottomPanelHeight, setBottomPanelHeight, setBottomPanelOpen, pushModal } = useUIStore()
   const bookId = useBookStore((s) => s.currentBookId)
   const plotNodes = usePlotStore((s) => s.plotNodes)
   const plotlines = usePlotStore((s) => s.plotlines)
@@ -169,12 +169,42 @@ export default function BottomPanel() {
     }
   }, [setBottomPanelHeight])
 
+  if (!bottomPanelOpen) {
+    return (
+      <div className="bottom-panel-entry h-9 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] shrink-0 shadow-sm">
+        <button
+          type="button"
+          onClick={() => setBottomPanelOpen(true)}
+          aria-label="展开创世沙盘"
+          aria-expanded={false}
+          className="flex h-full w-full items-center justify-between gap-3 px-4 text-xs text-[var(--text-secondary)] transition hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] no-drag"
+          title="展开创世沙盘 (Ctrl+`)"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <Activity size={14} className="shrink-0 text-[var(--accent-secondary)]" />
+            <span className="font-semibold text-[var(--text-primary)]">创世沙盘</span>
+            <span className="hidden sm:inline text-[10px] text-[var(--text-muted)]">
+              {plotNodes.length} 节点
+            </span>
+            {poisonStatus.triggered && (
+              <span className="rounded-full border border-[var(--danger-border)] bg-[var(--danger-surface)] px-2 py-0.5 text-[10px] font-semibold text-[var(--danger-primary)]">
+                毒点 Ch {poisonStatus.startCh}-{poisonStatus.endCh}
+              </span>
+            )}
+          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            <span className="hidden md:inline text-[10px] text-[var(--text-muted)]">Ctrl+`</span>
+            <ChevronUp size={15} />
+          </span>
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div
-      className={`border-t border-[var(--border-primary)] bg-[var(--bg-primary)] shrink-0 flex flex-col transition-all duration-300 ease-in-out ${
-        bottomPanelOpen ? 'opacity-100 z-20' : 'h-0 opacity-0 overflow-hidden border-t-0 z-0'
-      }`}
-      style={bottomPanelOpen ? { height: `${bottomPanelHeight}px` } : undefined}
+      className="bottom-panel-entry border-t border-[var(--border-primary)] bg-[var(--bg-primary)] shrink-0 flex flex-col transition-all duration-300 ease-in-out opacity-100 z-20"
+      style={{ height: `${bottomPanelHeight}px` }}
     >
       <button
         type="button"
@@ -190,9 +220,19 @@ export default function BottomPanel() {
         <span className="h-1 w-14 rounded-full bg-[var(--border-secondary)]" />
       </button>
       <div className="h-10 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] flex items-center px-6 justify-between shrink-0 shadow-sm">
-        <div className="flex items-center space-x-2 text-[var(--accent-secondary)] font-bold text-sm tracking-wide">
-          <Activity size={16} />
-          <span>创世沙盘 &amp; 爽点心电图</span>
+        <div className="flex min-w-0 items-center gap-2 text-[var(--accent-secondary)] font-bold text-sm tracking-wide">
+          <button
+            type="button"
+            onClick={() => setBottomPanelOpen(false)}
+            aria-label="折叠创世沙盘"
+            aria-expanded={true}
+            className="p-1 rounded text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] transition"
+            title="折叠创世沙盘 (Ctrl+`)"
+          >
+            <ChevronDown size={14} />
+          </button>
+          <Activity size={16} className="shrink-0" />
+          <span className="truncate">创世沙盘 &amp; 爽点心电图</span>
         </div>
         <div className="flex space-x-3 items-center">
           <div className="flex items-center text-[10px] text-[var(--text-secondary)] mr-4 space-x-3">

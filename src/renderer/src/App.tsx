@@ -8,6 +8,7 @@ import WorkspaceLayout from '@/components/layout/WorkspaceLayout'
 import ToastContainer from '@/components/shared/ToastContainer'
 import UpdateBootstrap from '@/components/shared/UpdateBootstrap'
 import ModalManager from '@/components/modals/ModalManager'
+import { resolveThemeMode } from '@/utils/themes'
 import { APP_DISPLAY_NAME } from '../../shared/window-shell'
 
 export default function App(): JSX.Element {
@@ -21,7 +22,13 @@ export default function App(): JSX.Element {
   }, [])
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme
+    const prefersDark =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+    const resolved = resolveThemeMode(theme, prefersDark)
+    document.documentElement.dataset.theme = resolved
+    document.documentElement.dataset.themeMode = theme
+    document.documentElement.style.colorScheme = resolved === 'light' ? 'light' : 'dark'
   }, [theme])
 
   useEffect(() => {

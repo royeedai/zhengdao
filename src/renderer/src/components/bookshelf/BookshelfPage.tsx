@@ -60,8 +60,8 @@ export default function BookshelfPage() {
             type="button"
             onClick={() => openModal('appSettings')}
             className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded transition"
-            aria-label="应用设置 / 关于"
-            title="应用设置 / 关于"
+            aria-label="应用设置"
+            title="应用设置"
           >
             <Info size={18} />
           </button>

@@ -3,7 +3,8 @@ import {
   chooseDefaultRightPanelTab,
   clampWorkspacePanelWidth,
   getDefaultWorkspacePanelWidth,
-  isRightPanelTab
+  isRightPanelTab,
+  resolveDefaultBottomPanelOpen
 } from '../workspace-layout'
 
 describe('workspace panel layout', () => {
@@ -53,5 +54,13 @@ describe('workspace panel layout', () => {
         currentChapterCharacterCount: 4
       })
     ).toBe('notes')
+  })
+
+  it('opens the bottom sandbox by default while respecting stored user preference', () => {
+    expect(resolveDefaultBottomPanelOpen(null)).toBe(true)
+    expect(resolveDefaultBottomPanelOpen(undefined)).toBe(true)
+    expect(resolveDefaultBottomPanelOpen('')).toBe(true)
+    expect(resolveDefaultBottomPanelOpen('true')).toBe(true)
+    expect(resolveDefaultBottomPanelOpen('false')).toBe(false)
   })
 })

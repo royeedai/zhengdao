@@ -375,20 +375,29 @@ export default function ProjectSettingsModal() {
               <div className="rounded-lg border border-[var(--info-border)] bg-[var(--info-surface)] p-3 text-xs text-[var(--text-primary)]">
                 <div className="font-bold text-[var(--info-primary)]">AI 配置已拆分</div>
                 <p className="mt-1 text-[var(--text-secondary)]">
-                  账号、API Key、Gemini CLI 与 Ollama 属于全局账号；提示词、上下文、写作禁区和能力卡在“AI 能力与作品配置”中管理。
+                  账号、API Key、Gemini CLI 与 Ollama 属于系统级设置；提示词、上下文、写作禁区和能力卡在“AI 能力与作品配置”中管理。
                 </p>
-                <button
-                  type="button"
-                  onClick={() => openModal('aiSettings')}
-                  className="mt-2 rounded border border-[var(--info-border)] px-3 py-1.5 text-xs font-semibold text-[var(--info-primary)] hover:bg-[var(--info-surface)]"
-                >
-                  打开 AI 能力与作品配置
-                </button>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openModal('appSettings', { tab: 'aiAccounts' })}
+                    className="rounded border border-[var(--info-border)] px-3 py-1.5 text-xs font-semibold text-[var(--info-primary)] hover:bg-[var(--info-surface)]"
+                  >
+                    打开 AI 全局账号
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openModal('aiSettings')}
+                    className="rounded border border-[var(--info-border)] px-3 py-1.5 text-xs font-semibold text-[var(--info-primary)] hover:bg-[var(--info-surface)]"
+                  >
+                    打开 AI 能力与作品配置
+                  </button>
+                </div>
               </div>
               <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3 text-xs text-[var(--text-secondary)]">
                 <div className="font-bold text-[var(--text-primary)]">旧项目级 AI Provider 表单已退场</div>
                 <p className="mt-1">
-                  当前作品不再单独保存 provider、API Key、Gemini CLI 登录或 Ollama 连接。上述能力统一在“AI 能力与作品配置 / 全局账号”中维护，这里只保留作品内的非账号设置。
+                  当前作品不再单独保存 provider、API Key、Gemini CLI 登录或 Ollama 连接。上述能力统一在“应用设置 / AI 全局账号”中维护，这里只保留作品内的非账号设置。
                 </p>
               </div>
               <div>

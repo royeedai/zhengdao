@@ -11,3 +11,8 @@ guards:
     verification:
       - "unit test: layout clamp/default placement"
       - "manual visual smoke at 1024/1440/1920"
+  - id: "bottom-sandbox-entry-hidden-without-chapter"
+    failure_mode: "未选择章节时创世沙盘入口不可见，用户误以为沙盘必须依赖文章"
+    verification:
+      - "unit test: default bottom panel open resolution"
+      - "manual visual smoke: open book without selected chapter"

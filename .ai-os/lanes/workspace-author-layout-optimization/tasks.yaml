@@ -67,3 +67,21 @@ tasks:
     verification_required:
       - "npm run build"
       - "manual visual checklist"
+
+  - id: TASK-LAYOUT-005
+    title: "创世沙盘默认展示并改为固定底栏入口"
+    status: done
+    owner: AI
+    risk: medium
+    priority: P1
+    approval_required: "confirmed"
+    affected_components:
+      - "ui-store"
+      - "BottomPanel"
+      - "EditorArea"
+      - "OnboardingTour"
+    verification_required:
+      - "workspace layout unit tests"
+      - "npm test"
+      - "npm run build"
+      - "git diff --check"

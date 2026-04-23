@@ -309,6 +309,12 @@ export default function AiAssistantDock() {
   }, [aiAssistantSkillKey])
 
   useEffect(() => {
+    if (!aiAssistantOpen || !bookId) return
+    void refreshConfig()
+    void refreshConversation(conversationId)
+  }, [aiAssistantOpen, bookId])
+
+  useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages.length, drafts.length, loading])
 

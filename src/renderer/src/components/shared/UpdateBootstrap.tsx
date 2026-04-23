@@ -20,7 +20,7 @@ export default function UpdateBootstrap() {
 
       if (shouldAutoOpenUpdateDialog(snapshot, promptedVersionRef.current)) {
         promptedVersionRef.current = snapshot.version
-        useUIStore.getState().openModal('appSettings')
+        useUIStore.getState().openModal('appSettings', { tab: 'updates' })
         try {
           await window.api.setAppState(UPDATE_PROMPTED_VERSION_KEY, snapshot.version!)
         } catch (error) {

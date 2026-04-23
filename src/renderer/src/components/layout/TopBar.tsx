@@ -9,10 +9,7 @@ import {
   Settings,
   ArrowUpRight,
   HelpCircle,
-  ChevronDown,
   Cloud,
-  Palette,
-  LogIn,
   ArchiveRestore,
   BarChart3,
   LayoutDashboard,
@@ -29,7 +26,6 @@ import { useWritingSession } from '@/hooks/useWritingSession'
 import { useWritingStreak } from '@/hooks/useWritingStreak'
 import PomodoroTimer from '@/components/shared/PomodoroTimer'
 import AppBrand from '@/components/shared/AppBrand'
-import { THEME_IDS, THEME_LABELS } from '@/utils/themes'
 import { useAuthStore } from '@/stores/auth-store'
 import { getCurrentTitlebarSafeArea } from '@/utils/window-shell'
 
@@ -40,17 +36,11 @@ export default function TopBar() {
     toggleLeftPanel,
     toggleRightPanel,
     openModal,
-    theme,
-    setTheme,
     topbarToolsCollapsed,
     toggleTopbarToolsCollapsed
   } = useUIStore()
   const { books, currentBookId, closeBook } = useBookStore()
-  const [themeMenuOpen, setThemeMenuOpen] = useState(false)
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [toolMenuOpen, setToolMenuOpen] = useState(false)
-  const themeMenuRef = useRef<HTMLDivElement>(null)
-  const accountMenuRef = useRef<HTMLDivElement>(null)
   const toolMenuRef = useRef<HTMLDivElement>(null)
 
   const user = useAuthStore((s) => s.user)
@@ -58,7 +48,6 @@ export default function TopBar() {
   const lastBookSyncAt = useAuthStore((s) => s.lastBookSyncAt)
   const loadUser = useAuthStore((s) => s.loadUser)
   const loadBookSyncMeta = useAuthStore((s) => s.loadBookSyncMeta)
-  const logout = useAuthStore((s) => s.logout)
 
   useEffect(() => {
     void loadUser()
@@ -69,16 +58,14 @@ export default function TopBar() {
   }, [currentBookId, loadBookSyncMeta])
 
   useEffect(() => {
-    if (!themeMenuOpen && !accountMenuOpen && !toolMenuOpen) return
+    if (!toolMenuOpen) return
     const close = (e: MouseEvent) => {
       const t = e.target as Node
-      if (themeMenuOpen && !themeMenuRef.current?.contains(t)) setThemeMenuOpen(false)
-      if (accountMenuOpen && !accountMenuRef.current?.contains(t)) setAccountMenuOpen(false)
       if (toolMenuOpen && !toolMenuRef.current?.contains(t)) setToolMenuOpen(false)
     }
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
-  }, [themeMenuOpen, accountMenuOpen, toolMenuOpen])
+  }, [toolMenuOpen])
   const config = useConfigStore((s) => s.config)
   const warningCount = useForeshadowStore((s) => s.getWarningCount())
   const currentBook = books.find((b) => b.id === currentBookId)
@@ -101,12 +88,6 @@ export default function TopBar() {
       : lastBookSyncAt
         ? `已备份到云端（${lastBookSyncAt.slice(0, 19).replace('T', ' ')}）`
         : '已登录，尚未备份当前书到云端'
-
-  const applyTheme = (id: string) => {
-    setTheme(id)
-    setThemeMenuOpen(false)
-    setAccountMenuOpen(false)
-  }
 
   const closeToolsAndOpenModal = (modal: Parameters<typeof openModal>[0]) => {
     setToolMenuOpen(false)
@@ -198,9 +179,9 @@ export default function TopBar() {
           <button
             type="button"
             onClick={() => openModal('appSettings')}
-            aria-label="应用设置 / 关于"
+            aria-label="应用设置"
             className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] rounded transition shrink-0 min-h-8 min-w-8"
-            title="应用设置 / 关于"
+            title="应用设置"
           >
             <Info size={16} />
           </button>
@@ -282,7 +263,7 @@ export default function TopBar() {
               onClick={() => closeToolsAndOpenModal('appSettings')}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
             >
-              <Info size={14} /> 应用设置 / 关于
+              <Info size={14} /> 应用设置
             </button>
             <button
               role="menuitem"
@@ -351,129 +332,6 @@ export default function TopBar() {
         >
           <Cloud size={18} className={cloudIconClass} strokeWidth={2} />
         </span>
-        {!user && (
-          <div className="relative no-drag" ref={themeMenuRef}>
-            <button
-              type="button"
-              aria-label="选择主题"
-              aria-expanded={themeMenuOpen}
-              aria-haspopup="menu"
-              onClick={() => {
-                setAccountMenuOpen(false)
-                setThemeMenuOpen((o) => !o)
-              }}
-              className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-primary)] rounded transition min-h-8 min-w-8"
-              title="主题外观"
-            >
-              <Palette size={16} />
-            </button>
-            {themeMenuOpen && (
-              <div
-                role="menu"
-                className="absolute right-0 top-full z-50 mt-1 min-w-[168px] rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] py-1 shadow-xl"
-              >
-                <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                  主题
-                </div>
-                {THEME_IDS.map((id) => (
-                  <button
-                    key={id}
-                    role="menuitem"
-                    type="button"
-                    onClick={() => applyTheme(id)}
-                    className={`flex w-full items-center px-3 py-2 text-left text-xs transition ${
-                      theme === id
-                        ? 'bg-[var(--accent-primary)]/15 text-[var(--accent-primary)] font-medium'
-                        : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
-                    }`}
-                  >
-                    {THEME_LABELS[id]}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        {!user && (
-          <button
-            type="button"
-            onClick={() => openModal('login')}
-            title="登录并启用云备份"
-            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border border-[var(--accent-border)] text-[var(--accent-secondary)] hover:bg-[var(--accent-surface)] transition"
-          >
-            <LogIn size={14} />
-            登录
-          </button>
-        )}
-        {user && (
-          <div className="relative no-drag flex items-center gap-1 max-w-[200px]" ref={accountMenuRef}>
-            <button
-              type="button"
-              aria-label="账号与主题"
-              aria-expanded={accountMenuOpen}
-              aria-haspopup="menu"
-              onClick={() => {
-                setThemeMenuOpen(false)
-                setAccountMenuOpen((o) => !o)
-              }}
-              className="flex items-center gap-1 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)] min-w-0"
-            >
-              {user.picture ? (
-                <img
-                  src={user.picture}
-                  alt=""
-                  className="w-7 h-7 rounded-full shrink-0 object-cover border border-[var(--border-primary)]"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="w-7 h-7 rounded-full border border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)] flex items-center justify-center text-xs font-bold shadow-md shrink-0">
-                  {(user.name || user.email || '?').charAt(0)}
-                </div>
-              )}
-              <span className="text-xs font-medium text-[var(--text-primary)] truncate max-w-[96px] hidden sm:inline">
-                {user.name || user.email || 'Google'}
-              </span>
-              <ChevronDown size={14} className="text-[var(--text-muted)] shrink-0" />
-            </button>
-            {accountMenuOpen && (
-              <div
-                role="menu"
-                className="absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] py-1 shadow-xl"
-              >
-                <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                  主题
-                </div>
-                {THEME_IDS.map((id) => (
-                  <button
-                    key={id}
-                    role="menuitem"
-                    type="button"
-                    onClick={() => applyTheme(id)}
-                    className={`flex w-full items-center px-3 py-2 text-left text-xs transition ${
-                      theme === id
-                        ? 'bg-[var(--accent-primary)]/15 text-[var(--accent-primary)] font-medium'
-                        : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
-                    }`}
-                  >
-                    {THEME_LABELS[id]}
-                  </button>
-                ))}
-                <div className="my-1 border-t border-[var(--border-primary)]" />
-                <button
-                  role="menuitem"
-                  type="button"
-                  onClick={() => {
-                    void logout()
-                    setAccountMenuOpen(false)
-                  }}
-                  className="flex w-full items-center px-3 py-2 text-left text-xs text-[var(--danger-primary)] hover:bg-[var(--danger-surface)] transition"
-                >
-                  退出 Google 登录
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   )

@@ -16,6 +16,13 @@ impact_rules:
       - "npm run build"
       - "git diff --check"
       - "GitHub Release body and asset check"
+  - when: "system-settings-ia-change"
+    run:
+      - "npm test"
+      - "npm run build"
+      - "code review: AppSettings appearance/account/update tabs"
+      - "code review: TopBar has no theme/account settings menu"
+      - "code review: AI global accounts are under AppSettings"
 
 failure_modes:
   - id: FM-DEF-001
@@ -42,6 +49,22 @@ failure_modes:
     scenario: "GitHub Release contains assets but no changelog or release notes"
     expected: "Release body contains changelog, package list, update metadata, notes, validation state, and rollback guidance"
     guard: "scripts/release/update-github-release-notes.mjs plus remote Release body check"
+  - id: FM-DEF-007
+    scenario: "Theme mode is persisted as system but renderer writes data-theme='system'"
+    expected: "Document data-theme always receives the resolved light/dark theme while data-theme-mode stores the user choice"
+    guard: "src/renderer/src/App.tsx review plus npm run build"
+  - id: FM-DEF-008
+    scenario: "Update auto-open lands on appearance settings instead of update status"
+    expected: "Updater opens AppSettings with the updates tab selected"
+    guard: "UpdateBootstrap opens appSettings with tab=updates"
+  - id: FM-DEF-009
+    scenario: "Removing titlebar account menu makes Google login unreachable"
+    expected: "AppSettings account tab supports login, logout, sync toggle, manual upload and cloud list refresh"
+    guard: "AppSettings account tab review plus npm run build"
+  - id: FM-DEF-010
+    scenario: "AI global account management remains hidden inside project-level AI configuration"
+    expected: "AppSettings has an AI global account tab, while AiSettings keeps only project profile and skills"
+    guard: "AppSettings / AiSettings tab review plus npm run build"
 
 guards:
   - ".ai-os/lanes/default/evals/ai-os-v9-lane-normalization.md"
