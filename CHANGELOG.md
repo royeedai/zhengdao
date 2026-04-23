@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 The project follows Semantic Versioning for release numbers. Release entries use a simple `Added / Changed / Fixed / Docs / Release` structure so the app package, Git tag, GitHub Release and changelog can stay aligned.
 
+## v1.4.0 - 2026-04-23
+
+### Release
+
+- Publish the settings/workspace polish release after `v1.3.1`.
+
+### Added
+
+- Add a system-level genre template library with seed templates, custom templates, copy/edit/delete support, and a configurable default template.
+- Add system default daily-goal settings plus per-work follow-system/custom daily-goal modes.
+- Add settings panels for genre templates, shortcut settings, backup/migration, and system daily-goal configuration.
+- Add shared note state, sandbox layout helpers, AI panel resize-layout guards, and migration coverage for the new settings model.
+
+### Changed
+
+- Split Application Settings and Work Settings so system configuration no longer lives inside project settings.
+- Update the new-book wizard and work settings to apply genre templates as snapshots rather than dynamic references.
+- Improve the workspace top bar, bottom sandbox rail, right-panel notes badge, AI dock resizing, and several legacy modals to use the current theme tokens.
+- Strengthen the renderer content-security policy by removing inline event handlers from the app shell.
+
+### Fixed
+
+- Preserve historical custom daily goals during migration while default 6000-word goals follow the system default.
+- Keep the first sandbox plot node visible and separate click/open behavior from drag updates.
+- Restore AI global-account status checks for draft and saved provider credentials.
+
+### Docs
+
+- Add the settings-workspace-polish lane artifacts, risk register, release plan, verification matrix, and related change records.
+- Record AI dock resize and bottom sandbox/topbar interaction guards in the relevant lane artifacts.
+
 ## v1.3.1 - 2026-04-23
 
 ### Release
