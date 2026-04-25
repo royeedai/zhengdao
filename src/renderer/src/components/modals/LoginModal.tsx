@@ -3,6 +3,7 @@ import { ArrowUpRight, BadgeCheck, Cloud, Coins, LogIn, X, Loader2, RefreshCw, U
 import { useUIStore } from '@/stores/ui-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { useBookStore } from '@/stores/book-store'
+import { getUserDisplayName, getUserTierLabel, hasUserDisplayName } from '@/utils/auth-display'
 
 export function AccountSyncSettings() {
   const user = useAuthStore((s) => s.user)
@@ -23,8 +24,10 @@ export function AccountSyncSettings() {
   const [cloudList, setCloudList] = useState<Array<{ id: string; name: string; modifiedTime: string }>>([])
   const [cloudLoading, setCloudLoading] = useState(false)
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
-  const displayName = user?.displayName || user?.email?.split('@')[0] || '证道用户'
-  const tierLabel = user?.role === 'admin' ? 'Admin' : user?.pro ? 'Pro' : user?.tier === 'team' ? 'Team' : 'Free'
+  const displayName = getUserDisplayName(user)
+  const hasDisplayName = hasUserDisplayName(user)
+  const tierLabel = getUserTierLabel(user)
+  const showFreeUpgradePrompt = user && tierLabel === 'Free'
 
   async function loadCloudFiles() {
     setCloudLoading(true)
@@ -110,7 +113,7 @@ export function AccountSyncSettings() {
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold text-[var(--text-primary)] truncate">{displayName}</div>
-            <div className="text-xs text-[var(--text-muted)] truncate">{user.email}</div>
+            {hasDisplayName ? <div className="text-xs text-[var(--text-muted)] truncate">{user.email}</div> : null}
             <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-secondary)]">
               <span className="inline-flex items-center gap-1 rounded border border-[var(--success-border)] px-1.5 py-0.5 text-[var(--success-primary)]">
                 <BadgeCheck size={12} />
@@ -125,7 +128,7 @@ export function AccountSyncSettings() {
         </div>
       )}
 
-      {user && !user.pro && user.role !== 'admin' && (
+      {showFreeUpgradePrompt && (
         <div className="rounded-lg border border-[var(--warning-border)] bg-[var(--warning-surface)] p-3 text-xs text-[var(--warning-primary)]">
           <div className="font-semibold">当前是 Free 账号</div>
           <div className="mt-1 text-[var(--text-secondary)]">兑换 CDK 后可开通 Pro、官网云备份和 AI 点数。</div>

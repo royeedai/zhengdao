@@ -35,6 +35,7 @@ import { useSettingsStore } from '@/stores/settings-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useUIStore } from '@/stores/ui-store'
 import { useUpdateStore } from '@/stores/update-store'
+import { getUserDisplayName, getUserTierLabel, hasUserDisplayName } from '@/utils/auth-display'
 import { buildManualUpdateMessage, shouldUseManualUpdate } from '@/utils/update-prompt'
 import { THEME_IDS, THEME_LABELS, THEME_TOKENS, resolveThemeMode, type ThemeId } from '@/utils/themes'
 import type { UpdateStatus } from '../../../../shared/update'
@@ -76,14 +77,6 @@ function isAppSettingsTab(value: unknown): value is AppSettingsTab {
   )
 }
 
-function getTierLabel(user: ReturnType<typeof useAuthStore.getState>['user']): string {
-  if (!user) return '未登录'
-  if (user.role === 'admin') return 'Admin'
-  if (user.pro) return 'Pro'
-  if (user.tier === 'team') return 'Team'
-  return 'Free'
-}
-
 const OVERVIEW_SETTING_CARDS: Array<{
   id: Exclude<AppSettingsTab, 'overview'>
   label: string
@@ -113,8 +106,9 @@ function AppSettingsOverview({
   const loadUser = useAuthStore((s) => s.loadUser)
   const login = useAuthStore((s) => s.login)
   const logout = useAuthStore((s) => s.logout)
-  const displayName = user?.displayName || user?.email?.split('@')[0] || '证道用户'
-  const tierLabel = getTierLabel(user)
+  const displayName = getUserDisplayName(user)
+  const hasDisplayName = hasUserDisplayName(user)
+  const tierLabel = getUserTierLabel(user)
 
   useEffect(() => {
     void loadUser()
@@ -146,9 +140,14 @@ function AppSettingsOverview({
       </div>
       <div className="min-w-0">
         <div className="text-sm font-semibold text-[var(--text-primary)]">{user ? displayName : '登录证道账号'}</div>
-        <div className="mt-1 truncate text-xs text-[var(--text-muted)]">
-          {user ? user.email : '登录后这里会显示账号、会员等级、点数和云备份入口。'}
-        </div>
+        {user && hasDisplayName ? (
+          <div className="mt-1 truncate text-xs text-[var(--text-muted)]">{user.email}</div>
+        ) : null}
+        {!user ? (
+          <div className="mt-1 truncate text-xs text-[var(--text-muted)]">
+            登录后这里会显示账号、会员等级、点数和云备份入口。
+          </div>
+        ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-secondary)]">
           <span className="inline-flex items-center gap-1 rounded border border-[var(--success-border)] px-1.5 py-0.5 text-[var(--success-primary)]">
             <BadgeCheck size={12} />

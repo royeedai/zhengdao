@@ -14,19 +14,12 @@ import {
 import { useAuthStore } from '@/stores/auth-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useUIStore } from '@/stores/ui-store'
+import { getUserDisplayName, getUserTierLabel, hasUserDisplayName } from '@/utils/auth-display'
 
 interface AccountSettingsMenuProps {
   className?: string
   buttonClassName?: string
   showTrash?: boolean
-}
-
-function getTierLabel(user: ReturnType<typeof useAuthStore.getState>['user']): string {
-  if (!user) return '未登录'
-  if (user.role === 'admin') return 'Admin'
-  if (user.pro) return 'Pro'
-  if (user.tier === 'team') return 'Team'
-  return 'Free'
 }
 
 export default function AccountSettingsMenu({
@@ -43,8 +36,9 @@ export default function AccountSettingsMenu({
   const logout = useAuthStore((s) => s.logout)
   const applyAuthUpdate = useAuthStore((s) => s.applyAuthUpdate)
   const openModal = useUIStore((s) => s.openModal)
-  const displayName = user?.displayName || user?.email?.split('@')[0] || '证道用户'
-  const tierLabel = getTierLabel(user)
+  const displayName = getUserDisplayName(user)
+  const hasDisplayName = hasUserDisplayName(user)
+  const tierLabel = getUserTierLabel(user)
 
   useEffect(() => {
     void loadUser()
@@ -100,9 +94,12 @@ export default function AccountSettingsMenu({
           <div className="truncate text-sm font-semibold text-[var(--text-primary)]">
             {user ? displayName : '未登录证道账号'}
           </div>
-          <div className="mt-0.5 truncate text-xs text-[var(--text-muted)]">
-            {user ? user.email : '登录后显示账号与云备份能力'}
-          </div>
+          {user && hasDisplayName ? (
+            <div className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{user.email}</div>
+          ) : null}
+          {!user ? (
+            <div className="mt-0.5 truncate text-xs text-[var(--text-muted)]">登录后显示账号与云备份能力</div>
+          ) : null}
         </div>
       </div>
       <div className="mt-3 flex items-center gap-2 text-[11px] text-[var(--text-secondary)]">
