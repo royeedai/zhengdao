@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 The project follows Semantic Versioning for release numbers. Release entries use a simple `Added / Changed / Fixed / Docs / Release` structure so the app package, Git tag, GitHub Release and changelog can stay aligned.
 
+## v1.5.0 - 2026-04-25
+
+### Release
+
+- Publish the desktop account, cloud backup, and documentation migration release after `v1.4.1`.
+
+### Added
+
+- Add Zhengdao account login through the official web auth callback flow, including desktop deep-link handling and account refresh notifications.
+- Add official cloud-backup integration for book upload, cloud backup listing, and backup download through the Agent X website API.
+- Add a shared account/settings menu for the bookshelf and workspace chrome with account status, sync settings, updates, and trash access.
+
+### Changed
+
+- Move desktop account and cloud sync from Google OAuth / Drive credentials to the Zhengdao website account flow.
+- Keep AI accounts as application-level defaults only; work AI profiles no longer expose or persist work-level account selection.
+- Remove the built-in usage-help modal and F1 help shortcut now that product documentation is moving to the website docs center.
+- Simplify the daily workbench to focus on writing progress, save state, snapshots, local backups, review, and publish checks.
+
+### Fixed
+
+- Handle `zhengdao://auth/callback` links both when the app is already running and when the callback launches the app as the first instance.
+- Preserve legacy work-profile account references safely by ignoring them at runtime and clearing incoming account references on save.
+
+### Docs
+
+- Record the AI account boundary correction, help-docs migration, and desktop account/cloud backup domain decisions in lane artifacts.
+
 ## v1.4.1 - 2026-04-24
 
 ### Release
