@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The project follows Semantic Versioning for release numbers. Release entries use a simple `Added / Changed / Fixed / Docs / Release` structure so the app package, Git tag, GitHub Release and changelog can stay aligned.
 
+## v1.5.2 - 2026-04-25
+
+### Release
+
+- 发布账号信息与发布前检查体验优化
+
+### Changed
+
+- “应用设置”的首页改为账号信息面板，集中展示邮箱、角色、邮箱验证、Pro 权益、AI 点数和账户中心入口。
+- 发布前检查包改为大窗口双栏工作台，支持当前章节 / 全书切换、章节级问题定位、发布稿预览、复制与 TXT / DOCX / Markdown 导出。
+- 账号菜单文案收口为“账号与设置”，已登录状态下优先进入账号信息页。
+
+### Fixed
+
+- 修复没有加载到章节列表时发布前检查包无法使用当前章节 / 目录缓存回退的问题。
+- 修复发布稿预览、问题统计和导出按钮在空章节、无当前章节或全书检查场景下的边界显示。
+- 补齐发布前检查包的回归测试，覆盖章节回退、全书 scope 和发布文本生成路径。
+
+### Docs
+
+- Release notes 继续从本版本中文 `CHANGELOG.md` 同步到 GitHub Release，保留安装包、自动更新元数据、验证状态和回滚提示。
+
 ## v1.5.1 - 2026-04-25
 
 ### Release
