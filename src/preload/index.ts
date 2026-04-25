@@ -161,6 +161,7 @@ const api = {
   authLogout: () => ipcRenderer.invoke('auth:logout'),
   authGetAccessToken: () => ipcRenderer.invoke('auth:getAccessToken'),
   authOpenUpgradePage: () => ipcRenderer.invoke('auth:openUpgradePage'),
+  authOpenAccountPage: () => ipcRenderer.invoke('auth:openAccountPage'),
   onAuthUpdated: (handler: (user: unknown) => void) => {
     const listener = (_event: IpcRendererEvent, user: unknown) => handler(user)
     ipcRenderer.on('auth:updated', listener)

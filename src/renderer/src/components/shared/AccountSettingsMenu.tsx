@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import {
   ArchiveRestore,
   BadgeCheck,
-  Cloud,
   Info,
   Loader2,
   LogIn,
@@ -61,7 +60,7 @@ export default function AccountSettingsMenu({
     return () => document.removeEventListener('mousedown', close)
   }, [open])
 
-  const openSettingsTab = (tab?: 'account' | 'updates') => {
+  const openSettingsTab = (tab?: 'overview' | 'updates') => {
     setOpen(false)
     openModal('appSettings', tab ? { tab } : undefined)
   }
@@ -116,10 +115,10 @@ export default function AccountSettingsMenu({
     <div ref={menuRef} className={`relative ${className}`} data-no-titlebar-toggle>
       <button
         type="button"
-        aria-label="账号与应用设置"
+        aria-label="账号与设置"
         aria-haspopup="menu"
         aria-expanded={open}
-        title="账号与应用设置"
+        title="账号与设置"
         onClick={() => setOpen((next) => !next)}
         className={
           buttonClassName ||
@@ -160,10 +159,10 @@ export default function AccountSettingsMenu({
               <button
                 role="menuitem"
                 type="button"
-                onClick={() => openSettingsTab('account')}
+                onClick={() => openSettingsTab('overview')}
                 className={menuItemClass}
               >
-                <Cloud size={14} /> 账号与云同步
+                <UserRound size={14} /> 账号信息
               </button>
             ) : (
               <button

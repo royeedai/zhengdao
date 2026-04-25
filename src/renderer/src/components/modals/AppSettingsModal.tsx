@@ -1,19 +1,12 @@
 import {
   AlertTriangle,
-  ArrowRight,
-  BadgeCheck,
   CheckCircle,
-  Cloud,
-  Coins,
   Database,
   Download,
   ExternalLink,
   Info,
   Keyboard,
   KeyRound,
-  Loader2,
-  LogIn,
-  LogOut,
   Monitor,
   Palette,
   RefreshCw,
@@ -30,12 +23,9 @@ import ShortcutSettingsPanel from '@/components/settings/ShortcutSettingsPanel'
 import SystemDailyGoalSettingsPanel from '@/components/settings/SystemDailyGoalSettingsPanel'
 import AppBrand from '@/components/shared/AppBrand'
 import { AccountSyncSettings } from '@/components/modals/LoginModal'
-import { useAuthStore } from '@/stores/auth-store'
 import { useSettingsStore } from '@/stores/settings-store'
-import { useToastStore } from '@/stores/toast-store'
 import { useUIStore } from '@/stores/ui-store'
 import { useUpdateStore } from '@/stores/update-store'
-import { getUserDisplayName, getUserTierLabel, hasUserDisplayName } from '@/utils/auth-display'
 import { buildManualUpdateMessage, shouldUseManualUpdate } from '@/utils/update-prompt'
 import { THEME_IDS, THEME_LABELS, THEME_TOKENS, resolveThemeMode, type ThemeId } from '@/utils/themes'
 import type { UpdateStatus } from '../../../../shared/update'
@@ -46,225 +36,39 @@ type AppSettingsTab =
   | 'genreTemplates'
   | 'dailyDefaults'
   | 'aiAccounts'
-  | 'account'
   | 'shortcuts'
   | 'backup'
   | 'updates'
 
 const SETTINGS_TABS: Array<{ id: AppSettingsTab; label: string; icon: typeof Palette }> = [
-  { id: 'overview', label: '账号与应用', icon: UserRound },
+  { id: 'overview', label: '账号信息', icon: UserRound },
   { id: 'appearance', label: '外观', icon: Palette },
   { id: 'genreTemplates', label: '题材模板', icon: SlidersHorizontal },
   { id: 'dailyDefaults', label: '日更默认', icon: Target },
   { id: 'aiAccounts', label: 'AI 与模型', icon: KeyRound },
-  { id: 'account', label: '账号与云同步', icon: Cloud },
   { id: 'shortcuts', label: '快捷键', icon: Keyboard },
   { id: 'backup', label: '备份与迁移', icon: Database },
   { id: 'updates', label: '更新与关于', icon: Info }
 ]
 
-function isAppSettingsTab(value: unknown): value is AppSettingsTab {
+function normalizeAppSettingsTab(value: unknown): AppSettingsTab | null {
+  if (value === 'account') return 'overview'
   return (
     value === 'overview' ||
     value === 'appearance' ||
     value === 'genreTemplates' ||
     value === 'dailyDefaults' ||
     value === 'aiAccounts' ||
-    value === 'account' ||
     value === 'shortcuts' ||
     value === 'backup' ||
     value === 'updates'
+      ? value
+      : null
   )
 }
 
-const OVERVIEW_SETTING_CARDS: Array<{
-  id: Exclude<AppSettingsTab, 'overview'>
-  label: string
-  description: string
-  icon: typeof Palette
-}> = [
-  { id: 'appearance', label: '外观', description: '主题、浅深色和界面观感', icon: Palette },
-  { id: 'aiAccounts', label: 'AI 与模型', description: '官方 AI 和高级第三方入口', icon: KeyRound },
-  { id: 'shortcuts', label: '快捷键', description: '查看和调整常用快捷操作', icon: Keyboard },
-  { id: 'backup', label: '备份与迁移', description: '本地备份、恢复和数据导入导出', icon: Database },
-  { id: 'updates', label: '更新与关于', description: '版本信息、更新检查和安装', icon: Info },
-  { id: 'genreTemplates', label: '题材模板', description: '维护系统级作品模板', icon: SlidersHorizontal },
-  { id: 'dailyDefaults', label: '日更默认', description: '设置新作品默认日更目标', icon: Target }
-]
-
-function AppSettingsOverview({
-  appVersion,
-  updateStatus,
-  setTab
-}: {
-  appVersion: string | null
-  updateStatus: UpdateStatus
-  setTab: (tab: AppSettingsTab) => void
-}) {
-  const user = useAuthStore((s) => s.user)
-  const loading = useAuthStore((s) => s.loading)
-  const loadUser = useAuthStore((s) => s.loadUser)
-  const login = useAuthStore((s) => s.login)
-  const logout = useAuthStore((s) => s.logout)
-  const displayName = getUserDisplayName(user)
-  const hasDisplayName = hasUserDisplayName(user)
-  const tierLabel = getUserTierLabel(user)
-
-  useEffect(() => {
-    void loadUser()
-  }, [loadUser])
-
-  const handleLogin = async () => {
-    const result = await login()
-    if (!result.ok) {
-      useToastStore.getState().addToast('error', result.error || '无法打开证道网页登录')
-      return
-    }
-    useToastStore.getState().addToast('success', '已打开证道官网关联登录')
-  }
-
-  const refreshEntitlement = async () => {
-    await loadUser()
-    useToastStore.getState().addToast('success', '账号权益已刷新')
-  }
-
-  const handleLogout = async () => {
-    await logout()
-    useToastStore.getState().addToast('success', '已退出证道账号')
-  }
-
-  const accountSummaryContent = (
-    <>
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-[var(--border-primary)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]">
-        {loading && !user ? <Loader2 size={24} className="animate-spin" /> : <UserRound size={24} />}
-      </div>
-      <div className="min-w-0">
-        <div className="text-sm font-semibold text-[var(--text-primary)]">{user ? displayName : '登录证道账号'}</div>
-        {user && hasDisplayName ? (
-          <div className="mt-1 truncate text-xs text-[var(--text-muted)]">{user.email}</div>
-        ) : null}
-        {!user ? (
-          <div className="mt-1 truncate text-xs text-[var(--text-muted)]">
-            登录后这里会显示账号、会员等级、点数和云备份入口。
-          </div>
-        ) : null}
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-secondary)]">
-          <span className="inline-flex items-center gap-1 rounded border border-[var(--success-border)] px-1.5 py-0.5 text-[var(--success-primary)]">
-            <BadgeCheck size={12} />
-            {tierLabel}
-          </span>
-          {user ? (
-            <span className="inline-flex items-center gap-1">
-              <Coins size={12} />
-              {user.pointsBalance.toLocaleString()} 点
-            </span>
-          ) : null}
-        </div>
-      </div>
-    </>
-  )
-
-  return (
-    <div className="space-y-5">
-      <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          {user ? (
-            <div className="flex min-w-0 items-center gap-3">{accountSummaryContent}</div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void handleLogin()}
-              disabled={loading}
-              className="-m-2 flex min-w-0 cursor-pointer items-center gap-3 rounded-md p-2 text-left transition hover:bg-[var(--bg-tertiary)] disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {accountSummaryContent}
-            </button>
-          )}
-
-          <div className="flex flex-wrap justify-end gap-2">
-            {user ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setTab('account')}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent-primary)] px-3 py-2 text-xs font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-secondary)]"
-                >
-                  <Cloud size={14} />
-                  账号与云同步
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void refreshEntitlement()}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-primary)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-tertiary)]"
-                >
-                  <RefreshCw size={14} />
-                  刷新权益
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleLogout()}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-primary)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-tertiary)]"
-                >
-                  <LogOut size={14} />
-                  退出登录
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => void handleLogin()}
-                  disabled={loading}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent-primary)] px-3 py-2 text-xs font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-secondary)] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {loading ? <RefreshCw size={14} className="animate-spin" /> : <LogIn size={14} />}
-                  登录证道账号
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTab('account')}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-primary)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-tertiary)]"
-                >
-                  <Cloud size={14} />
-                  账号与云同步
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">应用设置</h2>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              当前版本 v{appVersion || '—'} · {getStatusLabel(updateStatus)}
-            </p>
-          </div>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {OVERVIEW_SETTING_CARDS.map(({ id, label, description, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id)}
-              className="flex min-h-[92px] items-start justify-between gap-3 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3 text-left transition hover:border-[var(--accent-border)] hover:bg-[var(--accent-surface)]"
-            >
-              <span className="min-w-0">
-                <span className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
-                  <Icon size={16} />
-                  {label}
-                </span>
-                <span className="mt-2 block text-xs leading-5 text-[var(--text-muted)]">{description}</span>
-              </span>
-              <ArrowRight size={15} className="mt-0.5 shrink-0 text-[var(--text-muted)]" />
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
+function AppSettingsOverview() {
+  return <AccountSyncSettings />
 }
 
 function formatReleaseDate(value: string | null): string {
@@ -360,10 +164,11 @@ export default function AppSettingsModal() {
   const checkForUpdates = useUpdateStore((s) => s.checkForUpdates)
   const downloadAvailableUpdate = useUpdateStore((s) => s.downloadAvailableUpdate)
   const installReadyUpdate = useUpdateStore((s) => s.installReadyUpdate)
-  const [tab, setTab] = useState<AppSettingsTab>(() => (isAppSettingsTab(modalData?.tab) ? modalData.tab : 'overview'))
+  const [tab, setTab] = useState<AppSettingsTab>(() => normalizeAppSettingsTab(modalData?.tab) ?? 'overview')
 
   useEffect(() => {
-    if (isAppSettingsTab(modalData?.tab)) setTab(modalData.tab)
+    const nextTab = normalizeAppSettingsTab(modalData?.tab)
+    if (nextTab) setTab(nextTab)
   }, [modalData?.tab])
 
   useEffect(() => {
@@ -539,7 +344,7 @@ export default function AppSettingsModal() {
 
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
             {tab === 'overview' && (
-              <AppSettingsOverview appVersion={appVersion} updateStatus={snapshot.status} setTab={setTab} />
+              <AppSettingsOverview />
             )}
 
             {tab === 'appearance' && (
@@ -582,8 +387,6 @@ export default function AppSettingsModal() {
             {tab === 'genreTemplates' && <GenreTemplatesSettingsPanel />}
 
             {tab === 'dailyDefaults' && <SystemDailyGoalSettingsPanel />}
-
-            {tab === 'account' && <AccountSyncSettings />}
 
             {tab === 'aiAccounts' && <AiGlobalAccountsSettings />}
 

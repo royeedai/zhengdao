@@ -68,6 +68,10 @@ export class ZhengdaoAuth {
     await shell.openExternal(`${WEBSITE_URL}/pricing?from=desktop#pro-cdk`)
   }
 
+  async openAccountPage(): Promise<void> {
+    await shell.openExternal(`${WEBSITE_URL}/app/account`)
+  }
+
   async handleCallback(url: string): Promise<ZhengdaoUser> {
     const parsed = new URL(url)
     const state = parsed.searchParams.get('state')

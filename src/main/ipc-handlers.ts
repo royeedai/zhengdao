@@ -446,6 +446,7 @@ export function registerIpcHandlers(): void {
   })
   ipcMain.handle('auth:getAccessToken', async () => zhengdaoAuth.getAccessToken())
   ipcMain.handle('auth:openUpgradePage', async () => zhengdaoAuth.openUpgradePage())
+  ipcMain.handle('auth:openAccountPage', async () => zhengdaoAuth.openAccountPage())
 
   ipcMain.handle('ai:complete', async (_, request: AiBridgeCompleteRequest) => {
     if (request.provider === 'zhengdao_official') {

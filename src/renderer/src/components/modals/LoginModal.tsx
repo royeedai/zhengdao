@@ -3,7 +3,7 @@ import { ArrowUpRight, BadgeCheck, Cloud, Coins, LogIn, X, Loader2, RefreshCw, U
 import { useUIStore } from '@/stores/ui-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { useBookStore } from '@/stores/book-store'
-import { getUserDisplayName, getUserTierLabel, hasUserDisplayName } from '@/utils/auth-display'
+import { getUserDisplayName, getUserTierLabel } from '@/utils/auth-display'
 
 export function AccountSyncSettings() {
   const user = useAuthStore((s) => s.user)
@@ -25,7 +25,6 @@ export function AccountSyncSettings() {
   const [cloudLoading, setCloudLoading] = useState(false)
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
   const displayName = getUserDisplayName(user)
-  const hasDisplayName = hasUserDisplayName(user)
   const tierLabel = getUserTierLabel(user)
   const showFreeUpgradePrompt = user && tierLabel === 'Free'
 
@@ -100,29 +99,54 @@ export function AccountSyncSettings() {
     await window.api.authOpenUpgradePage()
   }
 
+  const openAccountPage = async () => {
+    await window.api.authOpenAccountPage()
+  }
+
   return (
     <div className="space-y-4">
-      <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-        使用证道官网账号关联桌面端。登录后可识别 Pro 权益、AI 点数，并使用官网云备份。
-      </p>
-
       {user && (
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-primary)]">
-          <div className="w-11 h-11 rounded-full bg-[var(--accent-surface)] flex items-center justify-center text-[var(--accent-secondary)] shrink-0">
-            <UserRound size={22} />
+        <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-[var(--accent-surface)] text-[var(--accent-secondary)]">
+              <UserRound size={22} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold text-[var(--text-primary)]">{displayName}</div>
+              <div className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{user.email}</div>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-secondary)]">
+                <span className="inline-flex items-center gap-1 rounded border border-[var(--success-border)] px-1.5 py-0.5 text-[var(--success-primary)]">
+                  <BadgeCheck size={12} />
+                  {tierLabel}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Coins size={12} />
+                  {user.pointsBalance.toLocaleString()} 点
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold text-[var(--text-primary)] truncate">{displayName}</div>
-            {hasDisplayName ? <div className="text-xs text-[var(--text-muted)] truncate">{user.email}</div> : null}
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-secondary)]">
-              <span className="inline-flex items-center gap-1 rounded border border-[var(--success-border)] px-1.5 py-0.5 text-[var(--success-primary)]">
-                <BadgeCheck size={12} />
-                {tierLabel}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Coins size={12} />
-                {user.pointsBalance.toLocaleString()} 点
-              </span>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <AccountDetail label="账号 ID" value={user.id} mono />
+            <AccountDetail label="账号角色" value={user.role === 'admin' ? '管理员' : '普通用户'} />
+            <AccountDetail label="邮箱状态" value={user.emailVerified ? '已验证' : '未验证'} />
+            <AccountDetail label="Pro 权益" value={user.pro ? '已开通' : '未开通'} />
+          </div>
+        </div>
+      )}
+
+      {!user && (
+        <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-[var(--accent-surface)] text-[var(--accent-secondary)]">
+              {loading ? <Loader2 size={22} className="animate-spin" /> : <UserRound size={22} />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold text-[var(--text-primary)]">未登录证道账号</div>
+              <div className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
+                登录后会显示邮箱、会员、点数、云备份和官网账户中心入口。
+              </div>
             </div>
           </div>
         </div>
@@ -227,6 +251,14 @@ export function AccountSyncSettings() {
           <>
             <button
               type="button"
+              onClick={() => void openAccountPage()}
+              className="flex items-center gap-1 rounded bg-[var(--accent-primary)] px-4 py-1.5 text-xs text-[var(--accent-contrast)] transition hover:bg-[var(--accent-secondary)]"
+            >
+              <ArrowUpRight size={13} />
+              账户中心
+            </button>
+            <button
+              type="button"
               onClick={() => void refreshEntitlement()}
               className="px-4 py-1.5 text-xs border border-[var(--border-secondary)] text-[var(--text-primary)] rounded hover:bg-[var(--bg-tertiary)] transition"
             >
@@ -256,6 +288,15 @@ export function AccountSyncSettings() {
   )
 }
 
+function AccountDetail({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="min-w-0 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2">
+      <div className="text-[10px] text-[var(--text-muted)]">{label}</div>
+      <div className={`mt-1 truncate text-xs text-[var(--text-primary)] ${mono ? 'font-mono' : ''}`}>{value}</div>
+    </div>
+  )
+}
+
 export default function LoginModal() {
   const closeModal = useUIStore((s) => s.closeModal)
 
@@ -265,7 +306,7 @@ export default function LoginModal() {
         <div className="h-12 border-b border-[var(--border-primary)] bg-[var(--bg-primary)] flex items-center justify-between px-5 shrink-0">
           <div className="flex items-center space-x-2 text-[var(--accent-secondary)] font-bold">
             <Cloud size={18} />
-            <span>证道账号与云同步</span>
+            <span>证道账号</span>
           </div>
           <button type="button" onClick={closeModal} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition">
             <X size={20} />
