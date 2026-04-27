@@ -3,6 +3,10 @@ impact_rules:
     run:
       - "npx vitest run src/renderer/src/components/ai/__tests__/*.test.ts"
       - "npm run build"
+  - when: "ai-assistant-sidebar-or-intent-change"
+    run:
+      - "npm test -- src/renderer/src/components/ai src/renderer/src/utils/__tests__/workspace-layout.test.ts src/renderer/src/stores/__tests__/ui-store.test.ts"
+      - "npm run build"
   - when: "ai-config-truth-source-change"
     run:
       - "npx vitest run src/renderer/src/utils/ai/__tests__/provider-routing.test.ts src/renderer/src/utils/ai/__tests__/assistant-workflow.test.ts"
@@ -54,6 +58,14 @@ failure_modes:
     scenario: "User stops an in-flight generation and the UI shows a failure or loses all partial output"
     expected: "Stop ends the request without an error banner and preserves partial content"
     guard: "gemini-cli-service / provider-routing focused tests and manual UI check"
+  - id: FM-AI-009
+    scenario: "AI writing tasks require the user to choose an ability card before sending or default to the wrong writing skill"
+    expected: "Assistant resolves intent from explicit entry, selected text, current chapter and prompt text; low-confidence prompts remain ordinary chat"
+    guard: "src/renderer/src/components/ai/__tests__/conversation-mode.test.ts"
+  - id: FM-AI-010
+    scenario: "AI assistant reopens as a floating panel and blocks editor content after the right sidebar layout migration"
+    expected: "Assistant opens the right sidebar AI tab; the floating launcher only appears when the right sidebar is hidden"
+    guard: "src/renderer/src/stores/__tests__/ui-store.test.ts and manual UI check"
 
 guards:
   - ".ai-os/lanes/ai-chat-assistant/evals/gemini-cli-stream-empty-response.md"

@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
-import { AlertCircle, Lightbulb, Users } from 'lucide-react'
+import { AlertCircle, Bot, Lightbulb, Users } from 'lucide-react'
 import { useBookStore } from '@/stores/book-store'
 import { useForeshadowStore } from '@/stores/foreshadow-store'
 import { useCharacterStore } from '@/stores/character-store'
@@ -9,6 +9,7 @@ import type { RightPanelTab } from '@/utils/workspace-layout'
 import ForeshadowBoard from './ForeshadowBoard'
 import ActiveCharacters from './ActiveCharacters'
 import QuickNotes from './QuickNotes'
+import { AiAssistantPanel } from '@/components/ai/AiAssistantDock'
 
 function ContextTabButton({
   tab,
@@ -94,11 +95,19 @@ export default function RightPanel() {
           icon={<Lightbulb size={13} />}
           onClick={setRightPanelTab}
         />
+        <ContextTabButton
+          tab="ai"
+          active={rightPanelTab === 'ai'}
+          label="AI"
+          icon={<Bot size={13} />}
+          onClick={setRightPanelTab}
+        />
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">
         {rightPanelTab === 'foreshadow' && <ForeshadowBoard />}
         {rightPanelTab === 'characters' && <ActiveCharacters />}
         {rightPanelTab === 'notes' && <QuickNotes />}
+        {rightPanelTab === 'ai' && <AiAssistantPanel />}
       </div>
     </div>
   )

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createMacManualInstallerTarget,
   createIdleUpdateSnapshot,
+  normalizeMacInstallerArch,
   reduceUpdateSnapshot,
   summarizeReleaseNotes,
   withManualUpdateFallback
@@ -117,5 +119,32 @@ describe('reduceUpdateSnapshot', () => {
       automaticUpdateUnsupportedReason: '需要手动下载',
       manualDownloadUrl: 'https://example.test/releases/latest'
     })
+  })
+
+  it('builds macOS manual installer targets from release version and architecture', () => {
+    expect(normalizeMacInstallerArch('arm64')).toBe('arm64')
+    expect(normalizeMacInstallerArch('x64')).toBe('x64')
+    expect(normalizeMacInstallerArch('ia32')).toBeNull()
+
+    expect(
+      createMacManualInstallerTarget({
+        version: 'v1.5.2',
+        arch: 'arm64',
+        releasesUrl: 'https://github.com/royeedai-labs/zhengdao/releases/'
+      })
+    ).toEqual({
+      fileName: 'zhengdao-1.5.2-arm64.dmg',
+      tagName: 'v1.5.2',
+      downloadUrl:
+        'https://github.com/royeedai-labs/zhengdao/releases/download/v1.5.2/zhengdao-1.5.2-arm64.dmg'
+    })
+
+    expect(
+      createMacManualInstallerTarget({
+        version: '../1.5.2',
+        arch: 'arm64',
+        releasesUrl: 'https://github.com/royeedai-labs/zhengdao/releases'
+      })
+    ).toBeNull()
   })
 })

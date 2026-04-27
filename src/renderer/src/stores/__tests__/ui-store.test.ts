@@ -84,4 +84,16 @@ describe('ui store bottom panel state', () => {
     expect(useUIStore.getState().bottomPanelOpen).toBe(true)
     expect(localStorage.getItem('write-bottom-panel-open')).toBe('true')
   })
+
+  it('opens the right sidebar AI tab for the assistant entry', async () => {
+    const { useUIStore } = await import('../ui-store')
+
+    useUIStore.getState().openAiAssistant('continue_writing')
+
+    expect(useUIStore.getState().rightPanelOpen).toBe(true)
+    expect(useUIStore.getState().rightPanelTab).toBe('ai')
+    expect(useUIStore.getState().aiAssistantOpen).toBe(true)
+    expect(useUIStore.getState().aiAssistantSkillKey).toBe('continue_writing')
+    expect(localStorage.getItem('write-right-panel-tab')).toBe('ai')
+  })
 })

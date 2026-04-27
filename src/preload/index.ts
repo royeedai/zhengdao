@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
-import type { UpdateSnapshot } from '../shared/update'
+import type { ManualInstallerDownloadResult, UpdateSnapshot } from '../shared/update'
 import type { AiBridgeCompleteRequest, AiOfficialProfile, AiResponse, AiStreamCallbacks } from '../shared/ai'
 
 let aiStreamRequestSeq = 0
@@ -31,7 +31,7 @@ const api = {
   // Chapters
   getChapters: (volumeId: number) => ipcRenderer.invoke('db:getChapters', volumeId),
   getChapter: (id: number) => ipcRenderer.invoke('db:getChapter', id),
-  createChapter: (data: { volume_id: number; title: string; content?: string }) =>
+  createChapter: (data: { volume_id: number; title: string; content?: string; summary?: string }) =>
     ipcRenderer.invoke('db:createChapter', data),
   getChapterTemplates: (bookId: number) => ipcRenderer.invoke('db:getChapterTemplates', bookId),
   createChapterTemplate: (bookId: number, name: string, content: string) =>
@@ -284,6 +284,8 @@ const api = {
   getAppVersion: () => ipcRenderer.invoke('app:getAppVersion') as Promise<string>,
   checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates') as Promise<UpdateSnapshot>,
   downloadUpdate: () => ipcRenderer.invoke('app:downloadUpdate') as Promise<UpdateSnapshot>,
+  downloadManualInstallerUpdate: () =>
+    ipcRenderer.invoke('app:downloadManualInstallerUpdate') as Promise<ManualInstallerDownloadResult>,
   getUpdateState: () => ipcRenderer.invoke('app:getUpdateState') as Promise<UpdateSnapshot>,
   onUpdateState: (listener: (snapshot: UpdateSnapshot) => void) => {
     const wrapped = (_event: unknown, snapshot: UpdateSnapshot) => listener(snapshot)

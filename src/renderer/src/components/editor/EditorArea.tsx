@@ -166,6 +166,8 @@ export default function EditorArea() {
   const prevChapterIdRef = useRef<number | undefined>(undefined)
   const [savedAt, setSavedAt] = useState('')
   const [showSearch, setShowSearch] = useState(false)
+  const [summaryModalOpen, setSummaryModalOpen] = useState(false)
+  const [summaryLoading, setSummaryLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [replaceQuery, setReplaceQuery] = useState('')
   const [contextMenu, setContextMenu] = useState<{
@@ -613,7 +615,11 @@ export default function EditorArea() {
   )
 
   const handleGenerateSummary = useCallback(async () => {
-    if (!editor || !currentChapter) return
+    if (!editor || !currentChapter || summaryLoading) return
+    if (currentChapter.summary?.trim()) {
+      const ok = window.confirm('当前章节已有摘要。确定重新生成并覆盖吗？')
+      if (!ok) return
+    }
     const cfg = await getResolvedAiConfigForBook(bookId)
     if (!isAiConfigReady(cfg)) {
       useToastStore.getState().addToast('warning', '请先在应用设置中配置 AI')
@@ -624,23 +630,34 @@ export default function EditorArea() {
       useToastStore.getState().addToast('warning', '本章暂无正文')
       return
     }
-    const res = await aiSummarize(
-      {
-        ai_provider: cfg.ai_provider,
-        ai_api_key: cfg.ai_api_key,
-        ai_api_endpoint: cfg.ai_api_endpoint,
-        ai_model: cfg.ai_model || '',
-        ai_official_profile_id: cfg.ai_official_profile_id || ''
-      },
-      text
-    )
-    if (res.error) {
-      useToastStore.getState().addToast('error', res.error || '生成失败')
-      return
+    setSummaryLoading(true)
+    try {
+      const res = await aiSummarize(
+        {
+          ai_provider: cfg.ai_provider,
+          ai_api_key: cfg.ai_api_key,
+          ai_api_endpoint: cfg.ai_api_endpoint,
+          ai_model: cfg.ai_model || '',
+          ai_official_profile_id: cfg.ai_official_profile_id || ''
+        },
+        text
+      )
+      if (res.error) {
+        useToastStore.getState().addToast('error', res.error || '生成失败')
+        return
+      }
+      const summary = res.content.trim()
+      if (!summary) {
+        useToastStore.getState().addToast('error', '生成的摘要为空')
+        return
+      }
+      await updateChapterSummary(currentChapter.id, summary)
+      setSummaryModalOpen(true)
+      useToastStore.getState().addToast('success', '章节摘要已生成')
+    } finally {
+      setSummaryLoading(false)
     }
-    await updateChapterSummary(currentChapter.id, res.content.trim())
-    useToastStore.getState().addToast('success', '章节摘要已生成')
-  }, [editor, currentChapter, updateChapterSummary, bookId])
+  }, [editor, currentChapter, summaryLoading, updateChapterSummary, bookId])
 
   const handleFindReplace = () => {
     if (!editor || !searchQuery) return
@@ -676,6 +693,7 @@ export default function EditorArea() {
   }
 
   const totalWords = getTotalWords()
+  const currentSummary = currentChapter?.summary?.trim() ?? ''
 
   if (!currentChapter) {
     return (
@@ -758,6 +776,16 @@ export default function EditorArea() {
         className="flex-1 overflow-y-auto px-8 pt-16 pb-32 lg:px-32 scroll-smooth"
         onContextMenu={handleContextMenu}
       >
+        {currentSummary && (
+          <button
+            type="button"
+            onClick={() => setSummaryModalOpen(true)}
+            className={`${widthClass} mx-auto mb-5 block w-full rounded-lg border border-[var(--border-primary)] bg-[var(--surface-primary)] px-4 py-3 text-left shadow-sm transition hover:border-[var(--accent-primary)]`}
+          >
+            <div className="mb-1 text-[11px] font-medium text-[var(--accent-secondary)]">本章摘要</div>
+            <div className="line-clamp-2 text-sm leading-6 text-[var(--text-secondary)]">{currentSummary}</div>
+          </button>
+        )}
         <EditorContent editor={editor} />
       </div>
 
@@ -792,9 +820,9 @@ export default function EditorArea() {
           </button>
           <button
             type="button"
-            onClick={() => void handleGenerateSummary()}
+            onClick={() => setSummaryModalOpen(true)}
             className="flex items-center gap-1 hover:text-[var(--accent-secondary)] transition"
-            title="AI 生成本章摘要"
+            title={currentSummary ? '查看本章摘要' : '生成本章摘要'}
           >
             <Sparkles size={11} /> 摘要
           </button>
@@ -809,6 +837,61 @@ export default function EditorArea() {
           <span>{savedAt ? `已保存 ${savedAt}` : '未保存'}</span>
         </div>
       </div>
+
+      {summaryModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
+          onClick={() => setSummaryModalOpen(false)}
+        >
+          <div
+            className="flex max-h-[82vh] w-full max-w-xl flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--surface-elevated)] shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-5">
+              <div className="min-w-0">
+                <div className="text-sm font-bold text-[var(--text-primary)]">本章摘要</div>
+                <div className="truncate text-xs text-[var(--text-muted)]">{currentChapter.title}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSummaryModalOpen(false)}
+                className="rounded p-1 text-[var(--text-muted)] transition hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
+                title="关闭"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="min-h-[180px] overflow-y-auto p-5">
+              {currentSummary ? (
+                <div className="whitespace-pre-wrap rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-4 text-sm leading-7 text-[var(--text-secondary)]">
+                  {currentSummary}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-[var(--border-primary)] bg-[var(--bg-primary)] p-8 text-center text-sm text-[var(--text-muted)]">
+                  暂无摘要
+                </div>
+              )}
+            </div>
+            <div className="flex h-14 shrink-0 items-center justify-end gap-3 border-t border-[var(--border-primary)] bg-[var(--bg-primary)] px-5">
+              <button
+                type="button"
+                onClick={() => setSummaryModalOpen(false)}
+                className="px-4 py-1.5 text-xs text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
+              >
+                关闭
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleGenerateSummary()}
+                disabled={summaryLoading}
+                className="flex items-center gap-1 rounded bg-[var(--accent-primary)] px-4 py-1.5 text-xs text-[var(--accent-contrast)] transition hover:bg-[var(--accent-secondary)] disabled:opacity-50"
+              >
+                <Sparkles size={14} /> {summaryLoading ? '生成中...' : currentSummary ? '重新生成' : 'AI 生成'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {contextMenu && (
         <div
@@ -915,6 +998,17 @@ export default function EditorArea() {
                 className="w-full px-3 py-1.5 text-left text-[var(--accent-secondary)] hover:bg-[var(--accent-surface)] transition"
               >
                 写作风格分析
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  syncAiAssistantSelection()
+                  openAiAssistant('polish_text')
+                  setContextMenu(null)
+                }}
+                className="w-full px-3 py-1.5 text-left text-[var(--accent-secondary)] hover:bg-[var(--accent-surface)] transition"
+              >
+                AI 润色改写
               </button>
               <button
                 type="button"

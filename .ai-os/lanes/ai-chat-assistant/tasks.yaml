@@ -92,3 +92,7 @@ tasks:
     title: "扩大 AI 面板左右横向缩放命中区"
     status: completed
     acceptance: ["AC-AI-010"]
+  - id: TASK-AI-CHAT-024
+    title: "将 AI 助手迁入右侧栏并新增自动能力路由"
+    status: completed
+    acceptance: ["AC-AI-001", "AC-AI-003", "AC-AI-004", "AC-AI-014"]

@@ -22,6 +22,7 @@ export default function NewChapterModal() {
 
   const [volumeId, setVolumeId] = useState<number>(data?.volume_id || volumes[volumes.length - 1]?.id || 0)
   const [title, setTitle] = useState('')
+  const [summary, setSummary] = useState('')
   const [templateKey, setTemplateKey] = useState<string>('b:blank')
   const [customTemplates, setCustomTemplates] = useState<CustomChapterTemplate[]>([])
 
@@ -43,7 +44,7 @@ export default function NewChapterModal() {
 
   const handleSubmit = async () => {
     if (!volumeId || !title.trim()) return
-    const ch = await createChapter(volumeId, title.trim(), previewContent)
+    const ch = await createChapter(volumeId, title.trim(), previewContent, summary.trim())
     await selectChapter(ch.id)
     closeModal()
   }
@@ -82,6 +83,15 @@ export default function NewChapterModal() {
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
               placeholder="例如：第 1 章 归来"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] text-[var(--text-muted)] uppercase mb-1">摘要 / 本章目标（可选）</label>
+            <textarea
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              className="min-h-[84px] w-full resize-y rounded border border-[var(--border-primary)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)]"
+              placeholder="写下本章关键剧情、冲突或情绪走向"
             />
           </div>
           <div>

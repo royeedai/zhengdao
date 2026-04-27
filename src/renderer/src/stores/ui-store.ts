@@ -364,7 +364,10 @@ export const useUIStore = create<UIStore>((set, get) => ({
   },
   setRightPanelTab: (tab) => {
     persistRightPanelTab(tab)
-    set({ rightPanelTab: tab })
+    set((s) => ({
+      rightPanelTab: tab,
+      aiAssistantOpen: tab === 'ai' ? true : s.aiAssistantOpen
+    }))
   },
   setBottomPanelOpen: (open) => {
     persistBottomPanelOpen(open)
@@ -416,19 +419,16 @@ export const useUIStore = create<UIStore>((set, get) => ({
   setSplitChapterId: (id) => set({ splitChapterId: id }),
 
   openAiAssistant: (skillKey = null) =>
-    set((state) => {
-      const rect =
-        typeof window === 'undefined'
-          ? state.aiAssistantPanelRect
-          : clampAiAssistantPanelRect(state.aiAssistantPanelRect, window.innerWidth, window.innerHeight)
-      persistAiAssistantPanelRect(rect)
+    set(() => {
+      persistRightPanelTab('ai')
       return {
+        rightPanelOpen: true,
+        rightPanelTab: 'ai',
         aiAssistantOpen: true,
-        aiAssistantSkillKey: skillKey,
-        aiAssistantPanelRect: rect
+        aiAssistantSkillKey: skillKey
       }
     }),
-  closeAiAssistant: () => set({ aiAssistantOpen: false }),
+  closeAiAssistant: () => set({ aiAssistantOpen: false, rightPanelOpen: false }),
   setAiAssistantSkillKey: (skillKey) => set({ aiAssistantSkillKey: skillKey }),
   setAiAssistantPanelRect: (rect) => {
     const next =

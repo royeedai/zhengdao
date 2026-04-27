@@ -30,7 +30,14 @@ import { CloudSync } from './sync/cloud-sync'
 import { backupDatabaseFile, replaceDatabaseFromFile } from './database/connection'
 import { autoBackup } from './backup/auto-backup'
 import { readDocxPlainText } from './utils/read-docx-text'
-import { checkForUpdates, downloadAvailableUpdate, getAppVersion, getUpdateState, installDownloadedUpdate } from './updater/service'
+import {
+  checkForUpdates,
+  downloadAvailableUpdate,
+  downloadManualInstallerUpdate,
+  getAppVersion,
+  getUpdateState,
+  installDownloadedUpdate
+} from './updater/service'
 import {
   buildGeminiCliSetupScript,
   createGeminiCliService,
@@ -698,6 +705,9 @@ export function registerIpcHandlers(): void {
   })
   ipcMain.handle('app:downloadUpdate', async () => {
     return await downloadAvailableUpdate()
+  })
+  ipcMain.handle('app:downloadManualInstallerUpdate', async () => {
+    return await downloadManualInstallerUpdate()
   })
   ipcMain.handle('app:installDownloadedUpdate', async () => {
     await installDownloadedUpdate()

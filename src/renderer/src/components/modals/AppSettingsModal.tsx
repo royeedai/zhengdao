@@ -3,7 +3,6 @@ import {
   CheckCircle,
   Database,
   Download,
-  ExternalLink,
   Info,
   Keyboard,
   KeyRound,
@@ -163,8 +162,10 @@ export default function AppSettingsModal() {
   const snapshot = useUpdateStore((s) => s.snapshot)
   const checkForUpdates = useUpdateStore((s) => s.checkForUpdates)
   const downloadAvailableUpdate = useUpdateStore((s) => s.downloadAvailableUpdate)
+  const downloadManualInstallerUpdate = useUpdateStore((s) => s.downloadManualInstallerUpdate)
   const installReadyUpdate = useUpdateStore((s) => s.installReadyUpdate)
   const [tab, setTab] = useState<AppSettingsTab>(() => normalizeAppSettingsTab(modalData?.tab) ?? 'overview')
+  const [manualInstallerBusy, setManualInstallerBusy] = useState(false)
 
   useEffect(() => {
     const nextTab = normalizeAppSettingsTab(modalData?.tab)
@@ -177,7 +178,10 @@ export default function AppSettingsModal() {
 
   const closeDisabled = snapshot.status === 'installing'
   const actionBusy =
-    snapshot.status === 'checking' || snapshot.status === 'downloading' || snapshot.status === 'installing'
+    manualInstallerBusy ||
+    snapshot.status === 'checking' ||
+    snapshot.status === 'downloading' ||
+    snapshot.status === 'installing'
   const releaseVersion = snapshot.version ?? '未发现新版本'
   const primaryButtonClass =
     'inline-flex min-w-[132px] items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-[var(--text-inverse)] transition disabled:cursor-not-allowed disabled:opacity-60'
@@ -189,19 +193,28 @@ export default function AppSettingsModal() {
     onClick: () => void
     disabled?: boolean
     className?: string
-    icon?: 'download' | 'external'
+    icon?: 'download'
+    busy?: boolean
   } | null = null
 
   const manualUpdate = shouldUseManualUpdate(snapshot)
 
   if (manualUpdate) {
     primaryAction = {
-      label: '打开下载页',
-      onClick: () => {
-        if (snapshot.manualDownloadUrl) window.open(snapshot.manualDownloadUrl, '_blank', 'noopener,noreferrer')
+      label: manualInstallerBusy ? '下载中…' : '下载安装包',
+      onClick: async () => {
+        if (manualInstallerBusy) return
+        setManualInstallerBusy(true)
+        try {
+          await downloadManualInstallerUpdate()
+        } finally {
+          setManualInstallerBusy(false)
+        }
       },
+      disabled: manualInstallerBusy,
       className: 'bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)]',
-      icon: 'external'
+      icon: 'download',
+      busy: manualInstallerBusy
     }
   } else if (snapshot.status === 'available') {
     primaryAction = {
@@ -273,7 +286,7 @@ export default function AppSettingsModal() {
   }
 
   const summaryText = manualUpdate
-    ? '已发现新版本。当前平台暂不使用应用内自动安装，请打开下载页获取最新安装包。'
+    ? '已发现新版本。当前平台暂不使用应用内自动安装，可以在应用内下载安装包，下载完成后会打开 DMG。'
     : snapshot.status === 'available'
       ? '已发现新版本，你可以先查看更新日志，再决定是否下载。'
       : snapshot.status === 'downloading'
@@ -513,12 +526,11 @@ export default function AppSettingsModal() {
                 disabled={primaryAction.disabled}
                 className={`${primaryButtonClass} ${primaryAction.className ?? 'bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)]'}`}
               >
-                {snapshot.status === 'checking' ||
+                {primaryAction.busy ||
+                snapshot.status === 'checking' ||
                 snapshot.status === 'downloading' ||
                 snapshot.status === 'installing' ? (
                   <RefreshCw size={16} className="animate-spin" />
-                ) : primaryAction.icon === 'external' ? (
-                  <ExternalLink size={16} />
                 ) : primaryAction.icon === 'download' ? (
                   <Download size={16} />
                 ) : null}

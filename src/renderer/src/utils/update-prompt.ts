@@ -14,11 +14,12 @@ export function buildReadyToInstallMessage(snapshot: UpdateSnapshot): string {
 
 export function shouldUseManualUpdate(snapshot: UpdateSnapshot): boolean {
   return (
-    Boolean(snapshot.automaticUpdateUnsupportedReason && snapshot.manualDownloadUrl) &&
+    Boolean(snapshot.version && snapshot.automaticUpdateUnsupportedReason && snapshot.manualDownloadUrl) &&
     (snapshot.status === 'available' || snapshot.status === 'ready' || snapshot.status === 'error')
   )
 }
 
 export function buildManualUpdateMessage(snapshot: UpdateSnapshot): string {
-  return snapshot.automaticUpdateUnsupportedReason ?? '当前平台暂不支持应用内自动安装，请手动下载安装包。'
+  const reason = snapshot.automaticUpdateUnsupportedReason ?? '当前平台暂不支持应用内自动安装'
+  return reason.includes('下载安装包') ? reason : `${reason} 请下载安装包后按系统提示完成安装。`
 }

@@ -34,6 +34,11 @@ impact_rules:
       - "npm run build"
       - "git diff --check"
       - "Windows real-device uninstall / overwrite install smoke or explicit manual blocker"
+  - when: "macos-manual-installer-download"
+    run:
+      - "npm test -- src/shared/__tests__/update.test.ts src/renderer/src/utils/__tests__/update-prompt.test.ts src/renderer/src/components/modals/__tests__/AppSettingsModal.test.tsx"
+      - "npm run typecheck"
+      - "macOS packaged-app download/open DMG smoke or explicit manual blocker"
 
 failure_modes:
   - id: FM-DEF-001
@@ -96,6 +101,10 @@ failure_modes:
     scenario: "Application Settings overview references an icon component that was not imported and crashes during unauthenticated account loading"
     expected: "Application Settings can render its overview while the account state is loading"
     guard: "src/renderer/src/components/modals/__tests__/AppSettingsModal.test.tsx plus npm run build"
+  - id: FM-DEF-016
+    scenario: "Unsigned macOS public builds only open the GitHub Release page, leaving users to manually find the matching DMG"
+    expected: "The macOS manual-update action downloads the current-version DMG for the running architecture into Downloads and opens it, while automatic install remains blocked"
+    guard: "src/shared/__tests__/update.test.ts plus src/renderer/src/components/modals/__tests__/AppSettingsModal.test.tsx plus packaged-app smoke"
 
 guards:
   - ".ai-os/lanes/default/evals/ai-os-v9-lane-normalization.md"

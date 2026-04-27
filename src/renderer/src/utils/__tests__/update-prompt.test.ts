@@ -50,10 +50,18 @@ describe('update prompt helpers', () => {
 
     expect(shouldUseManualUpdate(available)).toBe(true)
     expect(buildManualUpdateMessage(available)).toContain('macOS')
+    expect(buildManualUpdateMessage(available)).toContain('下载安装包')
     expect(
       shouldUseManualUpdate({
         ...available,
         status: 'checking' as const
+      })
+    ).toBe(false)
+    expect(
+      shouldUseManualUpdate({
+        ...available,
+        status: 'error' as const,
+        version: null
       })
     ).toBe(false)
   })

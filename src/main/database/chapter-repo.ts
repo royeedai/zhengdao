@@ -85,7 +85,7 @@ function countWordsFromHtml(html: string): number {
   return stripped.length
 }
 
-export function createChapter(data: { volume_id: number; title: string; content?: string }) {
+export function createChapter(data: { volume_id: number; title: string; content?: string; summary?: string }) {
   const db = getDb()
   const maxOrder = db
     .prepare(
@@ -93,12 +93,13 @@ export function createChapter(data: { volume_id: number; title: string; content?
     )
     .get(data.volume_id) as { max_order: number }
   const content = data.content ?? ''
+  const summary = data.summary?.trim() ?? ''
   const wordCount = countWordsFromHtml(content)
   const result = db
     .prepare(
-      'INSERT INTO chapters (volume_id, title, content, word_count, sort_order) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO chapters (volume_id, title, content, word_count, summary, sort_order) VALUES (?, ?, ?, ?, ?, ?)'
     )
-    .run(data.volume_id, data.title, content, wordCount, maxOrder.max_order + 1)
+    .run(data.volume_id, data.title, content, wordCount, summary, maxOrder.max_order + 1)
   return db.prepare('SELECT * FROM chapters WHERE id = ?').get(result.lastInsertRowid)
 }
 

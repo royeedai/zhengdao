@@ -14,6 +14,20 @@ export interface UpdateSnapshot {
   errorRecoveryAction: UpdateRecoveryAction | null
 }
 
+export interface ManualInstallerDownloadResult {
+  fileName: string
+  filePath: string
+  downloadUrl: string
+}
+
+export interface MacManualInstallerTarget {
+  fileName: string
+  tagName: string
+  downloadUrl: string
+}
+
+export type MacInstallerArch = 'arm64' | 'x64'
+
 export type UpdateEvent =
   | { type: 'checking' }
   | { type: 'download-started' }
@@ -65,6 +79,42 @@ const HTML_ENTITIES: Record<string, string> = {
   lt: '<',
   nbsp: ' ',
   quot: '"'
+}
+
+export function normalizeMacInstallerArch(value: string): MacInstallerArch | null {
+  if (value === 'arm64' || value === 'x64') return value
+  return null
+}
+
+function normalizeReleaseVersion(value: string): string | null {
+  const trimmed = value.trim().replace(/^v/i, '')
+  if (!/^[0-9A-Za-z][0-9A-Za-z._+-]*$/.test(trimmed)) return null
+  return trimmed
+}
+
+export function createMacManualInstallerTarget({
+  version,
+  arch,
+  releasesUrl
+}: {
+  version: string
+  arch: string
+  releasesUrl: string
+}): MacManualInstallerTarget | null {
+  const normalizedVersion = normalizeReleaseVersion(version)
+  const normalizedArch = normalizeMacInstallerArch(arch)
+  const normalizedReleasesUrl = releasesUrl.trim().replace(/\/+$/, '')
+
+  if (!normalizedVersion || !normalizedArch || !normalizedReleasesUrl) return null
+
+  const fileName = `zhengdao-${normalizedVersion}-${normalizedArch}.dmg`
+  const tagName = `v${normalizedVersion}`
+
+  return {
+    fileName,
+    tagName,
+    downloadUrl: `${normalizedReleasesUrl}/download/${encodeURIComponent(tagName)}/${encodeURIComponent(fileName)}`
+  }
 }
 
 function decodeHtmlEntities(value: string): string {

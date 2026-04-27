@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Bot, Check, ChevronDown, ClipboardCheck, GripVertical, Loader2, MessageSquare, MessageSquarePlus, Send, Settings2, Sparkles, Trash2, X } from 'lucide-react'
+import { Bot, Check, ClipboardCheck, Loader2, MessageSquare, MessageSquarePlus, Send, Settings2, Sparkles, Trash2, X } from 'lucide-react'
 import { useBookStore } from '@/stores/book-store'
 import { useChapterStore } from '@/stores/chapter-store'
 import { useCharacterStore } from '@/stores/character-store'
@@ -27,18 +27,15 @@ import {
 import { stripHtmlToText } from '@/utils/html-to-text'
 import { getActiveEditor } from '@/components/editor/active-editor'
 import { buildConversationListItems, pickConversationAfterDelete } from './conversation-list'
-import { resolveAssistantSkillSelection } from './conversation-mode'
+import {
+  ASSISTANT_CHAT_MODE_KEY,
+  resolveAssistantIntent,
+  resolveAssistantSkillSelection
+} from './conversation-mode'
 import { shouldSubmitAiAssistantInput } from './input-behavior'
 import { buildDraftPreviewModel } from './draft-preview'
 import { buildAssistantMessageDisplay } from './message-display'
-import {
-  resizeAiAssistantPanelRect,
-  resizeAiAssistantPanelRectFromLeftEdge,
-  resizeAiAssistantPanelRectFromRightEdge,
-  resizeAiAssistantPanelRectFromTopLeft,
-  translateAiAssistantLauncherPosition,
-  translateAiAssistantPanelRect
-} from './panel-layout'
+import { translateAiAssistantLauncherPosition } from './panel-layout'
 import {
   appendAssistantStreamToken,
   completeAssistantStreamMessage,
@@ -137,7 +134,7 @@ function withLocalRagChip(context: AiAssistantContext): AiAssistantContext {
   }
 }
 
-export default function AiAssistantDock() {
+export function AiAssistantPanel() {
   const bookId = useBookStore((s) => s.currentBookId)
   const currentChapter = useChapterStore((s) => s.currentChapter)
   const volumes = useChapterStore((s) => s.volumes)
@@ -153,19 +150,13 @@ export default function AiAssistantDock() {
   const createPlotNode = usePlotStore((s) => s.createPlotNode)
   const createWikiEntry = useWikiStore((s) => s.createEntry)
   const {
-    aiAssistantOpen,
     aiAssistantSkillKey,
-    aiAssistantPanelRect,
-    aiAssistantLauncherPosition,
     aiAssistantSelectionText,
     aiAssistantSelectionChapterId,
     aiAssistantSelectionFrom,
     aiAssistantSelectionTo,
-    openAiAssistant,
     closeAiAssistant,
     setAiAssistantSkillKey,
-    setAiAssistantLauncherPosition,
-    setAiAssistantPanelRect,
     openModal
   } = useUIStore()
 
@@ -180,35 +171,26 @@ export default function AiAssistantDock() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [conversationListOpen, setConversationListOpen] = useState(false)
+  const [intentPickerOpen, setIntentPickerOpen] = useState(false)
   const [enabledContextChipIds, setEnabledContextChipIds] = useState<string[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
-  const panelRectRef = useRef(aiAssistantPanelRect)
-  const launcherPositionRef = useRef(aiAssistantLauncherPosition)
-  const launcherClickSuppressedRef = useRef(false)
-  const interactionCleanupRef = useRef<(() => void) | null>(null)
   const activeRequestAbortRef = useRef<AbortController | null>(null)
 
-  useEffect(() => {
-    panelRectRef.current = aiAssistantPanelRect
-  }, [aiAssistantPanelRect])
-
-  useEffect(() => {
-    launcherPositionRef.current = aiAssistantLauncherPosition
-  }, [aiAssistantLauncherPosition])
-
-  useEffect(() => {
-    const handleWindowResize = () => {
-      setAiAssistantPanelRect(panelRectRef.current)
-      setAiAssistantLauncherPosition(launcherPositionRef.current)
-    }
-
-    window.addEventListener('resize', handleWindowResize)
-    return () => window.removeEventListener('resize', handleWindowResize)
-  }, [setAiAssistantLauncherPosition, setAiAssistantPanelRect])
-
+  const assistantIntent = useMemo(
+    () =>
+      resolveAssistantIntent({
+        skills,
+        explicitSkillKey: aiAssistantSkillKey,
+        userInput: input,
+        selectedText: aiAssistantSelectionChapterId === currentChapter?.id ? aiAssistantSelectionText : '',
+        hasCurrentChapter: Boolean(currentChapter),
+        hasVolumes: volumes.length > 0
+      }),
+    [aiAssistantSelectionChapterId, aiAssistantSelectionText, aiAssistantSkillKey, currentChapter, input, skills, volumes.length]
+  )
   const selectedSkill = useMemo(() => {
-    return resolveAssistantSkillSelection(skills, overrides, aiAssistantSkillKey)
-  }, [skills, overrides, aiAssistantSkillKey])
+    return resolveAssistantSkillSelection(skills, overrides, assistantIntent.skillKey)
+  }, [skills, overrides, assistantIntent.skillKey])
   const contextPolicy = useMemo(
     () => resolveAssistantContextPolicy(selectedSkill, profile),
     [profile, selectedSkill]
@@ -321,30 +303,14 @@ export default function AiAssistantDock() {
   }, [bookId])
 
   useEffect(() => {
-    if (!aiAssistantSkillKey) return
-    const id = window.setTimeout(() => {
-      setInput('')
-    }, 0)
-    return () => window.clearTimeout(id)
-  }, [aiAssistantSkillKey])
-
-  useEffect(() => {
-    if (!aiAssistantOpen || !bookId) return
+    if (!bookId) return
     void refreshConfig()
     void refreshConversation(conversationId)
-  }, [aiAssistantOpen, bookId, conversationId, refreshConfig, refreshConversation])
+  }, [bookId, conversationId, refreshConfig, refreshConversation])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages.length, drafts.length, loading])
-
-  useEffect(() => {
-    const onWindowResize = () => {
-      setAiAssistantPanelRect(panelRectRef.current)
-    }
-    window.addEventListener('resize', onWindowResize)
-    return () => window.removeEventListener('resize', onWindowResize)
-  }, [setAiAssistantPanelRect])
 
   useEffect(() => {
     setEnabledContextChipIds(
@@ -355,7 +321,6 @@ export default function AiAssistantDock() {
   useEffect(() => {
     return () => {
       activeRequestAbortRef.current?.abort()
-      interactionCleanupRef.current?.()
     }
   }, [])
 
@@ -363,7 +328,7 @@ export default function AiAssistantDock() {
 
   const handleSkillSelectionChange = (skillKey: string | null) => {
     setAiAssistantSkillKey(skillKey)
-    setInput('')
+    setIntentPickerOpen(false)
   }
 
   const validateSkillBeforeSend = (skill: AiSkillTemplate | null): string | null => {
@@ -415,6 +380,8 @@ export default function AiAssistantDock() {
       const userMessage = (await window.api.aiAddMessage(conversationId, 'user', text, {
         skill_key: skill?.key ?? null,
         mode: skill ? 'skill' : 'chat',
+        intent_reason: assistantIntent.reason,
+        intent_confidence: assistantIntent.confidence,
         context_chips: requestContext.chips
       })) as AiMessage
       const pendingMessageId = -Date.now()
@@ -511,7 +478,9 @@ export default function AiAssistantDock() {
 
       const assistantMessage = (await window.api.aiAddMessage(conversationId, 'assistant', streamedContent, {
         skill_key: skill?.key ?? null,
-        mode: skill ? 'skill' : 'chat'
+        mode: skill ? 'skill' : 'chat',
+        intent_reason: assistantIntent.reason,
+        intent_confidence: assistantIntent.confidence
       })) as { id: number }
       setMessages((current) =>
         completeAssistantStreamMessage(current, pendingMessageId, assistantMessage.id, streamedContent)
@@ -553,6 +522,8 @@ export default function AiAssistantDock() {
       setInput('从当前光标或章节末尾自然续写，保持当前节奏。')
     } else if (skill.key === 'review_chapter') {
       setInput('审核当前章节的节奏、人物一致性、伏笔和毒点风险。')
+    } else if (skill.key === 'polish_text') {
+      setInput('润色选中文本，保留原意和人物口吻。')
     } else {
       setInput('')
     }
@@ -666,14 +637,21 @@ export default function AiAssistantDock() {
           const chapter = await createChapter(
             volumeId,
             String(payload.title || draft.title || 'AI 新章节'),
-            ensureHtmlContent(String(payload.content || ''))
+            ensureHtmlContent(String(payload.content || '')),
+            String(payload.summary || '').trim()
           )
           await selectChapter(chapter.id)
           break
         }
         case 'update_chapter_summary': {
           if (!currentChapter) throw new Error('请先打开目标章节')
-          await updateChapterSummary(currentChapter.id, String(payload.summary || payload.content || ''))
+          if (currentChapter.summary?.trim()) {
+            const ok = window.confirm('当前章节已有摘要。确定用这条 AI 摘要覆盖吗？')
+            if (!ok) return
+          }
+          const summary = String(payload.summary || payload.content || '').trim()
+          if (!summary) throw new Error('摘要内容为空')
+          await updateChapterSummary(currentChapter.id, summary)
           break
         }
         case 'create_character': {
@@ -728,246 +706,44 @@ export default function AiAssistantDock() {
     }
   }
 
-  const open = () => {
-    openAiAssistant()
-    void refreshConfig()
-    void refreshConversation()
-  }
-
-  const stopInteraction = () => {
-    interactionCleanupRef.current?.()
-    interactionCleanupRef.current = null
-  }
-
-  const handleDragStart = (event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    const startX = event.clientX
-    const startY = event.clientY
-    const startRect = panelRectRef.current
-    const previousUserSelect = document.body.style.userSelect
-
-    const handleMove = (moveEvent: MouseEvent) => {
-      setAiAssistantPanelRect(
-        translateAiAssistantPanelRect(
-          startRect,
-          moveEvent.clientX - startX,
-          moveEvent.clientY - startY,
-          window.innerWidth,
-          window.innerHeight
-        )
-      )
+  const quickActions = [
+    {
+      key: 'continue_writing',
+      label: '续写当前章',
+      description: '从当前章节末尾或光标位置继续推进正文。',
+      disabled: !currentChapter
+    },
+    {
+      key: 'polish_text',
+      label: '润色选区',
+      description: '改写当前选中文本，保留原意和人物口吻。',
+      disabled: !(aiAssistantSelectionChapterId === currentChapter?.id && aiAssistantSelectionText.trim())
+    },
+    {
+      key: 'review_chapter',
+      label: '审核本章',
+      description: '检查节奏、毒点、伏笔和人物一致性。',
+      disabled: !currentChapter
     }
-
-    const cleanup = () => {
-      document.body.style.userSelect = previousUserSelect
-      window.removeEventListener('mousemove', handleMove)
-      window.removeEventListener('mouseup', cleanup)
-      interactionCleanupRef.current = null
-    }
-
-    stopInteraction()
-    interactionCleanupRef.current = cleanup
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', handleMove)
-    window.addEventListener('mouseup', cleanup)
-  }
-
-  const handleResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    const startX = event.clientX
-    const startY = event.clientY
-    const startRect = panelRectRef.current
-    const previousUserSelect = document.body.style.userSelect
-
-    const handleMove = (moveEvent: MouseEvent) => {
-      setAiAssistantPanelRect(
-        resizeAiAssistantPanelRect(
-          startRect,
-          moveEvent.clientX - startX,
-          moveEvent.clientY - startY,
-          window.innerWidth,
-          window.innerHeight
-        )
-      )
-    }
-
-    const cleanup = () => {
-      document.body.style.userSelect = previousUserSelect
-      window.removeEventListener('mousemove', handleMove)
-      window.removeEventListener('mouseup', cleanup)
-      interactionCleanupRef.current = null
-    }
-
-    stopInteraction()
-    interactionCleanupRef.current = cleanup
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', handleMove)
-    window.addEventListener('mouseup', cleanup)
-  }
-
-  const handleTopLeftResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    const startX = event.clientX
-    const startY = event.clientY
-    const startRect = panelRectRef.current
-    const previousUserSelect = document.body.style.userSelect
-
-    const handleMove = (moveEvent: MouseEvent) => {
-      setAiAssistantPanelRect(
-        resizeAiAssistantPanelRectFromTopLeft(
-          startRect,
-          moveEvent.clientX - startX,
-          moveEvent.clientY - startY,
-          window.innerWidth,
-          window.innerHeight
-        )
-      )
-    }
-
-    const cleanup = () => {
-      document.body.style.userSelect = previousUserSelect
-      window.removeEventListener('mousemove', handleMove)
-      window.removeEventListener('mouseup', cleanup)
-      interactionCleanupRef.current = null
-    }
-
-    stopInteraction()
-    interactionCleanupRef.current = cleanup
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', handleMove)
-    window.addEventListener('mouseup', cleanup)
-  }
-
-  const handleLeftEdgeResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    const startX = event.clientX
-    const startRect = panelRectRef.current
-    const previousUserSelect = document.body.style.userSelect
-
-    const handleMove = (moveEvent: MouseEvent) => {
-      setAiAssistantPanelRect(
-        resizeAiAssistantPanelRectFromLeftEdge(
-          startRect,
-          moveEvent.clientX - startX,
-          window.innerWidth,
-          window.innerHeight
-        )
-      )
-    }
-
-    const cleanup = () => {
-      document.body.style.userSelect = previousUserSelect
-      window.removeEventListener('mousemove', handleMove)
-      window.removeEventListener('mouseup', cleanup)
-      interactionCleanupRef.current = null
-    }
-
-    stopInteraction()
-    interactionCleanupRef.current = cleanup
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', handleMove)
-    window.addEventListener('mouseup', cleanup)
-  }
-
-  const handleRightEdgeResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    const startX = event.clientX
-    const startRect = panelRectRef.current
-    const previousUserSelect = document.body.style.userSelect
-
-    const handleMove = (moveEvent: MouseEvent) => {
-      setAiAssistantPanelRect(
-        resizeAiAssistantPanelRectFromRightEdge(
-          startRect,
-          moveEvent.clientX - startX,
-          window.innerWidth,
-          window.innerHeight
-        )
-      )
-    }
-
-    const cleanup = () => {
-      document.body.style.userSelect = previousUserSelect
-      window.removeEventListener('mousemove', handleMove)
-      window.removeEventListener('mouseup', cleanup)
-      interactionCleanupRef.current = null
-    }
-
-    stopInteraction()
-    interactionCleanupRef.current = cleanup
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', handleMove)
-    window.addEventListener('mouseup', cleanup)
-  }
-
-  const handleLauncherDragStart = (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (event.button !== 0) return
-    event.preventDefault()
-    const startX = event.clientX
-    const startY = event.clientY
-    const startPosition = launcherPositionRef.current
-    const previousUserSelect = document.body.style.userSelect
-    let moved = false
-
-    const handleMove = (moveEvent: MouseEvent) => {
-      const deltaX = moveEvent.clientX - startX
-      const deltaY = moveEvent.clientY - startY
-      if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
-        moved = true
-      }
-      setAiAssistantLauncherPosition(
-        translateAiAssistantLauncherPosition(
-          startPosition,
-          deltaX,
-          deltaY,
-          window.innerWidth,
-          window.innerHeight
-        )
-      )
-    }
-
-    const cleanup = () => {
-      document.body.style.userSelect = previousUserSelect
-      window.removeEventListener('mousemove', handleMove)
-      window.removeEventListener('mouseup', cleanup)
-      interactionCleanupRef.current = null
-      if (moved) {
-        launcherClickSuppressedRef.current = true
-        window.setTimeout(() => {
-          launcherClickSuppressedRef.current = false
-        }, 0)
-      }
-    }
-
-    stopInteraction()
-    interactionCleanupRef.current = cleanup
-    document.body.style.userSelect = 'none'
-    window.addEventListener('mousemove', handleMove)
-    window.addEventListener('mouseup', cleanup)
-  }
+  ]
+  const intentLabel =
+    aiAssistantSkillKey === ASSISTANT_CHAT_MODE_KEY
+      ? '普通对话'
+      : selectedSkill
+        ? `${aiAssistantSkillKey ? '手动' : '自动'}：${selectedSkill.name}`
+        : '自动：普通对话'
+  const intentHint = selectedSkill ? assistantIntent.reason : '普通问题会直接回答；创作任务会自动进入对应能力和草稿篮。'
 
   return (
-    <>
-      {aiAssistantOpen && (
-        <div
-          className="fixed z-40 flex flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-secondary)] shadow-2xl"
-          style={{
-            left: aiAssistantPanelRect.x,
-            top: aiAssistantPanelRect.y,
-            width: aiAssistantPanelRect.width,
-            height: aiAssistantPanelRect.height
-          }}
-        >
+        <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[var(--bg-secondary)]">
           <div
-            onMouseDown={handleDragStart}
-            className="flex h-12 shrink-0 cursor-move items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-4"
+            className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-3"
           >
             <div className="flex min-w-0 items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
               <Bot size={17} className="text-[var(--accent-primary)]" />
               <span className="shrink-0">AI 创作助手</span>
-              <GripVertical size={14} className="text-[var(--text-muted)]" />
             </div>
-            <div className="flex items-center gap-1" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => setConversationListOpen((open) => !open)}
@@ -1010,7 +786,7 @@ export default function AiAssistantDock() {
                 title="收起 AI 助手"
                 className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
               >
-                <ChevronDown size={16} />
+                <X size={16} />
               </button>
             </div>
           </div>
@@ -1084,22 +860,28 @@ export default function AiAssistantDock() {
             {messages.length === 0 && (
               <div className="space-y-3">
                 <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3 text-xs text-[var(--text-secondary)]">
-                  可以对话，也可以直接调用能力卡。涉及正文、章节和资产的结果会先进入草稿篮，确认后才写入作品。
+                  直接输入你的写作意图即可。AI 会自动选择续写、润色、审稿或资产生成；涉及正文和资产的结果会先进入草稿篮。
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {skills.map((skill) => (
+                <div className="grid grid-cols-1 gap-2">
+                  {quickActions.map((action) => {
+                    const skill = skills.find((item) => item.key === action.key)
+                    return (
                     <button
-                      key={skill.key}
+                      key={action.key}
                       type="button"
-                      onClick={() => runSkill(skill)}
-                      className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-2 text-left transition hover:border-[var(--accent-border)]"
+                      disabled={!skill || action.disabled}
+                      onClick={() => {
+                        if (skill) runSkill(skill)
+                      }}
+                      className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-2 text-left transition hover:border-[var(--accent-border)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)]">
-                        <Sparkles size={13} className="text-[var(--accent-primary)]" /> {skill.name}
+                        <Sparkles size={13} className="text-[var(--accent-primary)]" /> {action.label}
                       </div>
-                      <div className="mt-1 line-clamp-2 text-[10px] text-[var(--text-muted)]">{skill.description}</div>
+                      <div className="mt-1 line-clamp-2 text-[10px] text-[var(--text-muted)]">{action.description}</div>
                     </button>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -1247,18 +1029,61 @@ export default function AiAssistantDock() {
 
           <div className="shrink-0 border-t border-[var(--border-primary)] bg-[var(--bg-primary)] p-3">
             <div className="mb-2 flex items-center gap-2">
-              <select
-                value={selectedSkill?.key || ''}
-                onChange={(event) => handleSkillSelectionChange(event.target.value || null)}
-                className="field py-1.5 text-xs"
-              >
-                <option value="">普通对话 / 自动识别</option>
-                {skills.map((skill) => (
-                  <option key={skill.key} value={skill.key}>
-                    {skill.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative min-w-0 flex-1">
+                <button
+                  type="button"
+                  onClick={() => setIntentPickerOpen((open) => !open)}
+                  className="flex w-full min-w-0 items-center gap-1.5 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1.5 text-left text-xs text-[var(--text-secondary)] hover:border-[var(--accent-border)] hover:text-[var(--text-primary)]"
+                  title={intentHint}
+                >
+                  <Sparkles size={13} className="shrink-0 text-[var(--accent-primary)]" />
+                  <span className="truncate">{intentLabel}</span>
+                </button>
+                {intentPickerOpen && (
+                  <div className="absolute bottom-full left-0 z-30 mb-2 max-h-72 w-full overflow-y-auto rounded-md border border-[var(--border-primary)] bg-[var(--bg-primary)] p-1 shadow-2xl">
+                    <button
+                      type="button"
+                      onClick={() => handleSkillSelectionChange(null)}
+                      className={`w-full rounded px-2 py-1.5 text-left text-xs ${
+                        !aiAssistantSkillKey
+                          ? 'bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      自动识别
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSkillSelectionChange(ASSISTANT_CHAT_MODE_KEY)}
+                      className={`w-full rounded px-2 py-1.5 text-left text-xs ${
+                        aiAssistantSkillKey === ASSISTANT_CHAT_MODE_KEY
+                          ? 'bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      普通对话
+                    </button>
+                    <div className="my-1 border-t border-[var(--border-primary)]" />
+                    {skills.map((skill) => (
+                      <button
+                        key={skill.key}
+                        type="button"
+                        onClick={() => handleSkillSelectionChange(skill.key)}
+                        className={`w-full rounded px-2 py-1.5 text-left text-xs ${
+                          aiAssistantSkillKey === skill.key
+                            ? 'bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+                            : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        <span className="block truncate font-semibold">{skill.name}</span>
+                        <span className="mt-0.5 block truncate text-[10px] text-[var(--text-muted)]">
+                          {skill.description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => openModal('aiSettings')}
@@ -1279,7 +1104,7 @@ export default function AiAssistantDock() {
                     void send()
                   }
                 }}
-                placeholder="普通提问，或选择能力卡执行写作任务。Enter 发送，Shift + Enter 换行"
+                placeholder="直接描述你要 AI 做什么。Enter 发送，Shift + Enter 换行"
                 className="field resize-none text-xs"
               />
               <button
@@ -1294,60 +1119,109 @@ export default function AiAssistantDock() {
             </div>
           </div>
 
-          <div
-            onMouseDown={handleTopLeftResizeStart}
-            className="absolute left-0 top-0 z-10 h-5 w-5 cursor-nwse-resize"
-            title="拖动调整大小"
-          >
-            <div className="absolute left-1 top-1 h-2.5 w-2.5 rounded-sm border-l-2 border-t-2 border-[var(--text-muted)]" />
-          </div>
-
-          <div
-            onMouseDown={handleLeftEdgeResizeStart}
-            className="absolute left-0 top-5 bottom-5 z-10 w-3 cursor-ew-resize"
-            title="拖动调整宽度"
-          />
-
-          <div
-            onMouseDown={handleRightEdgeResizeStart}
-            className="absolute right-0 top-5 bottom-5 z-10 w-3 cursor-ew-resize"
-            title="拖动调整宽度"
-          />
-
-          <div
-            onMouseDown={handleResizeStart}
-            className="absolute bottom-0 right-0 z-10 h-5 w-5 cursor-nwse-resize"
-            title="拖动调整大小"
-          >
-            <div className="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-sm border-r-2 border-b-2 border-[var(--text-muted)]" />
-          </div>
         </div>
-      )}
+  )
+}
 
-      {!aiAssistantOpen && (
-        <button
-          type="button"
-          onMouseDown={handleLauncherDragStart}
-          onClick={(event) => {
-            if (launcherClickSuppressedRef.current) {
-              event.preventDefault()
-              launcherClickSuppressedRef.current = false
-              return
-            }
-            open()
-          }}
-          className="fixed z-40 flex h-12 w-12 cursor-grab items-center justify-center rounded-full border border-[var(--accent-border)] bg-[var(--accent-primary)] text-[var(--accent-contrast)] shadow-xl shadow-[0_10px_24px_rgba(63,111,159,0.22)] transition hover:bg-[var(--accent-secondary)] active:cursor-grabbing"
-          style={{
-            left: aiAssistantLauncherPosition.x,
-            top: aiAssistantLauncherPosition.y,
-            touchAction: 'none'
-          }}
-          title="拖动或打开 AI 创作助手"
-          aria-label="拖动或打开 AI 创作助手"
-        >
-          <Bot size={22} />
-        </button>
-      )}
-    </>
+export default function AiAssistantDock() {
+  const bookId = useBookStore((s) => s.currentBookId)
+  const rightPanelOpen = useUIStore((s) => s.rightPanelOpen)
+  const aiAssistantLauncherPosition = useUIStore((s) => s.aiAssistantLauncherPosition)
+  const setAiAssistantLauncherPosition = useUIStore((s) => s.setAiAssistantLauncherPosition)
+  const openAiAssistant = useUIStore((s) => s.openAiAssistant)
+  const launcherPositionRef = useRef(aiAssistantLauncherPosition)
+  const launcherClickSuppressedRef = useRef(false)
+  const interactionCleanupRef = useRef<(() => void) | null>(null)
+
+  useEffect(() => {
+    launcherPositionRef.current = aiAssistantLauncherPosition
+  }, [aiAssistantLauncherPosition])
+
+  useEffect(() => {
+    const handleWindowResize = () => {
+      setAiAssistantLauncherPosition(launcherPositionRef.current)
+    }
+
+    window.addEventListener('resize', handleWindowResize)
+    return () => window.removeEventListener('resize', handleWindowResize)
+  }, [setAiAssistantLauncherPosition])
+
+  useEffect(() => {
+    return () => {
+      interactionCleanupRef.current?.()
+    }
+  }, [])
+
+  if (!bookId || rightPanelOpen) return null
+
+  const handleLauncherDragStart = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return
+    event.preventDefault()
+    const startX = event.clientX
+    const startY = event.clientY
+    const startPosition = launcherPositionRef.current
+    const previousUserSelect = document.body.style.userSelect
+    let moved = false
+
+    const handleMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX
+      const deltaY = moveEvent.clientY - startY
+      if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+        moved = true
+      }
+      setAiAssistantLauncherPosition(
+        translateAiAssistantLauncherPosition(
+          startPosition,
+          deltaX,
+          deltaY,
+          window.innerWidth,
+          window.innerHeight
+        )
+      )
+    }
+
+    const cleanup = () => {
+      document.body.style.userSelect = previousUserSelect
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', cleanup)
+      interactionCleanupRef.current = null
+      if (moved) {
+        launcherClickSuppressedRef.current = true
+        window.setTimeout(() => {
+          launcherClickSuppressedRef.current = false
+        }, 0)
+      }
+    }
+
+    interactionCleanupRef.current?.()
+    interactionCleanupRef.current = cleanup
+    document.body.style.userSelect = 'none'
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', cleanup)
+  }
+
+  return (
+    <button
+      type="button"
+      onMouseDown={handleLauncherDragStart}
+      onClick={(event) => {
+        if (launcherClickSuppressedRef.current) {
+          event.preventDefault()
+          launcherClickSuppressedRef.current = false
+          return
+        }
+        openAiAssistant()
+      }}
+      className="fixed z-40 flex h-12 w-12 cursor-grab items-center justify-center rounded-full border border-[var(--accent-border)] bg-[var(--accent-primary)] text-[var(--accent-contrast)] shadow-xl shadow-[0_10px_24px_rgba(63,111,159,0.22)] transition hover:bg-[var(--accent-secondary)] active:cursor-grabbing"
+      style={{
+        left: aiAssistantLauncherPosition.x,
+        top: aiAssistantLauncherPosition.y,
+        touchAction: 'none'
+      }}
+      title="拖动或打开 AI 创作助手"
+      aria-label="拖动或打开 AI 创作助手"
+    >
+      <Bot size={22} />
+    </button>
   )
 }

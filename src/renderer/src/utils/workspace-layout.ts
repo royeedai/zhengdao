@@ -1,7 +1,7 @@
 export type WorkspacePanelKind = 'left' | 'right'
-export type RightPanelTab = 'foreshadow' | 'characters' | 'notes'
+export type RightPanelTab = 'foreshadow' | 'characters' | 'notes' | 'ai'
 
-export const RIGHT_PANEL_TABS: RightPanelTab[] = ['foreshadow', 'characters', 'notes']
+export const RIGHT_PANEL_TABS: RightPanelTab[] = ['foreshadow', 'characters', 'notes', 'ai']
 
 const PANEL_LIMITS: Record<WorkspacePanelKind, { min: number; max: number; fallback: number; viewportRatio: number }> = {
   left: { min: 232, max: 420, fallback: 296, viewportRatio: 0.34 },

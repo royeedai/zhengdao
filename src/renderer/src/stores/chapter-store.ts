@@ -9,7 +9,7 @@ interface ChapterStore {
   selectChapter: (id: number) => Promise<void>
   forceReloadCurrentChapter: () => Promise<void>
   createVolume: (bookId: number, title: string) => Promise<Volume>
-  createChapter: (volumeId: number, title: string, content?: string) => Promise<Chapter>
+  createChapter: (volumeId: number, title: string, content?: string, summary?: string) => Promise<Chapter>
   updateChapterContent: (id: number, content: string, wordCount: number) => Promise<void>
   updateChapterTitle: (id: number, title: string) => Promise<void>
   updateChapterSummary: (id: number, summary: string) => Promise<void>
@@ -58,8 +58,8 @@ export const useChapterStore = create<ChapterStore>((set, get) => ({
     return vol
   },
 
-  createChapter: async (volumeId, title, content) => {
-    const ch = await window.api.createChapter({ volume_id: volumeId, title, content })
+  createChapter: async (volumeId, title, content, summary) => {
+    const ch = await window.api.createChapter({ volume_id: volumeId, title, content, summary })
     const { volumes } = get()
     const vol = volumes.find((v) => v.chapters?.some((c) => c.volume_id === volumeId) || v.id === volumeId)
     if (vol) {

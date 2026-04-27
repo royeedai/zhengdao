@@ -22,6 +22,7 @@ describe('workspace panel layout', () => {
   it('validates right panel tabs', () => {
     expect(isRightPanelTab('foreshadow')).toBe(true)
     expect(isRightPanelTab('characters')).toBe(true)
+    expect(isRightPanelTab('ai')).toBe(true)
     expect(isRightPanelTab('outline')).toBe(false)
   })
 

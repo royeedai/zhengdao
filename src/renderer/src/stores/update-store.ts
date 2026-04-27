@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { UpdateSnapshot } from '../../../shared/update'
+import type { ManualInstallerDownloadResult, UpdateSnapshot } from '../../../shared/update'
 import { createIdleUpdateSnapshot } from '../../../shared/update'
 import { flushAndInstallUpdate } from '@/utils/install-update'
 import { useToastStore } from './toast-store'
@@ -15,6 +15,7 @@ interface UpdateStore {
   setPrepareInstallHandler: (handler: PrepareInstallHandler) => void
   checkForUpdates: () => Promise<UpdateSnapshot>
   downloadAvailableUpdate: () => Promise<UpdateSnapshot>
+  downloadManualInstallerUpdate: () => Promise<ManualInstallerDownloadResult>
   installReadyUpdate: () => Promise<void>
 }
 
@@ -68,6 +69,26 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
       return next
     } catch (error) {
       const message = error instanceof Error ? error.message : '下载更新失败'
+      useToastStore.getState().addToast('error', message)
+      throw error
+    }
+  },
+
+  downloadManualInstallerUpdate: async () => {
+    const { snapshot } = get()
+    if (!snapshot.automaticUpdateUnsupportedReason) {
+      throw new Error('当前平台支持应用内自动更新，无需手动下载安装包')
+    }
+    if (!snapshot.version) {
+      throw new Error('当前没有可下载的新版本')
+    }
+
+    try {
+      const result = await window.api.downloadManualInstallerUpdate()
+      useToastStore.getState().addToast('success', `安装包已下载并打开：${result.fileName}`, 5000)
+      return result
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '下载安装包失败'
       useToastStore.getState().addToast('error', message)
       throw error
     }
