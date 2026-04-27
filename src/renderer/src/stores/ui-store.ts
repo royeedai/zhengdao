@@ -224,6 +224,17 @@ if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
 
 type TypewriterPosition = 'center' | 'upper' | 'lower'
 
+type AiAssistantOpenOptions = {
+  input?: string
+  autoSend?: boolean
+}
+
+type AiAssistantCommand = {
+  id: number
+  input: string
+  autoSend: boolean
+}
+
 interface ModalEntry {
   type: ModalType
   data: Record<string, unknown> | null
@@ -256,6 +267,7 @@ interface UIStore {
   aiAssistantSelectionChapterId: number | null
   aiAssistantSelectionFrom: number | null
   aiAssistantSelectionTo: number | null
+  aiAssistantCommand: AiAssistantCommand | null
   chapterSaveStatus: ChapterSaveStatus
 
   activeModal: ModalType
@@ -283,9 +295,10 @@ interface UIStore {
   toggleSplitView: () => void
   setSplitChapterId: (id: number | null) => void
 
-  openAiAssistant: (skillKey?: string | null) => void
+  openAiAssistant: (options?: AiAssistantOpenOptions | string | null) => void
   closeAiAssistant: () => void
   setAiAssistantSkillKey: (skillKey: string | null) => void
+  consumeAiAssistantCommand: (id: number) => void
   setAiAssistantPanelRect: (rect: AiAssistantPanelRect) => void
   setAiAssistantLauncherPosition: (position: AiAssistantLauncherPosition) => void
   setAiAssistantSelection: (data: {
@@ -338,6 +351,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   aiAssistantSelectionChapterId: null,
   aiAssistantSelectionFrom: null,
   aiAssistantSelectionTo: null,
+  aiAssistantCommand: null,
   chapterSaveStatus: createInitialSaveStatus(),
 
   activeModal: null,
@@ -418,18 +432,30 @@ export const useUIStore = create<UIStore>((set, get) => ({
   toggleSplitView: () => set((s) => ({ splitView: !s.splitView })),
   setSplitChapterId: (id) => set({ splitChapterId: id }),
 
-  openAiAssistant: (skillKey = null) =>
+  openAiAssistant: (options = null) =>
     set(() => {
+      const input = typeof options === 'object' && options ? options.input?.trim() || '' : ''
       persistRightPanelTab('ai')
       return {
         rightPanelOpen: true,
         rightPanelTab: 'ai',
         aiAssistantOpen: true,
-        aiAssistantSkillKey: skillKey
+        aiAssistantSkillKey: null,
+        aiAssistantCommand: input
+          ? {
+              id: Date.now(),
+              input,
+              autoSend: Boolean(typeof options === 'object' && options?.autoSend)
+            }
+          : null
       }
     }),
   closeAiAssistant: () => set({ aiAssistantOpen: false, rightPanelOpen: false }),
   setAiAssistantSkillKey: (skillKey) => set({ aiAssistantSkillKey: skillKey }),
+  consumeAiAssistantCommand: (id) =>
+    set((s) => ({
+      aiAssistantCommand: s.aiAssistantCommand?.id === id ? null : s.aiAssistantCommand
+    })),
   setAiAssistantPanelRect: (rect) => {
     const next =
       typeof window === 'undefined'

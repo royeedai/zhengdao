@@ -18,7 +18,6 @@ import { useConfigStore } from '@/stores/config-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useUpdateStore } from '@/stores/update-store'
 import { aiSummarize, getResolvedAiConfigForBook, isAiConfigReady } from '@/utils/ai'
-import { createInlineCompleteExtension } from '@/components/editor/InlineComplete'
 import { useDailyStats } from '@/hooks/useDailyStats'
 import { useAchievementCheck } from '@/hooks/useAchievements'
 import { getSensitiveWords } from '@/utils/sensitive-words'
@@ -132,6 +131,9 @@ function buildDecorations(doc: any, words: string[]): DecorationSet {
 }
 
 type PostSave = 'none' | 'syncOnly' | 'full'
+
+const AI_CONTINUE_PROMPT = '从当前光标或章节末尾自然续写，保持当前节奏。'
+const AI_POLISH_PROMPT = '润色选中文本，保留原意和人物口吻。'
 
 export default function EditorArea() {
   const { currentChapter, volumes, updateChapterContent, updateChapterSummary, getTotalWords, getCurrentChapterNumber } =
@@ -334,11 +336,7 @@ export default function EditorArea() {
         renderLabel({ node }) {
           return node.attrs.label || ''
         }
-      }),
-      createInlineCompleteExtension(
-        () => getResolvedAiConfigForBook(bookId),
-        () => true
-      )
+      })
     ],
     editorProps: {
       attributes: {
@@ -614,6 +612,20 @@ export default function EditorArea() {
     [editor, setContextMenu]
   )
 
+  const requestAiContinuation = useCallback(
+    (autoSend: boolean) => {
+      if (!currentChapter) {
+        useToastStore.getState().addToast('warning', '请先打开目标章节')
+        setContextMenu(null)
+        return
+      }
+      syncAiAssistantSelection()
+      openAiAssistant({ input: AI_CONTINUE_PROMPT, autoSend })
+      setContextMenu(null)
+    },
+    [currentChapter, openAiAssistant, syncAiAssistantSelection]
+  )
+
   const handleGenerateSummary = useCallback(async () => {
     if (!editor || !currentChapter || summaryLoading) return
     if (currentChapter.summary?.trim()) {
@@ -812,7 +824,7 @@ export default function EditorArea() {
           </button>
           <button
             type="button"
-            onClick={() => openAiAssistant('continue_writing')}
+            onClick={() => requestAiContinuation(false)}
             className="flex items-center gap-1 hover:text-[var(--accent-secondary)] transition"
             title="打开 AI 续写助手"
           >
@@ -939,6 +951,13 @@ export default function EditorArea() {
               >
                 文本分析（本章）
               </button>
+              <button
+                type="button"
+                onClick={() => requestAiContinuation(true)}
+                className="w-full px-3 py-1.5 text-left text-[var(--accent-secondary)] hover:bg-[var(--accent-surface)] transition"
+              >
+                AI 续写
+              </button>
             </>
           ) : (
             <>
@@ -1001,9 +1020,16 @@ export default function EditorArea() {
               </button>
               <button
                 type="button"
+                onClick={() => requestAiContinuation(true)}
+                className="w-full px-3 py-1.5 text-left text-[var(--accent-secondary)] hover:bg-[var(--accent-surface)] transition"
+              >
+                AI 续写
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   syncAiAssistantSelection()
-                  openAiAssistant('polish_text')
+                  openAiAssistant({ input: AI_POLISH_PROMPT, autoSend: true })
                   setContextMenu(null)
                 }}
                 className="w-full px-3 py-1.5 text-left text-[var(--accent-secondary)] hover:bg-[var(--accent-surface)] transition"

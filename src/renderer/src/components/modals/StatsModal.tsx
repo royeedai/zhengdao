@@ -139,173 +139,177 @@ export default function StatsModal() {
   const unlockedMap = useMemo(() => new Map(achievementRows.map((a) => [a.type, a])), [achievementRows])
 
   return (
-    <div className="fixed inset-0 z-[120] flex flex-col bg-black/70 backdrop-blur-md text-[var(--text-primary)]">
-      <header className="grid grid-cols-[48px_1fr_48px] items-center px-6 py-4 border-b border-[var(--border-primary)] shrink-0 bg-[var(--bg-primary)]/95">
-        <div className="h-10 w-10" aria-hidden />
-        <h2 className="text-center text-lg font-bold tracking-wide text-[var(--accent-secondary)]">写作数据中心</h2>
-        <button
-          type="button"
-          onClick={closeModal}
-          className="justify-self-end rounded-lg p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
-          aria-label="关闭"
-          title="关闭"
-        >
-          <X size={20} />
-        </button>
-      </header>
-
-      <div className="flex gap-2 px-6 pt-4 shrink-0 border-b border-[var(--border-primary)] pb-3 bg-[var(--bg-secondary)]/90">
-        {(
-          [
-            ['day', '日'],
-            ['week', '周'],
-            ['month', '月'],
-            ['year', '年']
-          ] as const
-        ).map(([id, label]) => (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4 text-[var(--text-primary)] backdrop-blur-sm animate-fade-in">
+      <div className="flex max-h-[78vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--surface-elevated)] shadow-2xl">
+        <header className="grid grid-cols-[40px_1fr_40px] items-center border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-4 py-3 shrink-0">
+          <div className="h-9 w-9" aria-hidden />
+          <h2 className="text-center text-base font-bold tracking-wide text-[var(--accent-secondary)]">写作数据中心</h2>
           <button
-            key={id}
             type="button"
-            onClick={() => setTab(id)}
-            className={`px-4 py-2 rounded-lg border text-sm font-semibold transition ${
-              tab === id
-                ? 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
-                : 'border-[var(--border-primary)] bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] hover:text-[var(--text-primary)]'
-            }`}
+            onClick={closeModal}
+            className="justify-self-end rounded-lg p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
+            aria-label="关闭"
+            title="关闭"
           >
-            {label}
+            <X size={18} />
           </button>
-        ))}
-      </div>
+        </header>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-10 bg-[var(--bg-primary)]">
-        {tab === 'day' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-5">
-              <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider">今日字数</div>
-              <div className="mt-2 text-3xl font-bold text-[var(--accent-secondary)] tabular-nums">
-                {todayWords.toLocaleString()}
-              </div>
-            </div>
-            <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-5">
-              <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider">今日写作时长</div>
-              <div className="mt-2 text-3xl font-bold text-[var(--text-primary)] tabular-nums">
-                {todayMs >= 3600000
-                  ? `${Math.floor(todayMs / 3600000)}h ${Math.round((todayMs % 3600000) / 60000)}m`
-                  : `${Math.max(1, Math.round(todayMs / 60000))}m`}
-              </div>
-            </div>
-            <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-5">
-              <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider">时速（字/小时）</div>
-              <div className="mt-2 text-3xl font-bold text-[var(--text-primary)] tabular-nums">{wph.toLocaleString()}</div>
-            </div>
-          </div>
-        )}
-
-        {tab === 'week' && (
-          <div>
-            <div className="text-sm text-[var(--text-secondary)] mb-4">最近 7 日字数</div>
-            <div className="flex items-end justify-between gap-2 h-40 px-2">
-              {weekDays.map((d) => (
-                <div key={d.date} className="flex-1 flex flex-col items-center gap-2 min-w-0 h-full">
-                  <div className="flex-1 w-full flex flex-col justify-end min-h-0">
-                    <div
-                      className="w-full rounded-t-md min-h-[4px] transition-all"
-                      title={`${d.date} · ${d.count.toLocaleString()} 字`}
-                      style={{
-                        height: `${Math.max(4, (d.count / weekMax) * 100)}%`,
-                        background: 'linear-gradient(0deg, var(--accent-primary), var(--accent-secondary))'
-                      }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-[var(--text-muted)] truncate w-full text-center">{d.date.slice(5)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {tab === 'month' && (
-          <div>
-            <div className="text-sm text-[var(--text-secondary)] mb-4">最近 30 日热力（UTC 日历）</div>
-            <div
-              className="inline-grid gap-1"
-              style={{
-                gridTemplateRows: 'repeat(7, 12px)',
-                gridAutoFlow: 'column',
-                gridAutoColumns: '12px'
-              }}
+        <div className="flex gap-2 border-b border-[var(--border-primary)] bg-[var(--surface-elevated)] px-4 py-3 shrink-0">
+          {(
+            [
+              ['day', '日'],
+              ['week', '周'],
+              ['month', '月'],
+              ['year', '年']
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
+                tab === id
+                  ? 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+                  : 'border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] hover:text-[var(--text-primary)]'
+              }`}
             >
-              {heatmap.cells.map((cell, idx) => {
-                if (!cell) {
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 space-y-6 overflow-y-auto bg-[var(--surface-elevated)] px-5 py-5">
+          {tab === 'day' && (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-4">
+                <div className="text-xs uppercase tracking-wider text-[var(--text-muted)]">今日字数</div>
+                <div className="mt-2 text-3xl font-bold tabular-nums text-[var(--accent-secondary)]">
+                  {todayWords.toLocaleString()}
+                </div>
+              </div>
+              <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-4">
+                <div className="text-xs uppercase tracking-wider text-[var(--text-muted)]">今日写作时长</div>
+                <div className="mt-2 text-3xl font-bold tabular-nums text-[var(--text-primary)]">
+                  {todayMs >= 3600000
+                    ? `${Math.floor(todayMs / 3600000)}h ${Math.round((todayMs % 3600000) / 60000)}m`
+                    : `${Math.max(1, Math.round(todayMs / 60000))}m`}
+                </div>
+              </div>
+              <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-4">
+                <div className="text-xs uppercase tracking-wider text-[var(--text-muted)]">时速（字/小时）</div>
+                <div className="mt-2 text-3xl font-bold tabular-nums text-[var(--text-primary)]">{wph.toLocaleString()}</div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'week' && (
+            <div>
+              <div className="mb-4 text-sm text-[var(--text-secondary)]">最近 7 日字数</div>
+              <div className="flex h-40 items-end justify-between gap-2 px-2">
+                {weekDays.map((d) => (
+                  <div key={d.date} className="flex h-full min-w-0 flex-1 flex-col items-center gap-2">
+                    <div className="flex min-h-0 w-full flex-1 flex-col justify-end">
+                      <div
+                        className="min-h-[4px] w-full rounded-t-md transition-all"
+                        title={`${d.date} · ${d.count.toLocaleString()} 字`}
+                        style={{
+                          height: `${Math.max(4, (d.count / weekMax) * 100)}%`,
+                          background: 'linear-gradient(0deg, var(--accent-primary), var(--accent-secondary))'
+                        }}
+                      />
+                    </div>
+                    <span className="w-full truncate text-center text-[10px] text-[var(--text-muted)]">{d.date.slice(5)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === 'month' && (
+            <div>
+              <div className="mb-4 text-sm text-[var(--text-secondary)]">最近 30 日热力（UTC 日历）</div>
+              <div
+                className="inline-grid gap-1"
+                style={{
+                  gridTemplateRows: 'repeat(7, 12px)',
+                  gridAutoFlow: 'column',
+                  gridAutoColumns: '12px'
+                }}
+              >
+                {heatmap.cells.map((cell, idx) => {
+                  if (!cell) {
+                    return (
+                      <div key={`e-${idx}`} className="rounded-sm bg-[var(--bg-tertiary)]" />
+                    )
+                  }
+                  const intensity = cell.count === 0 ? 0 : Math.round((0.2 + (cell.count / heatmap.heatMax) * 0.8) * 85)
                   return (
-                    <div key={`e-${idx}`} className="rounded-sm bg-[var(--bg-tertiary)]" />
+                    <div
+                      key={cell.date}
+                      className="rounded-sm"
+                      style={{
+                        background:
+                          cell.count === 0
+                            ? 'var(--bg-tertiary)'
+                            : `color-mix(in srgb, var(--accent-primary) ${intensity}%, var(--bg-tertiary))`
+                      }}
+                      title={`${cell.date} · ${cell.count.toLocaleString()} 字`}
+                    />
                   )
-                }
-                const intensity = cell.count === 0 ? 0 : 0.2 + (cell.count / heatmap.heatMax) * 0.8
+                })}
+              </div>
+            </div>
+          )}
+
+          {tab === 'year' && (
+            <div>
+              <div className="mb-4 text-sm text-[var(--text-secondary)]">过去 12 个月每月字数</div>
+              <div className="flex h-44 items-end justify-between gap-2 px-1">
+                {yearMonths.labels.map((m) => (
+                  <div key={m.ym} className="flex h-full min-w-0 flex-1 flex-col items-center gap-2">
+                    <div className="flex min-h-0 w-full flex-1 flex-col justify-end">
+                      <div
+                        className="min-h-[4px] w-full rounded-t-md"
+                        style={{
+                          height: `${Math.max(4, (m.total / yearMonths.mx) * 100)}%`,
+                          background: 'linear-gradient(0deg, var(--accent-primary), var(--accent-secondary))'
+                        }}
+                        title={`${m.ym} · ${m.total.toLocaleString()} 字`}
+                      />
+                    </div>
+                    <span className="text-[10px] text-[var(--text-muted)]">{m.short}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div className="mb-4 text-sm font-semibold text-[var(--text-primary)]">成就徽章</div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+              {ACHIEVEMENTS.map((def) => {
+                const row = unlockedMap.get(def.type)
+                const unlocked = Boolean(row)
                 return (
                   <div
-                    key={cell.date}
-                    className="rounded-sm bg-[var(--bg-tertiary)]"
-                    style={{
-                      backgroundColor:
-                        cell.count === 0 ? 'rgb(39 39 42)' : `rgba(199, 165, 107, ${intensity})`
-                    }}
-                    title={`${cell.date} · ${cell.count.toLocaleString()} 字`}
-                  />
+                    key={def.type}
+                    className={`rounded-xl border p-3 text-center ${
+                      unlocked
+                        ? 'border-[var(--accent-border)] bg-[var(--accent-surface)]'
+                        : 'border-[var(--border-primary)] bg-[var(--bg-primary)] opacity-50'
+                    }`}
+                    title={def.description}
+                  >
+                    <div className="text-2xl">{def.icon}</div>
+                    <div className="mt-1 text-xs font-bold text-[var(--text-primary)]">{def.label}</div>
+                    {row?.unlocked_at && (
+                      <div className="mt-1 text-[10px] text-[var(--text-muted)]">{row.unlocked_at.slice(0, 10)}</div>
+                    )}
+                  </div>
                 )
               })}
             </div>
-          </div>
-        )}
-
-        {tab === 'year' && (
-          <div>
-            <div className="text-sm text-[var(--text-secondary)] mb-4">过去 12 个月每月字数</div>
-            <div className="flex items-end justify-between gap-2 h-44 px-1">
-              {yearMonths.labels.map((m) => (
-                <div key={m.ym} className="flex-1 flex flex-col items-center gap-2 min-w-0 h-full">
-                  <div className="flex-1 w-full flex flex-col justify-end min-h-0">
-                    <div
-                      className="w-full rounded-t-md min-h-[4px]"
-                      style={{
-                        height: `${Math.max(4, (m.total / yearMonths.mx) * 100)}%`,
-                        background: 'linear-gradient(0deg, var(--accent-primary), var(--accent-secondary))'
-                      }}
-                      title={`${m.ym} · ${m.total.toLocaleString()} 字`}
-                    />
-                  </div>
-                  <span className="text-[10px] text-[var(--text-muted)]">{m.short}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div>
-          <div className="text-sm font-semibold text-[var(--text-primary)] mb-4">成就徽章</div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {ACHIEVEMENTS.map((def) => {
-              const row = unlockedMap.get(def.type)
-              const unlocked = Boolean(row)
-              return (
-                <div
-                  key={def.type}
-                  className={`rounded-xl border p-3 text-center ${
-                    unlocked
-                      ? 'border-[var(--accent-border)] bg-[var(--accent-surface)]'
-                      : 'border-[var(--border-primary)] bg-[var(--bg-secondary)] opacity-50'
-                  }`}
-                  title={def.description}
-                >
-                  <div className="text-2xl">{def.icon}</div>
-                  <div className="text-xs font-bold mt-1 text-[var(--text-primary)]">{def.label}</div>
-                  {row?.unlocked_at && (
-                    <div className="text-[10px] text-[var(--text-muted)] mt-1">{row.unlocked_at.slice(0, 10)}</div>
-                  )}
-                </div>
-              )
-            })}
           </div>
         </div>
       </div>

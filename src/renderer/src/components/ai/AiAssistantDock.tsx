@@ -28,7 +28,6 @@ import { stripHtmlToText } from '@/utils/html-to-text'
 import { getActiveEditor } from '@/components/editor/active-editor'
 import { buildConversationListItems, pickConversationAfterDelete } from './conversation-list'
 import {
-  ASSISTANT_CHAT_MODE_KEY,
   resolveAssistantIntent,
   resolveAssistantSkillSelection
 } from './conversation-mode'
@@ -150,13 +149,13 @@ export function AiAssistantPanel() {
   const createPlotNode = usePlotStore((s) => s.createPlotNode)
   const createWikiEntry = useWikiStore((s) => s.createEntry)
   const {
-    aiAssistantSkillKey,
     aiAssistantSelectionText,
     aiAssistantSelectionChapterId,
     aiAssistantSelectionFrom,
     aiAssistantSelectionTo,
+    aiAssistantCommand,
     closeAiAssistant,
-    setAiAssistantSkillKey,
+    consumeAiAssistantCommand,
     openModal
   } = useUIStore()
 
@@ -171,22 +170,21 @@ export function AiAssistantPanel() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [conversationListOpen, setConversationListOpen] = useState(false)
-  const [intentPickerOpen, setIntentPickerOpen] = useState(false)
   const [enabledContextChipIds, setEnabledContextChipIds] = useState<string[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
   const activeRequestAbortRef = useRef<AbortController | null>(null)
+  const sendCommandRef = useRef<(text: string) => void>(() => {})
 
   const assistantIntent = useMemo(
     () =>
       resolveAssistantIntent({
         skills,
-        explicitSkillKey: aiAssistantSkillKey,
         userInput: input,
         selectedText: aiAssistantSelectionChapterId === currentChapter?.id ? aiAssistantSelectionText : '',
         hasCurrentChapter: Boolean(currentChapter),
         hasVolumes: volumes.length > 0
       }),
-    [aiAssistantSelectionChapterId, aiAssistantSelectionText, aiAssistantSkillKey, currentChapter, input, skills, volumes.length]
+    [aiAssistantSelectionChapterId, aiAssistantSelectionText, currentChapter, input, skills, volumes.length]
   )
   const selectedSkill = useMemo(() => {
     return resolveAssistantSkillSelection(skills, overrides, assistantIntent.skillKey)
@@ -324,12 +322,17 @@ export function AiAssistantPanel() {
     }
   }, [])
 
-  if (!bookId) return null
+  useEffect(() => {
+    if (!bookId || !aiAssistantCommand || !conversationId || loading || skills.length === 0) return
+    const { id, input: commandInput, autoSend } = aiAssistantCommand
+    setInput(commandInput)
+    consumeAiAssistantCommand(id)
+    if (autoSend) {
+      window.setTimeout(() => sendCommandRef.current(commandInput), 0)
+    }
+  }, [aiAssistantCommand, bookId, consumeAiAssistantCommand, conversationId, loading, skills.length])
 
-  const handleSkillSelectionChange = (skillKey: string | null) => {
-    setAiAssistantSkillKey(skillKey)
-    setIntentPickerOpen(false)
-  }
+  if (!bookId) return null
 
   const validateSkillBeforeSend = (skill: AiSkillTemplate | null): string | null => {
     if (!skill) return null
@@ -349,9 +352,19 @@ export function AiAssistantPanel() {
   }
 
   const send = async (explicitSkill?: AiSkillTemplate, explicitInput?: string) => {
-    const skill = explicitSkill || selectedSkill
     const text = (explicitInput ?? input).trim()
     if (!text || loading || !conversationId) return
+    const requestIntent =
+      explicitSkill
+        ? assistantIntent
+        : resolveAssistantIntent({
+            skills,
+            userInput: text,
+            selectedText: aiAssistantSelectionChapterId === currentChapter?.id ? aiAssistantSelectionText : '',
+            hasCurrentChapter: Boolean(currentChapter),
+            hasVolumes: volumes.length > 0
+          })
+    const skill = explicitSkill || resolveAssistantSkillSelection(skills, overrides, requestIntent.skillKey)
     const skillPreflightError = validateSkillBeforeSend(skill)
     if (skillPreflightError) {
       setError(skillPreflightError)
@@ -380,8 +393,8 @@ export function AiAssistantPanel() {
       const userMessage = (await window.api.aiAddMessage(conversationId, 'user', text, {
         skill_key: skill?.key ?? null,
         mode: skill ? 'skill' : 'chat',
-        intent_reason: assistantIntent.reason,
-        intent_confidence: assistantIntent.confidence,
+        intent_reason: requestIntent.reason,
+        intent_confidence: requestIntent.confidence,
         context_chips: requestContext.chips
       })) as AiMessage
       const pendingMessageId = -Date.now()
@@ -479,8 +492,8 @@ export function AiAssistantPanel() {
       const assistantMessage = (await window.api.aiAddMessage(conversationId, 'assistant', streamedContent, {
         skill_key: skill?.key ?? null,
         mode: skill ? 'skill' : 'chat',
-        intent_reason: assistantIntent.reason,
-        intent_confidence: assistantIntent.confidence
+        intent_reason: requestIntent.reason,
+        intent_confidence: requestIntent.confidence
       })) as { id: number }
       setMessages((current) =>
         completeAssistantStreamMessage(current, pendingMessageId, assistantMessage.id, streamedContent)
@@ -516,8 +529,11 @@ export function AiAssistantPanel() {
     }
   }
 
-  const runSkill = (skill: AiSkillTemplate) => {
-    handleSkillSelectionChange(skill.key)
+  sendCommandRef.current = (text) => {
+    void send(undefined, text)
+  }
+
+  const seedQuickAction = (skill: AiSkillTemplate) => {
     if (skill.key === 'continue_writing') {
       setInput('从当前光标或章节末尾自然续写，保持当前节奏。')
     } else if (skill.key === 'review_chapter') {
@@ -726,14 +742,6 @@ export function AiAssistantPanel() {
       disabled: !currentChapter
     }
   ]
-  const intentLabel =
-    aiAssistantSkillKey === ASSISTANT_CHAT_MODE_KEY
-      ? '普通对话'
-      : selectedSkill
-        ? `${aiAssistantSkillKey ? '手动' : '自动'}：${selectedSkill.name}`
-        : '自动：普通对话'
-  const intentHint = selectedSkill ? assistantIntent.reason : '普通问题会直接回答；创作任务会自动进入对应能力和草稿篮。'
-
   return (
         <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[var(--bg-secondary)]">
           <div
@@ -871,7 +879,7 @@ export function AiAssistantPanel() {
                       type="button"
                       disabled={!skill || action.disabled}
                       onClick={() => {
-                        if (skill) runSkill(skill)
+                        if (skill) seedQuickAction(skill)
                       }}
                       className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-2 text-left transition hover:border-[var(--accent-border)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -1028,71 +1036,6 @@ export function AiAssistantPanel() {
           </div>
 
           <div className="shrink-0 border-t border-[var(--border-primary)] bg-[var(--bg-primary)] p-3">
-            <div className="mb-2 flex items-center gap-2">
-              <div className="relative min-w-0 flex-1">
-                <button
-                  type="button"
-                  onClick={() => setIntentPickerOpen((open) => !open)}
-                  className="flex w-full min-w-0 items-center gap-1.5 rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1.5 text-left text-xs text-[var(--text-secondary)] hover:border-[var(--accent-border)] hover:text-[var(--text-primary)]"
-                  title={intentHint}
-                >
-                  <Sparkles size={13} className="shrink-0 text-[var(--accent-primary)]" />
-                  <span className="truncate">{intentLabel}</span>
-                </button>
-                {intentPickerOpen && (
-                  <div className="absolute bottom-full left-0 z-30 mb-2 max-h-72 w-full overflow-y-auto rounded-md border border-[var(--border-primary)] bg-[var(--bg-primary)] p-1 shadow-2xl">
-                    <button
-                      type="button"
-                      onClick={() => handleSkillSelectionChange(null)}
-                      className={`w-full rounded px-2 py-1.5 text-left text-xs ${
-                        !aiAssistantSkillKey
-                          ? 'bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
-                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
-                      }`}
-                    >
-                      自动识别
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSkillSelectionChange(ASSISTANT_CHAT_MODE_KEY)}
-                      className={`w-full rounded px-2 py-1.5 text-left text-xs ${
-                        aiAssistantSkillKey === ASSISTANT_CHAT_MODE_KEY
-                          ? 'bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
-                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
-                      }`}
-                    >
-                      普通对话
-                    </button>
-                    <div className="my-1 border-t border-[var(--border-primary)]" />
-                    {skills.map((skill) => (
-                      <button
-                        key={skill.key}
-                        type="button"
-                        onClick={() => handleSkillSelectionChange(skill.key)}
-                        className={`w-full rounded px-2 py-1.5 text-left text-xs ${
-                          aiAssistantSkillKey === skill.key
-                            ? 'bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
-                            : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
-                        }`}
-                      >
-                        <span className="block truncate font-semibold">{skill.name}</span>
-                        <span className="mt-0.5 block truncate text-[10px] text-[var(--text-muted)]">
-                          {skill.description}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => openModal('aiSettings')}
-                className="secondary-btn shrink-0"
-                title="配置能力"
-              >
-                <Settings2 size={13} />
-              </button>
-            </div>
             <div className="flex gap-2">
               <textarea
                 rows={2}

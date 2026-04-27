@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  ASSISTANT_CHAT_MODE_KEY,
   resolveAssistantIntent,
   resolveAssistantSkillSelection
 } from '../conversation-mode'
@@ -133,7 +132,6 @@ describe('resolveAssistantSkillSelection', () => {
   it('keeps ordinary chat mode when no skill key is selected', () => {
     expect(resolveAssistantSkillSelection(skills, [], null)).toBeNull()
     expect(resolveAssistantSkillSelection(skills, [], '')).toBeNull()
-    expect(resolveAssistantSkillSelection(skills, [], ASSISTANT_CHAT_MODE_KEY)).toBeNull()
   })
 
   it('resolves only an explicitly selected skill and applies book overrides', () => {
@@ -163,26 +161,14 @@ describe('resolveAssistantSkillSelection', () => {
 })
 
 describe('resolveAssistantIntent', () => {
-  it('prefers an explicit entry skill over automatic routing', () => {
+  it('routes from the user request instead of accepting manual type overrides', () => {
     expect(
       resolveAssistantIntent({
         skills,
-        explicitSkillKey: 'continue_writing',
         userInput: '帮我生成角色',
         hasCurrentChapter: true
       })
-    ).toMatchObject({ mode: 'skill', skillKey: 'continue_writing', confidence: 1 })
-  })
-
-  it('allows users to force ordinary chat mode', () => {
-    expect(
-      resolveAssistantIntent({
-        skills,
-        explicitSkillKey: ASSISTANT_CHAT_MODE_KEY,
-        userInput: '续写下一段',
-        hasCurrentChapter: true
-      })
-    ).toMatchObject({ mode: 'chat', skillKey: null, confidence: 1 })
+    ).toMatchObject({ mode: 'skill', skillKey: 'create_character' })
   })
 
   it('routes selected rewrite requests to polish_text', () => {

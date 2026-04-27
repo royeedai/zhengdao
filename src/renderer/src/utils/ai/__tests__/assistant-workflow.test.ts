@@ -185,8 +185,11 @@ describe('composeAssistantChatPrompt', () => {
     })
 
     expect(prompt.systemPrompt).toContain('普通对话')
+    expect(prompt.systemPrompt).toContain('自动识别')
     expect(prompt.systemPrompt).toContain('不要直接写入作品')
+    expect(prompt.systemPrompt).toContain('草稿篮确认')
     expect(prompt.systemPrompt).toContain('续写正文')
+    expect(prompt.systemPrompt).not.toContain('选择对应能力卡')
     expect(prompt.userPrompt).toContain('你能为我做什么？')
     expect(prompt.userPrompt).toContain('当前章节：主角来到宴会。')
     expect(prompt.userPrompt).not.toContain('请续写')

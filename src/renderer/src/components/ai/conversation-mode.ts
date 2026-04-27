@@ -4,8 +4,6 @@ import {
   type AiSkillTemplate
 } from '../../utils/ai/assistant-workflow'
 
-export const ASSISTANT_CHAT_MODE_KEY = '__chat__'
-
 export type AssistantIntent = {
   mode: 'chat' | 'skill'
   skillKey: string | null
@@ -31,20 +29,11 @@ function skillIntent(skillKey: string, confidence: number, reason: string): Assi
 
 export function resolveAssistantIntent(input: {
   skills: AiSkillTemplate[]
-  explicitSkillKey?: string | null
   userInput?: string | null
   selectedText?: string | null
   hasCurrentChapter?: boolean
   hasVolumes?: boolean
 }): AssistantIntent {
-  const explicitSkillKey = input.explicitSkillKey || null
-  if (explicitSkillKey === ASSISTANT_CHAT_MODE_KEY) {
-    return { mode: 'chat', skillKey: null, confidence: 1, reason: '手动指定普通对话' }
-  }
-  if (explicitSkillKey && hasSkill(input.skills, explicitSkillKey)) {
-    return skillIntent(explicitSkillKey, 1, '入口或用户手动指定能力')
-  }
-
   const text = normalizeText(input.userInput)
   const hasSelection = Boolean(input.selectedText?.trim())
   const hasCurrentChapter = input.hasCurrentChapter !== false
@@ -139,7 +128,7 @@ export function resolveAssistantSkillSelection(
   overrides: AiSkillOverride[],
   skillKey: string | null | undefined
 ): AiSkillTemplate | null {
-  if (!skillKey || skillKey === ASSISTANT_CHAT_MODE_KEY) return null
+  if (!skillKey) return null
   const base = skills.find((skill) => skill.key === skillKey)
   if (!base) return null
   const override = overrides.find((item) => item.skill_key === base.key) || null
