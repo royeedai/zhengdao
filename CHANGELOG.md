@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 
 The project follows Semantic Versioning for release numbers. Release entries use a simple `Added / Changed / Fixed / Docs / Release` structure so the app package, Git tag, GitHub Release and changelog can stay aligned.
 
+## v1.5.3 - 2026-04-27
+
+### Release
+
+- 发布 AI 助手自动意图、桌面宝典与更新提示优化
+
+### Added
+
+- AI 助手右侧栏支持按入口、选区、当前章节和自然语言输入自动识别写作意图，覆盖续写、润色、审稿、章节生成、角色、设定、伏笔和剧情节点等能力。
+- 新增桌面本地宝典上下文包，将作品风格、题材规则、内容边界、节奏规则、当前选区 / 章节、角色、伏笔、剧情节点和本地引用统一注入 AI 提示词。
+- macOS 未签名公开测试包新增手动下载 DMG 的更新路径，自动更新面板可以展示手动下载入口。
+
+### Changed
+
+- AI 助手输入区收口为“直接描述写作意图”的主流程，低置信请求保持普通对话，高置信请求才进入对应能力卡草稿流程。
+- 统计弹窗和 AI 助手面板的交互文案与布局做了收敛，减少重复模式选择和无效解释。
+- 更新状态增加可恢复动作标记，检查、下载、安装失败后能在设置面板里指向更明确的下一步操作。
+
+### Fixed
+
+- 修复非 Pro 账号仍可进入官方 AI 配置选择路径的边界问题；未具备权益时会引导升级，第三方模型开关继续保持显式用户选择。
+- 修复 AI 助手自动路由时部分上下文裁剪、章节选区和能力选择状态不一致的问题，并补齐对应回归测试。
+- 修复更新提示在 macOS 未签名包、下载错误和 HTML release notes 场景下的显示与恢复状态边界。
+
+### Docs
+
+- 更新 README 中应用内更新与 macOS 手动安装说明。
+- 更新 AI 助手 lane 和默认验证矩阵，记录自动意图识别、桌面宝典上下文和更新提示 guard。
+
 ## v1.5.2 - 2026-04-25
 
 ### Release
