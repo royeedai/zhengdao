@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getUserDisplayName, getUserTierLabel, hasUserDisplayName } from '@/utils/auth-display'
+import { getUserDisplayName, getUserTierLabel, hasProEntitlement, hasUserDisplayName } from '@/utils/auth-display'
 import type { ZhengdaoUser } from '@/stores/auth-store'
 
 function makeUser(patch: Partial<ZhengdaoUser> = {}): ZhengdaoUser {
@@ -34,5 +34,13 @@ describe('auth display helpers', () => {
     expect(getUserTierLabel(makeUser())).toBe('Free')
     expect(getUserTierLabel(makeUser({ pro: true }))).toBe('Pro')
     expect(getUserTierLabel(makeUser({ tier: 'team', pro: true }))).toBe('Team')
+  })
+
+  it('uses account entitlement for Pro feature visibility', () => {
+    expect(hasProEntitlement(null)).toBe(false)
+    expect(hasProEntitlement(makeUser())).toBe(false)
+    expect(hasProEntitlement(makeUser({ pro: true }))).toBe(true)
+    expect(hasProEntitlement(makeUser({ tier: 'pro' }))).toBe(true)
+    expect(hasProEntitlement(makeUser({ tier: 'team' }))).toBe(true)
   })
 })

@@ -3,7 +3,7 @@ import { ArrowUpRight, BadgeCheck, Cloud, Coins, LogIn, X, Loader2, RefreshCw, U
 import { useUIStore } from '@/stores/ui-store'
 import { useAuthStore } from '@/stores/auth-store'
 import { useBookStore } from '@/stores/book-store'
-import { getUserDisplayName, getUserTierLabel } from '@/utils/auth-display'
+import { getUserDisplayName, getUserTierLabel, hasProEntitlement } from '@/utils/auth-display'
 
 export function AccountSyncSettings() {
   const user = useAuthStore((s) => s.user)
@@ -26,9 +26,14 @@ export function AccountSyncSettings() {
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
   const displayName = getUserDisplayName(user)
   const tierLabel = getUserTierLabel(user)
-  const showFreeUpgradePrompt = user && tierLabel === 'Free'
+  const hasPro = hasProEntitlement(user)
+  const showFreeUpgradePrompt = user && !hasPro
 
   async function loadCloudFiles() {
+    if (!hasProEntitlement(useAuthStore.getState().user)) {
+      setCloudList([])
+      return
+    }
     setCloudLoading(true)
     try {
       const list = (await window.api.syncListCloudBooks()) as Array<{
@@ -48,16 +53,17 @@ export function AccountSyncSettings() {
     void (async () => {
       await loadUser()
       const tok = await window.api.authGetAccessToken()
-      if (!tok) return
+      if (!tok || !hasProEntitlement(useAuthStore.getState().user)) return
       await loadCloudFiles()
     })()
   }, [loadUser])
 
   useEffect(() => {
     return window.api.onAuthUpdated((incoming) => {
-      applyAuthUpdate(incoming as Parameters<typeof applyAuthUpdate>[0])
-      setSyncMsg('证道账号已关联，云端能力已可用。')
-      void loadCloudFiles()
+      const nextUser = incoming as Parameters<typeof applyAuthUpdate>[0]
+      applyAuthUpdate(nextUser)
+      setSyncMsg(hasProEntitlement(nextUser) ? '证道账号已关联，云端能力已可用。' : '证道账号已关联，升级 Pro 后可使用云端能力。')
+      if (hasProEntitlement(nextUser)) void loadCloudFiles()
     })
   }, [applyAuthUpdate])
 
@@ -181,7 +187,7 @@ export function AccountSyncSettings() {
         <div className="p-3 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-primary)] text-[var(--text-secondary)] text-xs">{syncMsg}</div>
       )}
 
-      {user && (
+      {user && hasPro && (
         <>
           <label className="flex items-center gap-3 cursor-pointer select-none">
             <input
@@ -244,6 +250,12 @@ export function AccountSyncSettings() {
             )}
           </div>
         </>
+      )}
+
+      {user && !hasPro && (
+        <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3 text-xs leading-5 text-[var(--text-muted)]">
+          云备份和官方 AI 使用同一套 Pro 权益。当前账号仍可使用本地写作、第三方模型和自带 API Key。
+        </div>
       )}
 
       <div className="flex items-center justify-end gap-3">

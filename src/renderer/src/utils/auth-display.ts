@@ -19,6 +19,10 @@ export function getUserDisplayName(user: ZhengdaoUser | null): string {
 export function getUserTierLabel(user: ZhengdaoUser | null): string {
   if (!user) return '未登录'
   if (user.tier === 'team') return 'Team'
-  if (user.pro || user.tier === 'pro') return 'Pro'
+  if (hasProEntitlement(user)) return 'Pro'
   return 'Free'
+}
+
+export function hasProEntitlement(user: ZhengdaoUser | null): boolean {
+  return Boolean(user && (user.pro || user.tier === 'pro' || user.tier === 'team'))
 }

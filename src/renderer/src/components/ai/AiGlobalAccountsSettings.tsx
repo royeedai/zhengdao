@@ -15,8 +15,10 @@ import {
   Trash2
 } from 'lucide-react'
 import { useToastStore } from '@/stores/toast-store'
+import { useAuthStore } from '@/stores/auth-store'
 import { getAiAccountProviderUiMeta } from '@/utils/ai/account-provider'
 import { buildAiGlobalAccountStatusRequest } from '@/utils/ai/global-account-status'
+import { hasProEntitlement } from '@/utils/auth-display'
 import type { AiOfficialProfile } from '@/utils/ai/types'
 
 type AiAccount = {
@@ -61,6 +63,8 @@ function createEmptyAccountDraft() {
 }
 
 export default function AiGlobalAccountsSettings() {
+  const user = useAuthStore((s) => s.user)
+  const loadUser = useAuthStore((s) => s.loadUser)
   const [officialProfiles, setOfficialProfiles] = useState<AiOfficialProfile[]>([])
   const [officialProfileId, setOfficialProfileId] = useState('')
   const [officialLoading, setOfficialLoading] = useState(false)
@@ -74,6 +78,7 @@ export default function AiGlobalAccountsSettings() {
     () => getAiAccountProviderUiMeta(accountDraft.provider),
     [accountDraft.provider]
   )
+  const hasPro = hasProEntitlement(user)
 
   const selectedOfficialProfile = useMemo(
     () =>
@@ -89,7 +94,7 @@ export default function AiGlobalAccountsSettings() {
     try {
       const [accountRows, profileRows, selectedProfileId, thirdPartyFlag] = await Promise.all([
         window.api.aiGetAccounts() as Promise<AiAccount[]>,
-        window.api.aiGetOfficialProfiles() as Promise<AiOfficialProfile[]>,
+        hasPro ? window.api.aiGetOfficialProfiles() as Promise<AiOfficialProfile[]> : Promise.resolve([]),
         window.api.getAppState(OFFICIAL_PROFILE_KEY),
         window.api.getAppState(THIRD_PARTY_ENABLED_KEY)
       ])
@@ -110,10 +115,18 @@ export default function AiGlobalAccountsSettings() {
   }
 
   useEffect(() => {
+    void loadUser()
+  }, [loadUser])
+
+  useEffect(() => {
     void refresh()
-  }, [])
+  }, [hasPro])
 
   const selectOfficialProfile = async (profileId: string) => {
+    if (!hasPro) {
+      await window.api.authOpenUpgradePage()
+      return
+    }
     await window.api.setAppState(OFFICIAL_PROFILE_KEY, profileId)
     await window.api.setAppState(THIRD_PARTY_ENABLED_KEY, '0')
     setOfficialProfileId(profileId)
@@ -239,11 +252,38 @@ export default function AiGlobalAccountsSettings() {
           </button>
         </div>
 
-        {officialProfiles.length === 0 ? (
+        {!user ? (
           <div className="rounded-lg border border-[var(--warning-border)] bg-[var(--warning-surface)] p-3 text-sm text-[var(--text-primary)]">
             <div className="flex items-start gap-2">
               <AlertTriangle size={16} className="mt-0.5 shrink-0 text-[var(--warning-primary)]" />
               <span>登录证道账号后可读取后台启用的官方 AI 配置。</span>
+            </div>
+          </div>
+        ) : !hasPro ? (
+          <div className="rounded-lg border border-[var(--warning-border)] bg-[var(--warning-surface)] p-3 text-sm text-[var(--text-primary)]">
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0 text-[var(--warning-primary)]" />
+              <div className="min-w-0">
+                <div className="font-semibold">官方 AI 需要 Pro 权益</div>
+                <div className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
+                  当前 Free 账号仍可使用第三方模型、自带 API Key、Gemini CLI 或 Ollama。
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => void window.api.authOpenUpgradePage()} className="primary-btn">
+                    升级 Pro
+                  </button>
+                  <button type="button" onClick={() => void loadUser()} className="secondary-btn">
+                    刷新权益
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : officialProfiles.length === 0 ? (
+          <div className="rounded-lg border border-[var(--warning-border)] bg-[var(--warning-surface)] p-3 text-sm text-[var(--text-primary)]">
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0 text-[var(--warning-primary)]" />
+              <span>当前没有后台启用的官方 AI 配置。</span>
             </div>
           </div>
         ) : (
