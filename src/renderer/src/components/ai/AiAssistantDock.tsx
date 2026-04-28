@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Bot, Check, ClipboardCheck, Loader2, MessageSquare, MessageSquarePlus, Send, Settings2, Sparkles, Trash2, X } from 'lucide-react'
+import { Bot, Check, ClipboardCheck, Loader2, MessageSquare, MessageSquarePlus, MessagesSquare, Send, Settings2, Sparkles, Trash2, X } from 'lucide-react'
 import { useBookStore } from '@/stores/book-store'
 import { useChapterStore } from '@/stores/chapter-store'
 import { useCharacterStore } from '@/stores/character-store'
@@ -871,6 +871,23 @@ export function AiAssistantPanel() {
               >
                 <Trash2 size={16} />
               </button>
+              {profile?.genre === 'script' && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    openModal('dialogueRewrite', {
+                      selectedText:
+                        aiAssistantSelectionChapterId === currentChapter?.id
+                          ? aiAssistantSelectionText
+                          : ''
+                    })
+                  }
+                  title="对白块改写 (剧本)"
+                  className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
+                >
+                  <MessagesSquare size={16} />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => openModal('aiSettings')}

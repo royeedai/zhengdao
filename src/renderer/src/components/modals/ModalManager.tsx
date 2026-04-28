@@ -27,6 +27,7 @@ import AppSettingsModal from './AppSettingsModal'
 import ChapterReviewModal from './ChapterReviewModal'
 import PublishCheckModal from './PublishCheckModal'
 import FormatTemplateModal from './FormatTemplateModal'
+import DialogueRewriteModal from './DialogueRewriteModal'
 
 function renderModal(type: ModalType) {
   switch (type) {
@@ -57,6 +58,7 @@ function renderModal(type: ModalType) {
     case 'chapterReview': return <ChapterReviewModal />
     case 'publishCheck': return <PublishCheckModal />
     case 'formatTemplate': return <FormatTemplateModal />
+    case 'dialogueRewrite': return <DialogueRewriteModal />
     default: return null
   }
 }
