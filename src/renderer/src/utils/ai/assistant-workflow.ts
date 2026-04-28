@@ -104,6 +104,10 @@ export type AiSelectionSnapshot = {
   to: number | null
 }
 
+// 生成 AiDraftKind 时同步更新 src/main/database/schema.ts 的 CHECK 约束与 migration v19。
+// 8 类通用虚构创作向 + 5 类 academic/professional 专属（GP-05）。
+// academic/professional 专属 kind 在 v1.5.x 仅做 schema/parse 层兼容（让 AI 输出能落库），
+// 实际 applyDraft 副作用由 DI-02 引用管理 / DI-05 公文格式模板分别落地。
 export type AiDraftKind =
   | 'insert_text'
   | 'replace_text'
@@ -113,6 +117,11 @@ export type AiDraftKind =
   | 'create_wiki_entry'
   | 'create_plot_node'
   | 'create_foreshadowing'
+  | 'create_citation'
+  | 'create_reference'
+  | 'create_section_outline'
+  | 'apply_format_template'
+  | 'create_policy_anchor'
 
 export type AiDraftPayload = Record<string, unknown> & {
   kind: AiDraftKind
@@ -126,7 +135,12 @@ const ALLOWED_DRAFT_KINDS = new Set<AiDraftKind>([
   'create_character',
   'create_wiki_entry',
   'create_plot_node',
-  'create_foreshadowing'
+  'create_foreshadowing',
+  'create_citation',
+  'create_reference',
+  'create_section_outline',
+  'apply_format_template',
+  'create_policy_anchor'
 ])
 
 function nonEmpty(value: string | null | undefined): boolean {

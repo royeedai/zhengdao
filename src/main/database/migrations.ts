@@ -606,6 +606,45 @@ const migrations: Migration[] = [
         CREATE INDEX IF NOT EXISTS idx_ai_work_profiles_genre ON ai_work_profiles(genre);
       `)
     }
+  },
+  {
+    version: 19,
+    description: 'Extend ai_drafts.kind whitelist with 5 new genre-specific kinds (academic citations + professional templates)',
+    up: (db) => {
+      // SQLite 无法 ALTER 已有 CHECK 约束。检查现有表的 CHECK 是否已含新 kinds，否则重建表。
+      const tableSql = (
+        db
+          .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'ai_drafts'`)
+          .get() as { sql: string } | undefined
+      )?.sql
+      if (!tableSql || tableSql.includes('create_citation')) return
+
+      db.exec(`
+        CREATE TABLE ai_drafts_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          book_id INTEGER NOT NULL,
+          conversation_id INTEGER,
+          message_id INTEGER,
+          kind TEXT NOT NULL CHECK(kind IN ('insert_text','replace_text','create_chapter','update_chapter_summary','create_character','create_wiki_entry','create_plot_node','create_foreshadowing','create_citation','create_reference','create_section_outline','apply_format_template','create_policy_anchor')),
+          title TEXT NOT NULL DEFAULT '',
+          payload TEXT NOT NULL DEFAULT '{}',
+          status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','applied','dismissed')),
+          target_ref TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+          FOREIGN KEY (conversation_id) REFERENCES ai_conversations(id) ON DELETE SET NULL,
+          FOREIGN KEY (message_id) REFERENCES ai_messages(id) ON DELETE SET NULL
+        );
+
+        INSERT INTO ai_drafts_new (id, book_id, conversation_id, message_id, kind, title, payload, status, target_ref, created_at, updated_at)
+        SELECT id, book_id, conversation_id, message_id, kind, title, payload, status, target_ref, created_at, updated_at FROM ai_drafts;
+
+        DROP TABLE ai_drafts;
+        ALTER TABLE ai_drafts_new RENAME TO ai_drafts;
+        CREATE INDEX IF NOT EXISTS idx_ai_drafts_book_status ON ai_drafts(book_id, status, created_at);
+      `)
+    }
   }
 ]
 

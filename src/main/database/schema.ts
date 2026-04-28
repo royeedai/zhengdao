@@ -119,7 +119,7 @@ export function createSchema(db: Database.Database): void {
       book_id INTEGER NOT NULL,
       conversation_id INTEGER,
       message_id INTEGER,
-      kind TEXT NOT NULL CHECK(kind IN ('insert_text','replace_text','create_chapter','update_chapter_summary','create_character','create_wiki_entry','create_plot_node','create_foreshadowing')),
+      kind TEXT NOT NULL CHECK(kind IN ('insert_text','replace_text','create_chapter','update_chapter_summary','create_character','create_wiki_entry','create_plot_node','create_foreshadowing','create_citation','create_reference','create_section_outline','apply_format_template','create_policy_anchor')),
       title TEXT NOT NULL DEFAULT '',
       payload TEXT NOT NULL DEFAULT '{}',
       status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','applied','dismissed')),
