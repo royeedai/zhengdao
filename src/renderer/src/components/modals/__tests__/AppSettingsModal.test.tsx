@@ -20,10 +20,13 @@ describe('AppSettingsModal', () => {
 
   it('renders macOS manual updates as an installer download action', async () => {
     const { createIdleUpdateSnapshot } = await import('../../../../../shared/update')
+    // Fixture-only version literal; do not replace with the current release tag
+    // every cycle. Real release-tag behavior is covered separately in the
+    // updater service tests.
     const snapshot = {
       ...createIdleUpdateSnapshot(),
       status: 'available' as const,
-      version: '1.5.2',
+      version: '9.9.9',
       automaticUpdateUnsupportedReason: '当前 macOS 公测包未完成签名与公证',
       manualDownloadUrl: 'https://github.com/royeedai-labs/zhengdao/releases/latest'
     }
@@ -44,7 +47,7 @@ describe('AppSettingsModal', () => {
     vi.doMock('@/stores/update-store', () => ({
       useUpdateStore: (selector: (state: Record<string, unknown>) => unknown) =>
         selector({
-          appVersion: '1.5.1',
+          appVersion: '9.9.0',
           snapshot,
           checkForUpdates: vi.fn(),
           downloadAvailableUpdate: vi.fn(),

@@ -93,7 +93,6 @@ describe('ui store bottom panel state', () => {
     expect(useUIStore.getState().rightPanelOpen).toBe(true)
     expect(useUIStore.getState().rightPanelTab).toBe('ai')
     expect(useUIStore.getState().aiAssistantOpen).toBe(true)
-    expect(useUIStore.getState().aiAssistantSkillKey).toBeNull()
     expect(useUIStore.getState().aiAssistantCommand).toMatchObject({
       input: '从当前光标自然续写。',
       autoSend: true

@@ -47,9 +47,14 @@ import {
 } from './ai/gemini-cli-service'
 import { getProviderStatus as probeProviderStatus } from './ai/provider-status'
 import { completeOfficialAi, getOfficialAiProfiles, streamOfficialAi } from './ai/official-ai-service'
+import type { ZhengdaoUser } from './auth/zhengdao-auth'
 import type { AiBridgeCompleteRequest } from '../shared/ai'
 
 const zhengdaoAuth = new ZhengdaoAuth()
+
+function hasProUser(user: ZhengdaoUser | null): boolean {
+  return Boolean(user && (user.pro || user.tier === 'pro' || user.tier === 'team'))
+}
 const cloudSync = new CloudSync(zhengdaoAuth)
 const searchRepo = new SearchRepo()
 let geminiCliService: ReturnType<typeof createGeminiCliService> | null = null
@@ -464,9 +469,11 @@ export function registerIpcHandlers(): void {
     }
     return getGeminiCliService().complete(request)
   })
-  ipcMain.handle('ai:getOfficialProfiles', async () =>
-    getOfficialAiProfiles(await zhengdaoAuth.getAccessToken())
-  )
+  ipcMain.handle('ai:getOfficialProfiles', async () => {
+    const user = await zhengdaoAuth.getUser()
+    if (!hasProUser(user)) return []
+    return getOfficialAiProfiles(await zhengdaoAuth.getAccessToken())
+  })
   ipcMain.handle(
     'ai:getProviderStatus',
     async (

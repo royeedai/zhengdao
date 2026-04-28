@@ -126,22 +126,24 @@ describe('reduceUpdateSnapshot', () => {
     expect(normalizeMacInstallerArch('x64')).toBe('x64')
     expect(normalizeMacInstallerArch('ia32')).toBeNull()
 
+    // The version literals below are fixture inputs for createMacManualInstallerTarget.
+    // They are intentionally fictitious so the test does not need to be updated for every release.
     expect(
       createMacManualInstallerTarget({
-        version: 'v1.5.2',
+        version: 'v9.9.9',
         arch: 'arm64',
         releasesUrl: 'https://github.com/royeedai-labs/zhengdao/releases/'
       })
     ).toEqual({
-      fileName: 'zhengdao-1.5.2-arm64.dmg',
-      tagName: 'v1.5.2',
+      fileName: 'zhengdao-9.9.9-arm64.dmg',
+      tagName: 'v9.9.9',
       downloadUrl:
-        'https://github.com/royeedai-labs/zhengdao/releases/download/v1.5.2/zhengdao-1.5.2-arm64.dmg'
+        'https://github.com/royeedai-labs/zhengdao/releases/download/v9.9.9/zhengdao-9.9.9-arm64.dmg'
     })
 
     expect(
       createMacManualInstallerTarget({
-        version: '../1.5.2',
+        version: '../9.9.9',
         arch: 'arm64',
         releasesUrl: 'https://github.com/royeedai-labs/zhengdao/releases'
       })

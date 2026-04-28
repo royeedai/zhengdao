@@ -260,7 +260,6 @@ interface UIStore {
   splitChapterId: number | null
 
   aiAssistantOpen: boolean
-  aiAssistantSkillKey: string | null
   aiAssistantPanelRect: AiAssistantPanelRect
   aiAssistantLauncherPosition: AiAssistantLauncherPosition
   aiAssistantSelectionText: string
@@ -297,7 +296,6 @@ interface UIStore {
 
   openAiAssistant: (options?: AiAssistantOpenOptions | string | null) => void
   closeAiAssistant: () => void
-  setAiAssistantSkillKey: (skillKey: string | null) => void
   consumeAiAssistantCommand: (id: number) => void
   setAiAssistantPanelRect: (rect: AiAssistantPanelRect) => void
   setAiAssistantLauncherPosition: (position: AiAssistantLauncherPosition) => void
@@ -344,7 +342,6 @@ export const useUIStore = create<UIStore>((set, get) => ({
   splitChapterId: null,
 
   aiAssistantOpen: false,
-  aiAssistantSkillKey: null,
   aiAssistantPanelRect: readStoredAiAssistantPanelRect(),
   aiAssistantLauncherPosition: readStoredAiAssistantLauncherPosition(),
   aiAssistantSelectionText: '',
@@ -440,7 +437,6 @@ export const useUIStore = create<UIStore>((set, get) => ({
         rightPanelOpen: true,
         rightPanelTab: 'ai',
         aiAssistantOpen: true,
-        aiAssistantSkillKey: null,
         aiAssistantCommand: input
           ? {
               id: Date.now(),
@@ -451,7 +447,6 @@ export const useUIStore = create<UIStore>((set, get) => ({
       }
     }),
   closeAiAssistant: () => set({ aiAssistantOpen: false, rightPanelOpen: false }),
-  setAiAssistantSkillKey: (skillKey) => set({ aiAssistantSkillKey: skillKey }),
   consumeAiAssistantCommand: (id) =>
     set((s) => ({
       aiAssistantCommand: s.aiAssistantCommand?.id === id ? null : s.aiAssistantCommand
