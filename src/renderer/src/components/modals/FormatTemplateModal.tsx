@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { CheckCircle2, ChevronLeft, ChevronRight, FileText, Save, X } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, FileText, Loader2, Save, Wand2, X } from 'lucide-react'
+import { useBookStore } from '@/stores/book-store'
 import { useChapterStore } from '@/stores/chapter-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useUIStore } from '@/stores/ui-store'
@@ -32,8 +33,17 @@ const PLAIN_HTML_PARAGRAPHS = (text: string): string =>
     .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
     .join('')
 
+interface FormatTemplateFillOutput {
+  projectId: string
+  templateKey: string
+  filled: Record<string, string>
+  uncertain: string[]
+  notes: string
+}
+
 export default function FormatTemplateModal() {
   const closeModal = useUIStore((s) => s.closeModal)
+  const bookId = useBookStore((s) => s.currentBookId)
   const currentChapter = useChapterStore((s) => s.currentChapter)
   const updateChapterContent = useChapterStore((s) => s.updateChapterContent)
   const addToast = useToastStore((s) => s.addToast)
@@ -42,6 +52,11 @@ export default function FormatTemplateModal() {
   const [selectedId, setSelectedId] = useState<ProfessionalTemplateId | null>(null)
   const [fields, setFields] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
+  // DI-05 v2 — AI 自动填字段状态
+  const [aiContext, setAiContext] = useState('')
+  const [aiRunning, setAiRunning] = useState(false)
+  const [aiNotes, setAiNotes] = useState<string>('')
+  const [uncertainKeys, setUncertainKeys] = useState<Set<string>>(new Set())
 
   const selectedTemplate: ProfessionalTemplate | null = selectedId
     ? PROFESSIONAL_TEMPLATES[selectedId]
@@ -58,6 +73,73 @@ export default function FormatTemplateModal() {
   const requiredFieldsFilled = selectedTemplate
     ? selectedTemplate.fields.filter((f) => f.required).every((f) => (fields[f.key] || '').trim().length > 0)
     : false
+
+  const handleAiFill = async () => {
+    if (!selectedTemplate || !bookId) return
+    if (aiContext.trim().length < 10) {
+      addToast('warning', '请先填要点 / 摘要 (至少 10 个字), AI 才能据此推断字段值')
+      return
+    }
+    setAiRunning(true)
+    try {
+      const manuscriptExcerpt = currentChapter?.content
+        ? stripHtmlToText(currentChapter.content).trim().slice(0, 3500)
+        : undefined
+      const r = await window.api.aiExecuteSkill(
+        'layer2.format-template-fill',
+        {
+          projectId: String(bookId),
+          templateKey: selectedTemplate.id,
+          templateLabel: selectedTemplate.label,
+          fields: selectedTemplate.fields.map((f) => ({
+            key: f.key,
+            label: f.label,
+            required: f.required,
+            placeholder: f.placeholder
+          })),
+          context: aiContext.trim(),
+          manuscriptExcerpt
+        },
+        { modelHint: 'balanced' }
+      )
+      if (r.error) {
+        const msg =
+          r.code === 'PRO_REQUIRED'
+            ? '公文模板自动填充是 Pro 功能, 请先升级证道 Pro'
+            : r.code === 'GENRE_PACK_REQUIRED'
+              ? '公文题材包未订阅, 该 Skill 仅 professional 题材包用户可用'
+              : r.code === 'SKILL_TIMEOUT'
+                ? 'AI 填充超时, 请减少要点字数或稍后再试'
+                : r.error.includes('GENRE_MISMATCH')
+                  ? '当前作品题材不是 professional, 该 Skill 仅在公文题材下可用'
+                  : r.error
+        addToast('error', msg)
+        return
+      }
+      const out = r.output as FormatTemplateFillOutput
+      const allowedKeys = new Set(selectedTemplate.fields.map((f) => f.key))
+      setFields((cur) => {
+        const next = { ...cur }
+        for (const [k, v] of Object.entries(out.filled)) {
+          if (allowedKeys.has(k) && typeof v === 'string') {
+            next[k] = v
+          }
+        }
+        return next
+      })
+      setUncertainKeys(new Set(out.uncertain.filter((k) => allowedKeys.has(k))))
+      setAiNotes(out.notes || '')
+      const filledCount = Object.keys(out.filled).filter((k) => allowedKeys.has(k)).length
+      addToast(
+        'success',
+        filledCount > 0
+          ? `AI 已建议 ${filledCount} 个字段, 请人工核对后再进入预览`
+          : 'AI 没能从要点里推断出任何字段, 请补充信息或手填'
+      )
+    } finally {
+      setAiRunning(false)
+    }
+  }
 
   const handleApply = async () => {
     if (!selectedTemplate || !currentChapter) return
@@ -150,21 +232,79 @@ export default function FormatTemplateModal() {
               <p className="text-xs text-[var(--text-secondary)]">
                 填写「{selectedTemplate.label}」所需字段。星号字段必填；其他字段为空时使用占位符。
               </p>
-              {selectedTemplate.fields.map((f) => (
-                <div key={f.key}>
-                  <label className="block text-[11px] text-[var(--text-muted)] uppercase tracking-wider mb-1">
-                    {f.label}
-                    {f.required ? <span className="ml-1 text-[var(--danger-primary)]">*</span> : null}
-                  </label>
-                  <input
-                    type="text"
-                    value={fields[f.key] || ''}
-                    onChange={(e) => setFields((cur) => ({ ...cur, [f.key]: e.target.value }))}
-                    placeholder={f.placeholder}
-                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] transition text-sm"
-                  />
+
+              <div className="rounded-lg border border-[var(--accent-border)] bg-[var(--accent-surface)]/30 p-3">
+                <div className="mb-2 flex items-center gap-2 text-[12px] font-bold text-[var(--accent-secondary)]">
+                  <Wand2 size={13} /> AI 自动填字段 (公文题材包)
                 </div>
-              ))}
+                <p className="mb-2 text-[11px] text-[var(--text-muted)]">
+                  填写要点 / 摘要 (至少 10 字), AI 会按 GB/T 9704 用语建议各字段值,
+                  你可以再人工修订。当前章节正文会自动作为额外参考。
+                </p>
+                <textarea
+                  rows={3}
+                  value={aiContext}
+                  onChange={(e) => setAiContext(e.target.value)}
+                  placeholder="例如: 市教育局拟下发关于 2026 年春季学期教学质量监测工作的通知, 主送各区县教育局..."
+                  className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-3 py-2 text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] transition resize-vertical"
+                />
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-[11px] text-[var(--text-muted)]">
+                    模型档位: balanced (单次约 2~10 秒)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void handleAiFill()}
+                    disabled={aiRunning || aiContext.trim().length < 10}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] disabled:opacity-40 text-[var(--accent-contrast)] rounded transition"
+                  >
+                    {aiRunning ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                    {aiRunning ? '填充中...' : 'AI 自动填字段'}
+                  </button>
+                </div>
+                {aiNotes && (
+                  <div className="mt-2 rounded border border-[var(--info-border)] bg-[var(--info-surface)] p-2 text-[11px] text-[var(--info-primary)]">
+                    <span className="font-bold">AI 总评:</span> {aiNotes}
+                  </div>
+                )}
+              </div>
+
+              {selectedTemplate.fields.map((f) => {
+                const isUncertain = uncertainKeys.has(f.key)
+                return (
+                  <div key={f.key}>
+                    <label className="block text-[11px] text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                      {f.label}
+                      {f.required ? <span className="ml-1 text-[var(--danger-primary)]">*</span> : null}
+                      {isUncertain && (
+                        <span className="ml-2 inline-flex items-center gap-1 normal-case tracking-normal rounded border border-[var(--warning-border)] bg-[var(--warning-surface)] px-1.5 py-0.5 text-[10px] text-[var(--warning-primary)]">
+                          <AlertCircle size={10} /> AI 不确定, 请核对
+                        </span>
+                      )}
+                    </label>
+                    <input
+                      type="text"
+                      value={fields[f.key] || ''}
+                      onChange={(e) => {
+                        setFields((cur) => ({ ...cur, [f.key]: e.target.value }))
+                        if (isUncertain) {
+                          setUncertainKeys((cur) => {
+                            const next = new Set(cur)
+                            next.delete(f.key)
+                            return next
+                          })
+                        }
+                      }}
+                      placeholder={f.placeholder}
+                      className={`w-full bg-[var(--bg-primary)] border rounded px-3 py-2 text-[var(--text-primary)] focus:outline-none transition text-sm ${
+                        isUncertain
+                          ? 'border-[var(--warning-border)] focus:border-[var(--warning-primary)]'
+                          : 'border-[var(--border-primary)] focus:border-[var(--accent-primary)]'
+                      }`}
+                    />
+                  </div>
+                )
+              })}
             </div>
           )}
 
