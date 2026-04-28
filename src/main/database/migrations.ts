@@ -593,6 +593,19 @@ const migrations: Migration[] = [
         `).run(String(defaultTemplateRow.id))
       }
     }
+  },
+  {
+    version: 18,
+    description: 'Add genre column to ai_work_profiles for 5-genre coverage (webnovel/script/fiction/academic/professional)',
+    up: (db) => {
+      const cols = db.prepare('PRAGMA table_info(ai_work_profiles)').all() as { name: string }[]
+      if (cols.some((c) => c.name === 'genre')) return
+      db.exec(`
+        ALTER TABLE ai_work_profiles ADD COLUMN genre TEXT NOT NULL DEFAULT 'webnovel'
+          CHECK (genre IN ('webnovel', 'script', 'fiction', 'academic', 'professional'));
+        CREATE INDEX IF NOT EXISTS idx_ai_work_profiles_genre ON ai_work_profiles(genre);
+      `)
+    }
   }
 ]
 
