@@ -138,6 +138,31 @@ export function createSchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_ai_messages_conversation ON ai_messages(conversation_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_ai_drafts_book_status ON ai_drafts(book_id, status, created_at);
 
+    -- DI-02 v1: 学术引文管理 (与 migration v22 等价的全量 schema)
+    CREATE TABLE IF NOT EXISTS citations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      book_id INTEGER NOT NULL,
+      citekey TEXT NOT NULL,
+      citation_type TEXT NOT NULL DEFAULT 'other'
+        CHECK(citation_type IN ('book','journal','conference','website','thesis','report','other')),
+      authors TEXT NOT NULL DEFAULT '',
+      title TEXT NOT NULL DEFAULT '',
+      year INTEGER,
+      publisher TEXT NOT NULL DEFAULT '',
+      journal TEXT NOT NULL DEFAULT '',
+      volume TEXT NOT NULL DEFAULT '',
+      issue TEXT NOT NULL DEFAULT '',
+      pages TEXT NOT NULL DEFAULT '',
+      doi TEXT NOT NULL DEFAULT '',
+      url TEXT NOT NULL DEFAULT '',
+      notes TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+      UNIQUE(book_id, citekey),
+      FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_citations_book ON citations(book_id);
+
     CREATE TABLE IF NOT EXISTS volumes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       book_id INTEGER NOT NULL,

@@ -11,6 +11,7 @@ import * as plotRepo from './database/plot-repo'
 import * as plotlineRepo from './database/plotline-repo'
 import * as foreshadowRepo from './database/foreshadow-repo'
 import * as wikiRepo from './database/wiki-repo'
+import * as citationRepo from './database/citation-repo'
 import * as snapshotRepo from './database/snapshot-repo'
 import * as configRepo from './database/config-repo'
 import * as aiAssistantRepo from './database/ai-assistant-repo'
@@ -399,6 +400,16 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('db:createWikiEntry', (_, data) => wikiRepo.createWikiEntry(data))
   ipcMain.handle('db:updateWikiEntry', (_, id, data) => wikiRepo.updateWikiEntry(id, data))
   ipcMain.handle('db:deleteWikiEntry', (_, id) => wikiRepo.deleteWikiEntry(id))
+
+  // DI-02 v1 — 学术引文管理 (academic 题材专用)
+  ipcMain.handle('db:listCitations', (_, bookId: number) => citationRepo.listCitations(bookId))
+  ipcMain.handle('db:createCitation', (_, bookId: number, data: Record<string, unknown>) =>
+    citationRepo.createCitation(bookId, data)
+  )
+  ipcMain.handle('db:updateCitation', (_, id: number, data: Record<string, unknown>) =>
+    citationRepo.updateCitation(id, data)
+  )
+  ipcMain.handle('db:deleteCitation', (_, id: number) => citationRepo.deleteCitation(id))
 
   // Snapshots
   ipcMain.handle('db:createSnapshot', (_, data) => snapshotRepo.createSnapshot(data))

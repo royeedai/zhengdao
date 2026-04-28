@@ -608,6 +608,37 @@ const migrations: Migration[] = [
     }
   },
   {
+    version: 22,
+    description: 'DI-02 v1: create citations table for academic genre — BibTeX-style citation entries scoped per book, unique by citekey',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS citations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          book_id INTEGER NOT NULL,
+          citekey TEXT NOT NULL,
+          citation_type TEXT NOT NULL DEFAULT 'other'
+            CHECK(citation_type IN ('book','journal','conference','website','thesis','report','other')),
+          authors TEXT NOT NULL DEFAULT '',
+          title TEXT NOT NULL DEFAULT '',
+          year INTEGER,
+          publisher TEXT NOT NULL DEFAULT '',
+          journal TEXT NOT NULL DEFAULT '',
+          volume TEXT NOT NULL DEFAULT '',
+          issue TEXT NOT NULL DEFAULT '',
+          pages TEXT NOT NULL DEFAULT '',
+          doi TEXT NOT NULL DEFAULT '',
+          url TEXT NOT NULL DEFAULT '',
+          notes TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          UNIQUE(book_id, citekey),
+          FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_citations_book ON citations(book_id);
+      `)
+    }
+  },
+  {
     version: 21,
     description: 'DI-07 v1: add canon_pack_locks JSON column to ai_work_profiles for manually-locked canon entries (overrides world-consistency Skill defaults)',
     up: (db) => {

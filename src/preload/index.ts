@@ -115,6 +115,14 @@ const api = {
   updateWikiEntry: (id: number, data: Record<string, unknown>) => ipcRenderer.invoke('db:updateWikiEntry', id, data),
   deleteWikiEntry: (id: number) => ipcRenderer.invoke('db:deleteWikiEntry', id),
 
+  // DI-02 v1 — 学术引文 (academic 题材专用)
+  listCitations: (bookId: number) => ipcRenderer.invoke('db:listCitations', bookId),
+  createCitation: (bookId: number, data: Record<string, unknown>) =>
+    ipcRenderer.invoke('db:createCitation', bookId, data),
+  updateCitation: (id: number, data: Record<string, unknown>) =>
+    ipcRenderer.invoke('db:updateCitation', id, data),
+  deleteCitation: (id: number) => ipcRenderer.invoke('db:deleteCitation', id),
+
   // Snapshots
   createSnapshot: (data: { chapter_id: number; content: string; word_count: number }) =>
     ipcRenderer.invoke('db:createSnapshot', data),

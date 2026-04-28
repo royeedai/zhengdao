@@ -215,6 +215,7 @@ export type ModalType =
   | 'formatTemplate'
   | 'dialogueRewrite'
   | 'worldConsistency'
+  | 'citationsManager'
 
 export interface GenrePreset {
   id: string
