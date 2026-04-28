@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The project follows Semantic Versioning for release numbers. Release entries use a simple `Added / Changed / Fixed / Docs / Release` structure so the app package, Git tag, GitHub Release and changelog can stay aligned.
 
+## v1.6.0 - 2026-04-28
+
+### Release
+
+- 发布 AI 起书筹备、行内草稿和全局 AI 配置体验
+
+### Added
+
+- 新增书架页 AI 起书筹备流程，支持用对话和快捷选项收集作品名、题材主题、篇幅目标、章节规划、人物规划、风格平台和创作边界，并生成可预览的一键起书筹备包。
+- 新增 AI 生成章节与正文的行内草稿体验，用户确认前不会直接写入正文，支持继续生成、应用、丢弃和章节级快捷动作。
+- 新增 AI 创建作品数据仓储与回归测试，覆盖筹备包校验、章节内容清理、起书入库和首章生成路径。
+- 新增伏笔板、快捷笔记弹窗和统一品牌标识组件，补齐右侧栏、顶部栏和工作台里的入口。
+
+### Changed
+
+- 全局 AI 配置从旧“账号列表”收口为单一运行时配置，继续保留官方 AI、Gemini CLI、Gemini API、Ollama、OpenAI 兼容和自定义兼容入口。
+- AI 助手上下文构建改为统一 resolver，章节、选区、作品资料、宝典上下文和本地引用在流式对话、草稿和快捷动作里保持一致。
+- 编辑器、AI 助手、右侧栏、日更工作台和多处 Modal 做了布局与入口整理，减少重复配置和无效跳转。
+- 应用品牌图标资源更新为更轻量的一组 PNG/ICO/ICNS/SVG 资产。
+
+### Fixed
+
+- 修复旧作品级 AI 配置迁移到全局配置时可能残留默认账号引用的问题，并清理旧 `ai_third_party_enabled` 状态。
+- 修复 AI 助手流式内容替换、消息展示和章节草稿 fallback 的边界问题，补齐对应单测。
+- 修复空章节、快捷动作、发布前检查弹窗和工作区布局在新 AI 草稿流程下的状态边界。
+
+### Docs
+
+- Release notes 继续从本版本中文 `CHANGELOG.md` 同步到 GitHub Release，保留安装包、自动更新元数据、验证状态和回滚提示。
+
 ## v1.5.3 - 2026-04-27
 
 ### Release
