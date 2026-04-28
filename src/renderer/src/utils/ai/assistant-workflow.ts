@@ -493,9 +493,19 @@ function stripCodeFence(text: string): string {
   return match ? match[1].trim() : trimmed
 }
 
+// LB-07: 严格 JSON.parse 优先；失败后用 JSON5 兜底解析（支持 trailing comma /
+// 未加引号 key / 嵌入注释等 LLM 常见非严格输出）。
 function tryParseJson(text: string): unknown | undefined {
   try {
     return JSON.parse(text)
+  } catch {
+    /* fall through to json5 lenient parse */
+  }
+  try {
+    // Lazy import 避免顶部 import 循环和体积负担。
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const JSON5 = require('json5') as { parse: (input: string) => unknown }
+    return JSON5.parse(text)
   } catch {
     return undefined
   }

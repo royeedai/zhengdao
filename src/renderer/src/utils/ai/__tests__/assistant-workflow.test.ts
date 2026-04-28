@@ -248,6 +248,39 @@ describe('parseAssistantDrafts', () => {
       }
     ])
   })
+
+  it('accepts JSON5-style lenient output with trailing commas (LB-07)', () => {
+    const parsed = parseAssistantDrafts(`{
+      "drafts": [
+        { "kind": "insert_text", "content": "续写段落", },
+      ],
+    }`)
+    expect(parsed.errors).toEqual([])
+    expect(parsed.drafts).toEqual([{ kind: 'insert_text', content: '续写段落' }])
+  })
+
+  it('accepts JSON5-style lenient output with unquoted keys (LB-07)', () => {
+    const parsed = parseAssistantDrafts(`{
+      drafts: [
+        { kind: 'insert_text', content: '续写段落' }
+      ]
+    }`)
+    expect(parsed.errors).toEqual([])
+    expect(parsed.drafts).toEqual([{ kind: 'insert_text', content: '续写段落' }])
+  })
+
+  it('accepts new GP-05 academic and professional draft kinds', () => {
+    const parsed = parseAssistantDrafts(
+      JSON.stringify({
+        drafts: [
+          { kind: 'create_citation', title: 'Smith 2024', payload: {} },
+          { kind: 'apply_format_template', template: 'red-header-notice' }
+        ]
+      })
+    )
+    expect(parsed.errors).toEqual([])
+    expect(parsed.drafts).toHaveLength(2)
+  })
 })
 
 describe('attachSelectionMetaToDrafts', () => {
