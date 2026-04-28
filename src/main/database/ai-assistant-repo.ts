@@ -288,6 +288,9 @@ export function saveAiWorkProfile(bookId: number, updates: Record<string, unknow
   // GP-01 v2: 'genre' 加入白名单，新建作品向导调 saveAiWorkProfile(bookId, { genre })
   // 把作品锁定到 5 题材（webnovel/script/fiction/academic/professional）之一。
   // CHECK 约束（migration v18）保证写入 SQLite 时校验合法值。
+  // GP-01 v2: 'genre' 加入白名单，DI-01 v2: 'style_fingerprint' + 'genre_meta' 加入白名单
+  // - style_fingerprint: layer2.style-learning skill 的输出 JSON (字符串化)
+  // - genre_meta: 题材包定制元数据 (例如 academic 的引文风格、professional 的归档号格式), 字符串化 JSON
   const allowed = [
     'style_guide',
     'genre_rules',
@@ -295,7 +298,9 @@ export function saveAiWorkProfile(bookId: number, updates: Record<string, unknow
     'asset_rules',
     'rhythm_rules',
     'context_policy',
-    'genre'
+    'genre',
+    'style_fingerprint',
+    'genre_meta'
   ]
   const fields: string[] = []
   const values: unknown[] = []

@@ -204,6 +204,26 @@ const api = {
   },
   aiCancelStream: (requestId: string) => ipcRenderer.send('ai:cancelStream', requestId),
   aiGetOfficialProfiles: () => ipcRenderer.invoke('ai:getOfficialProfiles') as Promise<AiOfficialProfile[]>,
+  aiExecuteSkill: (
+    skillId: string,
+    input: Record<string, unknown>,
+    options?: { modelHint?: 'fast' | 'balanced' | 'heavy' }
+  ) =>
+    ipcRenderer.invoke('ai:executeSkill', skillId, input, options) as Promise<{
+      runId?: string
+      output?: unknown
+      modelUsed?: string
+      usage?: {
+        promptTokens: number
+        completionTokens: number
+        totalTokens: number
+        costUsd: number
+      }
+      error?: string
+      code?: string
+      genre?: string
+      plans?: { monthly: string; yearly: string }
+    }>,
   aiGetProviderStatus: (
     provider: string,
     options?: {

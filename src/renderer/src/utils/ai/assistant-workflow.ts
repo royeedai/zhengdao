@@ -39,6 +39,12 @@ export type AiWorkProfile = {
   asset_rules: string
   rhythm_rules: string
   context_policy: string
+  /** GP-01 v2 — 5 题材之一: webnovel | script | fiction | academic | professional */
+  genre?: string
+  /** DI-01 v2 — layer2.style-learning skill 的输出, 字符串化 JSON, 空串表示未学习 */
+  style_fingerprint?: string
+  /** DI-01 v2 — 题材包定制元数据 (academic 的引文风格 / professional 的归档号格式), 字符串化 JSON */
+  genre_meta?: string
   created_at: string
   updated_at: string
 }

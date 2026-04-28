@@ -608,6 +608,20 @@ const migrations: Migration[] = [
     }
   },
   {
+    version: 20,
+    description: 'DI-01 v2: add style_fingerprint + genre_meta JSON columns to ai_work_profiles for AI style learning persistence',
+    up: (db) => {
+      const cols = db.prepare('PRAGMA table_info(ai_work_profiles)').all() as { name: string }[]
+      const has = (n: string) => cols.some((c) => c.name === n)
+      if (!has('style_fingerprint')) {
+        db.exec(`ALTER TABLE ai_work_profiles ADD COLUMN style_fingerprint TEXT NOT NULL DEFAULT ''`)
+      }
+      if (!has('genre_meta')) {
+        db.exec(`ALTER TABLE ai_work_profiles ADD COLUMN genre_meta TEXT NOT NULL DEFAULT ''`)
+      }
+    }
+  },
+  {
     version: 19,
     description: 'Extend ai_drafts.kind whitelist with 5 new genre-specific kinds (academic citations + professional templates)',
     up: (db) => {

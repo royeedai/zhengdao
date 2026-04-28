@@ -47,6 +47,7 @@ import {
 } from './ai/gemini-cli-service'
 import { getProviderStatus as probeProviderStatus } from './ai/provider-status'
 import { completeOfficialAi, getOfficialAiProfiles, streamOfficialAi } from './ai/official-ai-service'
+import { executeOfficialSkill } from './ai/skill-execute-service'
 import type { ZhengdaoUser } from './auth/zhengdao-auth'
 import type { AiBridgeCompleteRequest } from '../shared/ai'
 
@@ -474,6 +475,22 @@ export function registerIpcHandlers(): void {
     if (!hasProUser(user)) return []
     return getOfficialAiProfiles(await zhengdaoAuth.getAccessToken())
   })
+  // DI-01 v2 / DI-04 v2: 后端 Skill 执行客户端。token 在 main 进程内 inject，
+  // renderer 端只传 (skillId, input, options?)。
+  ipcMain.handle(
+    'ai:executeSkill',
+    async (
+      _,
+      skillId: string,
+      input: Record<string, unknown>,
+      options?: { modelHint?: 'fast' | 'balanced' | 'heavy' }
+    ) => {
+      const token = await zhengdaoAuth.getAccessToken()
+      return executeOfficialSkill(skillId, input, token, {
+        modelHint: options?.modelHint
+      })
+    }
+  )
   ipcMain.handle(
     'ai:getProviderStatus',
     async (
