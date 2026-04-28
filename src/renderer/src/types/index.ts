@@ -217,6 +217,7 @@ export type ModalType =
   | 'worldConsistency'
   | 'citationsManager'
   | 'citationPicker'
+  | 'referencesBuild'
 
 export interface GenrePreset {
   id: string

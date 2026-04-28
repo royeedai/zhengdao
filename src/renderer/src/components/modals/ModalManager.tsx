@@ -31,6 +31,7 @@ import DialogueRewriteModal from './DialogueRewriteModal'
 import WorldConsistencyModal from './WorldConsistencyModal'
 import CitationsManagerModal from './CitationsManagerModal'
 import CitationPickerModal from './CitationPickerModal'
+import ReferencesBuildModal from './ReferencesBuildModal'
 
 function renderModal(type: ModalType) {
   switch (type) {
@@ -65,6 +66,7 @@ function renderModal(type: ModalType) {
     case 'worldConsistency': return <WorldConsistencyModal />
     case 'citationsManager': return <CitationsManagerModal />
     case 'citationPicker': return <CitationPickerModal />
+    case 'referencesBuild': return <ReferencesBuildModal />
     default: return null
   }
 }

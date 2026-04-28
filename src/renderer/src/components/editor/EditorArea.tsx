@@ -834,8 +834,16 @@ export default function EditorArea() {
           >
             引文管理
           </button>
+          <button
+            type="button"
+            onClick={() => useUIStore.getState().openModal('referencesBuild')}
+            title="按 GB/T 7714 / APA / MLA 规范生成文末参考文献章节 (DI-02 v3)"
+            className="rounded border border-[var(--accent-border)] bg-[var(--accent-surface)] px-2 py-0.5 text-[var(--accent-secondary)] transition hover:bg-[var(--accent-primary)] hover:text-[var(--accent-contrast)]"
+          >
+            生成参考文献
+          </button>
           <span className="ml-auto text-[10px] text-[var(--text-muted)]">
-            正文中以 [@citekey] 形式引用 · DI-02 v3 文末参考文献章节生成跟进
+            正文中以 [@citekey] 形式引用 · 一键生成符合规范的参考文献章节
           </span>
         </div>
       )}
