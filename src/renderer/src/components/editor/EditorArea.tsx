@@ -813,6 +813,32 @@ export default function EditorArea() {
       </div>
 
       {aiWorkGenre === 'script' && <ScriptToolbar editor={editor} />}
+      {aiWorkGenre === 'academic' && (
+        <div className="flex items-center gap-1 border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-3 py-1.5 text-xs">
+          <span className="mr-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            学术工具
+          </span>
+          <button
+            type="button"
+            onClick={() => useUIStore.getState().openModal('citationPicker')}
+            title="在光标处插入引文锚点 [@citekey] (DI-02)"
+            className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[var(--text-primary)] transition hover:border-[var(--accent-border)] hover:text-[var(--accent-secondary)]"
+          >
+            插入引文
+          </button>
+          <button
+            type="button"
+            onClick={() => useUIStore.getState().openModal('citationsManager')}
+            title="管理学术引文条目 (citekey + 元数据)"
+            className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[var(--text-primary)] transition hover:border-[var(--accent-border)] hover:text-[var(--accent-secondary)]"
+          >
+            引文管理
+          </button>
+          <span className="ml-auto text-[10px] text-[var(--text-muted)]">
+            正文中以 [@citekey] 形式引用 · DI-02 v3 文末参考文献章节生成跟进
+          </span>
+        </div>
+      )}
 
       <div
         className="flex-1 overflow-y-auto px-8 pt-16 pb-32 lg:px-32 scroll-smooth"
