@@ -20,6 +20,10 @@ import { __testing, assertAllowedWritePath } from '../path-security'
 
 const { isSameOrChildPath, getAllowedWriteRoots } = __testing
 
+function toPosixPath(value: string): string {
+  return value.replace(/\\/g, '/')
+}
+
 /**
  * SPLIT-007 — boundary-lock test for path-security.
  *
@@ -49,7 +53,7 @@ describe('isSameOrChildPath', () => {
 
 describe('getAllowedWriteRoots', () => {
   it('contains the standard user-known roots', () => {
-    const roots = getAllowedWriteRoots()
+    const roots = getAllowedWriteRoots().map(toPosixPath)
     expect(roots.length).toBeGreaterThan(3)
     // userData + Documents + Downloads should always be allowed
     expect(roots.some((r) => r.includes('Application Support/zhengdao'))).toBe(true)
@@ -60,18 +64,18 @@ describe('getAllowedWriteRoots', () => {
 
 describe('assertAllowedWritePath', () => {
   it('allows a Documents-anchored path', () => {
-    const out = assertAllowedWritePath('/Users/test-user/Documents/export.pdf')
+    const out = toPosixPath(assertAllowedWritePath('/Users/test-user/Documents/export.pdf'))
     expect(out).toMatch(/Documents\/export\.pdf$/)
   })
 
   it('allows a Downloads-anchored path', () => {
-    const out = assertAllowedWritePath('/Users/test-user/Downloads/zhengdao-export.db')
+    const out = toPosixPath(assertAllowedWritePath('/Users/test-user/Downloads/zhengdao-export.db'))
     expect(out).toMatch(/Downloads\/zhengdao-export\.db$/)
   })
 
   it('allows the userData directory', () => {
-    const out = assertAllowedWritePath(
-      '/Users/test-user/Library/Application Support/zhengdao/backups/now.db'
+    const out = toPosixPath(
+      assertAllowedWritePath('/Users/test-user/Library/Application Support/zhengdao/backups/now.db')
     )
     expect(out).toMatch(/zhengdao\/backups\/now\.db$/)
   })
