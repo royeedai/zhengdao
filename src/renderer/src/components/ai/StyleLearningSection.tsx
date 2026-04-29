@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Loader2, Sparkles, Trash2, Wand2 } from 'lucide-react'
 import { useToastStore } from '@/stores/toast-store'
 import type { AiWorkProfile } from '@/utils/ai/assistant-workflow'
+import { SkillFeedbackForm } from './SkillFeedbackForm'
 
 /**
  * DI-01 v2 — AI 风格学习面板
@@ -86,6 +87,7 @@ export default function StyleLearningSection({ bookId, profile, onSaved }: Props
   const [samples, setSamples] = useState<string[]>(['', '', ''])
   const [running, setRunning] = useState(false)
   const [pending, setPending] = useState<StyleLearningOutput | null>(null)
+  const [feedbackRunId, setFeedbackRunId] = useState<string | null>(null)
   const addToast = useToastStore((s) => s.addToast)
 
   const productGenre = (profile.genre as StyleLearningOutput['productGenre']) || 'webnovel'
@@ -105,6 +107,7 @@ export default function StyleLearningSection({ bookId, profile, onSaved }: Props
       return
     }
     setRunning(true)
+    setFeedbackRunId(null)
     try {
       const r = await window.api.aiExecuteSkill(
         'layer2.style-learning',
@@ -128,6 +131,7 @@ export default function StyleLearningSection({ bookId, profile, onSaved }: Props
         return
       }
       setPending(r.output as StyleLearningOutput)
+      setFeedbackRunId(r.runId || null)
     } finally {
       setRunning(false)
     }
@@ -226,6 +230,13 @@ export default function StyleLearningSection({ bookId, profile, onSaved }: Props
                 应用到作品档案
               </button>
             </div>
+          )}
+          {feedbackRunId && (
+            <SkillFeedbackForm
+              runId={feedbackRunId}
+              skillId="layer2.style-learning"
+              surface="desktop-skill-dialog"
+            />
           )}
           <FingerprintSummary data={display.fingerprint} />
           {display.examples.goodWritingFromSamples.length > 0 && (

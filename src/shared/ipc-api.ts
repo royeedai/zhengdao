@@ -159,6 +159,7 @@ export type IpcInvokeChannel =
   | 'ai:complete'
   | 'ai:getOfficialProfiles'
   | 'ai:executeSkill'
+  | 'ai:submitSkillFeedback'
   | 'ai:getProviderStatus'
   | 'ai:setupGeminiCli'
 
@@ -279,8 +280,8 @@ export const IPC_INVOKE_CHANNELS: readonly IpcInvokeChannel[] = [
   'ai:updateConversationTitle', 'ai:clearConversation', 'ai:deleteConversation',
   'ai:getMessages', 'ai:addMessage', 'ai:getDrafts', 'ai:createDraft', 'ai:setDraftStatus',
   'ai:getResolvedGlobalConfig', 'ai:getResolvedConfigForBook', 'ai:getResolvedWorkspaceConfig',
-  'ai:complete', 'ai:getOfficialProfiles', 'ai:executeSkill', 'ai:getProviderStatus',
-  'ai:setupGeminiCli',
+  'ai:complete', 'ai:getOfficialProfiles', 'ai:executeSkill', 'ai:submitSkillFeedback',
+  'ai:getProviderStatus', 'ai:setupGeminiCli',
   'auth:login', 'auth:getUser', 'auth:logout', 'auth:getAccessToken',
   'auth:openUpgradePage', 'auth:openAccountPage',
   'team:listMine', 'team:create', 'team:listMembers', 'team:removeMember',

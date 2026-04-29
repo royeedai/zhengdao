@@ -8,6 +8,12 @@
 //   const r = await executeOfficialSkill('layer2.style-learning', input, token)
 //   if (r.error) ... else r.output 是 Skill 的 outputSchema 输出
 
+import {
+  buildSkillFeedbackApiBody,
+  type SkillFeedbackPayload,
+  type SkillFeedbackSubmitResult
+} from '../../shared/skill-feedback'
+
 const WEBSITE_URL = (process.env.ZHENGDAO_WEBSITE_URL || 'https://agent.xiangweihu.com').replace(/\/$/, '')
 const API_BASE = (process.env.ZHENGDAO_API_URL || `${WEBSITE_URL}/api/v1`).replace(/\/$/, '')
 
@@ -113,4 +119,57 @@ export async function executeOfficialSkill<TInput = unknown, TOutput = unknown>(
     modelUsed: typeof payload.modelUsed === 'string' ? payload.modelUsed : undefined,
     usage: payload.usage as SkillExecuteResult['usage']
   }
+}
+
+export async function submitOfficialSkillFeedback(
+  payload: SkillFeedbackPayload,
+  token: string | null
+): Promise<SkillFeedbackSubmitResult> {
+  if (!token) {
+    return { error: '请先登录证道账号后提交 Skill 反馈', code: 'AUTH_REQUIRED' }
+  }
+
+  let body: ReturnType<typeof buildSkillFeedbackApiBody>
+  try {
+    body = buildSkillFeedbackApiBody(payload)
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error), code: 'INVALID_PAYLOAD' }
+  }
+  const runId = payload.runId.trim()
+
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE}/skills/runs/${encodeURIComponent(runId)}/feedback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
+    })
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) }
+  }
+
+  const text = await response.text()
+  let parsed: Record<string, unknown> = {}
+  if (text) {
+    try {
+      parsed = JSON.parse(text) as Record<string, unknown>
+    } catch {
+      if (response.ok) return { error: '证道 Skill 反馈响应格式异常' }
+    }
+  }
+
+  if (!response.ok) {
+    return {
+      error:
+        typeof parsed.message === 'string'
+          ? parsed.message
+          : `证道 Skill 反馈提交失败 (${response.status})`,
+      code: typeof parsed.code === 'string' ? parsed.code : `HTTP_${response.status}`
+    }
+  }
+
+  return { feedback: parsed.feedback }
 }

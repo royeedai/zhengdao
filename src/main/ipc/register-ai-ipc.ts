@@ -1,9 +1,10 @@
 import { ipcMain } from 'electron'
 import * as aiAssistantRepo from '../database/ai-assistant-repo'
 import { completeOfficialAi, getOfficialAiProfiles, streamOfficialAi } from '../ai/official-ai-service'
-import { executeOfficialSkill } from '../ai/skill-execute-service'
+import { executeOfficialSkill, submitOfficialSkillFeedback } from '../ai/skill-execute-service'
 import { getProviderStatus as probeProviderStatus } from '../ai/provider-status'
 import type { AiBridgeCompleteRequest } from '../../shared/ai'
+import type { SkillFeedbackPayload } from '../../shared/skill-feedback'
 import { activeGeminiStreamSessions, getGeminiCliService, hasProUser, zhengdaoAuth } from './state'
 import { launchGeminiCliSetup } from './gemini-cli-setup'
 
@@ -178,6 +179,9 @@ export function registerAiIpc(): void {
         modelHint: options?.modelHint
       })
     }
+  )
+  ipcMain.handle('ai:submitSkillFeedback', async (_, payload: SkillFeedbackPayload) =>
+    submitOfficialSkillFeedback(payload, await zhengdaoAuth.getAccessToken())
   )
 
   // Provider liveness probe + bundled gemini-cli login launcher

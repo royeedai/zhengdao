@@ -64,7 +64,7 @@ describe('IPC channel registry', () => {
     // handler — that's the whole point of the contract.
     expect(counts).toEqual({
       db: 103,
-      ai: 28,
+      ai: 29,
       auth: 6,
       team: 8,
       app: 7,

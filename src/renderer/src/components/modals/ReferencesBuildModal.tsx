@@ -6,6 +6,7 @@ import { useBookStore } from '@/stores/book-store'
 import { useChapterStore } from '@/stores/chapter-store'
 import { stripHtmlToText } from '@/utils/html-to-text'
 import { getActiveEditor } from '@/components/editor/active-editor'
+import { SkillFeedbackForm } from '@/components/ai/SkillFeedbackForm'
 
 /**
  * DI-02 v3 — 文末参考文献章节生成 modal
@@ -63,6 +64,7 @@ export default function ReferencesBuildModal() {
   const [loading, setLoading] = useState(true)
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<ReferencesBuildOutput | null>(null)
+  const [feedbackRunId, setFeedbackRunId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!bookId) return
@@ -92,6 +94,7 @@ export default function ReferencesBuildModal() {
     }
     setRunning(true)
     setResult(null)
+    setFeedbackRunId(null)
     try {
       const r = await window.api.aiExecuteSkill(
         'layer2.references-section-build',
@@ -132,6 +135,7 @@ export default function ReferencesBuildModal() {
         return
       }
       setResult(r.output as ReferencesBuildOutput)
+      setFeedbackRunId(r.runId || null)
     } finally {
       setRunning(false)
     }
@@ -281,6 +285,13 @@ export default function ReferencesBuildModal() {
                   正文中没有任何 [@citekey] 锚点, 模型未生成参考文献。请先在
                   正文里用 "插入引文" 把 citekey 嵌入文中, 然后再次生成。
                 </div>
+              )}
+              {feedbackRunId && (
+                <SkillFeedbackForm
+                  runId={feedbackRunId}
+                  skillId="layer2.references-section-build"
+                  surface="desktop-skill-dialog"
+                />
               )}
             </section>
           )}

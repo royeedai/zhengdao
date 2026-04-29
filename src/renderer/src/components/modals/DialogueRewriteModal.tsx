@@ -5,6 +5,7 @@ import { useUIStore } from '@/stores/ui-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useBookStore } from '@/stores/book-store'
 import { getActiveEditor } from '@/components/editor/active-editor'
+import { SkillFeedbackForm } from '@/components/ai/SkillFeedbackForm'
 
 /**
  * DI-04 v2 — 剧本对话块改写
@@ -180,6 +181,7 @@ export default function DialogueRewriteModal() {
   const [voiceProfilesRaw, setVoiceProfilesRaw] = useState('')
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<DialogueRewriteOutput | null>(null)
+  const [feedbackRunId, setFeedbackRunId] = useState<string | null>(null)
 
   useEffect(() => {
     if (modalData?.selectedText) {
@@ -208,6 +210,7 @@ export default function DialogueRewriteModal() {
   const handleRewrite = useCallback(async () => {
     if (!bookId) return
     setRunning(true)
+    setFeedbackRunId(null)
     try {
       const characterVoiceProfiles: Record<string, string> = {}
       voiceProfilesRaw
@@ -252,6 +255,7 @@ export default function DialogueRewriteModal() {
         return
       }
       setResult(r.output as DialogueRewriteOutput)
+      setFeedbackRunId(r.runId || null)
     } finally {
       setRunning(false)
     }
@@ -429,6 +433,13 @@ export default function DialogueRewriteModal() {
                     应用替换
                   </button>
                 </div>
+                {feedbackRunId && (
+                  <SkillFeedbackForm
+                    runId={feedbackRunId}
+                    skillId="layer2.dialogue-block-rewrite"
+                    surface="desktop-skill-dialog"
+                  />
+                )}
               </div>
             )}
           </section>

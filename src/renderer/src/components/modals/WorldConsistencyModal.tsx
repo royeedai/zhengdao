@@ -6,6 +6,7 @@ import { useBookStore } from '@/stores/book-store'
 import { useChapterStore } from '@/stores/chapter-store'
 import { stripHtmlToText } from '@/utils/html-to-text'
 import type { CanonLockEntry } from '@/utils/ai/assistant-workflow'
+import { SkillFeedbackForm } from '@/components/ai/SkillFeedbackForm'
 
 /**
  * DI-07 v2 — 桌面端世界观一致性检查入口
@@ -78,6 +79,7 @@ export default function WorldConsistencyModal() {
   const [focus, setFocus] = useState<FocusDim[]>(['character', 'setting', 'timeline'])
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<WorldConsistencyOutput | null>(null)
+  const [feedbackRunId, setFeedbackRunId] = useState<string | null>(null)
   const [canonLocks, setCanonLocks] = useState<CanonLockEntry[]>([])
 
   useEffect(() => {
@@ -120,6 +122,7 @@ export default function WorldConsistencyModal() {
     if (!bookId) return
     setRunning(true)
     setResult(null)
+    setFeedbackRunId(null)
     try {
       const r = await window.api.aiExecuteSkill(
         'layer2.world-consistency',
@@ -153,6 +156,7 @@ export default function WorldConsistencyModal() {
         return
       }
       setResult(r.output as WorldConsistencyOutput)
+      setFeedbackRunId(r.runId || null)
       const total = (r.output as WorldConsistencyOutput).summary.total
       addToast('success', total === 0 ? '未发现一致性问题' : `共 ${total} 处问题, 见下方列表`)
     } finally {
@@ -336,6 +340,13 @@ export default function WorldConsistencyModal() {
                   <div className="rounded border border-[var(--success-border)] bg-[var(--success-surface)] p-3 text-xs text-[var(--success-primary)]">
                     未发现一致性问题。如要扩大检测面, 可在 AI 设置中给 Canon Pack 添加更多 critical 锁定条目。
                   </div>
+                )}
+                {feedbackRunId && (
+                  <SkillFeedbackForm
+                    runId={feedbackRunId}
+                    skillId="layer2.world-consistency"
+                    surface="desktop-skill-dialog"
+                  />
                 )}
               </section>
             )}

@@ -5,6 +5,7 @@ import { useChapterStore } from '@/stores/chapter-store'
 import { useToastStore } from '@/stores/toast-store'
 import { useUIStore } from '@/stores/ui-store'
 import { stripHtmlToText } from '@/utils/html-to-text'
+import { SkillFeedbackForm } from '@/components/ai/SkillFeedbackForm'
 import {
   PROFESSIONAL_TEMPLATES,
   PROFESSIONAL_TEMPLATE_IDS,
@@ -56,6 +57,7 @@ export default function FormatTemplateModal() {
   const [aiContext, setAiContext] = useState('')
   const [aiRunning, setAiRunning] = useState(false)
   const [aiNotes, setAiNotes] = useState<string>('')
+  const [feedbackRunId, setFeedbackRunId] = useState<string | null>(null)
   const [uncertainKeys, setUncertainKeys] = useState<Set<string>>(new Set())
 
   const selectedTemplate: ProfessionalTemplate | null = selectedId
@@ -81,6 +83,7 @@ export default function FormatTemplateModal() {
       return
     }
     setAiRunning(true)
+    setFeedbackRunId(null)
     try {
       const manuscriptExcerpt = currentChapter?.content
         ? stripHtmlToText(currentChapter.content).trim().slice(0, 3500)
@@ -129,6 +132,7 @@ export default function FormatTemplateModal() {
       })
       setUncertainKeys(new Set(out.uncertain.filter((k) => allowedKeys.has(k))))
       setAiNotes(out.notes || '')
+      setFeedbackRunId(r.runId || null)
       const filledCount = Object.keys(out.filled).filter((k) => allowedKeys.has(k)).length
       addToast(
         'success',
@@ -266,6 +270,14 @@ export default function FormatTemplateModal() {
                   <div className="mt-2 rounded border border-[var(--info-border)] bg-[var(--info-surface)] p-2 text-[11px] text-[var(--info-primary)]">
                     <span className="font-bold">AI 总评:</span> {aiNotes}
                   </div>
+                )}
+                {feedbackRunId && (
+                  <SkillFeedbackForm
+                    runId={feedbackRunId}
+                    skillId="layer2.format-template-fill"
+                    surface="desktop-skill-dialog"
+                    className="mt-2"
+                  />
                 )}
               </div>
 

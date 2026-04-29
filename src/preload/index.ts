@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { ManualInstallerDownloadResult, UpdateSnapshot } from '../shared/update'
 import type { AiBridgeCompleteRequest, AiOfficialProfile, AiResponse, AiStreamCallbacks } from '../shared/ai'
 import type { AiBookCreationPackage, AssistantCreationBrief } from '../shared/ai-book-creation'
+import type { SkillFeedbackPayload, SkillFeedbackSubmitResult } from '../shared/skill-feedback'
 
 let aiStreamRequestSeq = 0
 
@@ -255,6 +256,8 @@ const api = {
       genre?: string
       plans?: { monthly: string; yearly: string }
     }>,
+  skillSubmitFeedback: (payload: SkillFeedbackPayload) =>
+    ipcRenderer.invoke('ai:submitSkillFeedback', payload) as Promise<SkillFeedbackSubmitResult>,
   aiGetProviderStatus: (
     provider: string,
     options?: {

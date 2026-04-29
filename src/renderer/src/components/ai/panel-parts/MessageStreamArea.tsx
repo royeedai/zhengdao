@@ -2,6 +2,7 @@ import { forwardRef } from 'react'
 import { Loader2, Sparkles } from 'lucide-react'
 import type { AiContextChip, AiSkillTemplate } from '@/utils/ai/assistant-workflow'
 import { buildAssistantMessageDisplay } from '../message-display'
+import { SkillFeedbackForm } from '../SkillFeedbackForm'
 import type { QuickActionItem } from './AssistantPanelComposer'
 
 /**
@@ -100,6 +101,18 @@ export const MessageStreamArea = forwardRef<HTMLDivElement, MessageStreamAreaPro
             message.role === 'assistant' && message.streaming
               ? message.streamingLabel || 'AI 正在回复...'
               : ''
+          const feedbackRunId =
+            typeof message.metadata?.skill_run_id === 'string'
+              ? message.metadata.skill_run_id
+              : typeof message.metadata?.runId === 'string'
+                ? message.metadata.runId
+                : ''
+          const feedbackSkillId =
+            typeof message.metadata?.skill_id === 'string'
+              ? message.metadata.skill_id
+              : typeof message.metadata?.skill_key === 'string'
+                ? message.metadata.skill_key
+                : ''
 
           return (
             <div
@@ -149,6 +162,15 @@ export const MessageStreamArea = forwardRef<HTMLDivElement, MessageStreamAreaPro
                 </div>
               ) : (
                 display.text
+              )}
+              {message.role === 'assistant' && !message.streaming && feedbackRunId && feedbackSkillId && (
+                <div className="mt-3 whitespace-normal">
+                  <SkillFeedbackForm
+                    runId={feedbackRunId}
+                    skillId={feedbackSkillId}
+                    surface="desktop-ai-dock"
+                  />
+                </div>
               )}
             </div>
           )
