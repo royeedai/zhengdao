@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { BookOpen, Bot, Check, ClipboardCheck, Loader2, MessageSquare, MessageSquarePlus, MessagesSquare, Plus, Send, Settings2, ShieldCheck, Sparkles, Trash2, Users, X } from 'lucide-react'
+import { Bot } from 'lucide-react'
 import { useBookStore } from '@/stores/book-store'
 import { useChapterStore } from '@/stores/chapter-store'
 import { useCharacterStore } from '@/stores/character-store'
@@ -32,10 +32,8 @@ import {
   resolveAssistantIntent,
   resolveAssistantSkillSelection
 } from './conversation-mode'
-import { shouldSubmitAiAssistantInput } from './input-behavior'
 import { buildDraftPreviewModel } from './draft-preview'
 import { DEFAULT_CONTINUE_INPUT, toAiChapterDraft, toInlineAiDraft } from './inline-draft'
-import { buildAssistantMessageDisplay } from './message-display'
 import { translateAiAssistantLauncherPosition } from './panel-layout'
 import {
   appendAssistantStreamToken,
@@ -54,6 +52,11 @@ import {
   normalizeAssistantDrafts,
   withLocalRagChip
 } from './ai-assistant-helpers'
+import { AssistantPanelComposer } from './panel-parts/AssistantPanelComposer'
+import { AssistantPanelHeader } from './panel-parts/AssistantPanelHeader'
+import { ConversationListDropdown } from './panel-parts/ConversationListDropdown'
+import { DraftListPanel } from './panel-parts/DraftListPanel'
+import { MessageStreamArea } from './panel-parts/MessageStreamArea'
 
 type AiMessage = {
   id: number
@@ -901,390 +904,86 @@ export function AiAssistantPanel() {
   const showStarterActions = messages.length === 0 || (resolvedPanelContext.surface === 'chapter_editor' && currentChapterIsBlank)
   return (
         <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[var(--bg-secondary)]">
-          <div
-            className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-3"
+          <AssistantPanelHeader
+            title={resolvedPanelContext.title}
+            providerLabel={providerLabel}
+            conversationListOpen={conversationListOpen}
+            profileGenre={profile?.genre}
+            hasSelectedTextForCurrentChapter={aiAssistantSelectionChapterId === currentChapter?.id}
+            selectedText={aiAssistantSelectionText}
+            onToggleConversationList={() => setConversationListOpen((open) => !open)}
+            onCreateConversation={() => void createConversation()}
+            onClearConversation={() => void clearConversation()}
+            onOpenDialogueRewrite={(selectedText) =>
+              openModal('dialogueRewrite', { selectedText })
+            }
+            onOpenWorldConsistency={() => openModal('worldConsistency')}
+            onOpenCitationsManager={() => openModal('citationsManager')}
+            onOpenTeamManagement={() => openModal('teamManagement')}
+            onOpenAiSettings={() => openModal('aiSettings')}
+            onClose={closeAiAssistant}
+          />
+
+          <ConversationListDropdown
+            open={conversationListOpen}
+            items={conversationItems}
+            onClose={() => setConversationListOpen(false)}
+            onCreate={() => void createConversation()}
+            onSelect={(conversationId) => void refreshConversation(conversationId)}
+            onDelete={(conversationId) => void deleteConversation(conversationId)}
+          />
+
+          <MessageStreamArea
+            ref={scrollRef}
+            messages={messages}
+            contextChips={context.chips}
+            showStarterActions={showStarterActions}
+            starterDescription={resolvedPanelContext.description}
+            starterFooter={
+              resolvedPanelContext.surface === 'chapter_editor'
+                ? ' 直接输入你的写作意图即可；涉及正文和资产的结果会先进入草稿篮。'
+                : ' 直接输入目标，助手会按当前页面切换建议和输出方式。'
+            }
+            quickActions={quickActions.map((action) => ({
+              key: action.key,
+              label: action.label,
+              description: action.description,
+              disabled: Boolean(action.disabled),
+              input: (action as { input?: string }).input
+            }))}
+            skills={skills}
+            onSeedSkill={(skill, input) => seedQuickAction(skill, input)}
+            onPrefillInput={(input) => setInput(input)}
           >
-            <div className="flex min-w-0 items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
-              <Bot size={17} className="text-[var(--accent-primary)]" />
-              <span className="min-w-0 truncate">{resolvedPanelContext.title}</span>
-              <span className="min-w-0 truncate rounded border border-[var(--accent-border)] bg-[var(--accent-surface)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--accent-secondary)]">
-                {providerLabel}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setConversationListOpen((open) => !open)}
-                title="会话列表"
-                className={`rounded p-1.5 ${
-                  conversationListOpen
-                    ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]'
-                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                <MessageSquare size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => void createConversation()}
-                title="新建 AI 会话"
-                className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
-              >
-                <MessageSquarePlus size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => void clearConversation()}
-                title="清空当前会话"
-                className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--danger-surface)] hover:text-[var(--danger-primary)]"
-              >
-                <Trash2 size={16} />
-              </button>
-              {profile?.genre === 'script' && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    openModal('dialogueRewrite', {
-                      selectedText:
-                        aiAssistantSelectionChapterId === currentChapter?.id
-                          ? aiAssistantSelectionText
-                          : ''
-                    })
-                  }
-                  title="对白块改写 (剧本)"
-                  className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
-                >
-                  <MessagesSquare size={16} />
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => openModal('worldConsistency')}
-                title="世界观一致性检查 (Canon Pack)"
-                className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
-              >
-                <ShieldCheck size={16} />
-              </button>
-              {profile?.genre === 'academic' && (
-                <button
-                  type="button"
-                  onClick={() => openModal('citationsManager')}
-                  title="学术引文管理 (academic)"
-                  className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
-                >
-                  <BookOpen size={16} />
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => openModal('teamManagement')}
-                title="团队空间 (DI-06)"
-                className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
-              >
-                <Users size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => openModal('aiSettings')}
-                title="AI 能力与上下文"
-                className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
-              >
-                <Settings2 size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={closeAiAssistant}
-                title="收起 AI 助手"
-                className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
-
-          {conversationListOpen && (
-            <div
-              className="absolute right-0 top-12 bottom-0 z-20 flex w-64 flex-col border-l border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-2xl"
-              onMouseDown={(event) => event.stopPropagation()}
-            >
-              <div className="flex h-11 shrink-0 items-center justify-between border-b border-[var(--border-primary)] px-3">
-                <div className="text-xs font-bold text-[var(--text-primary)]">会话历史</div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => void createConversation()}
-                    title="新建 AI 会话"
-                    className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
-                  >
-                    <MessageSquarePlus size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConversationListOpen(false)}
-                    title="关闭会话列表"
-                    className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-              <div className="flex-1 space-y-1 overflow-y-auto p-2">
-                {conversationItems.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    className={`group flex items-start gap-2 rounded-lg border p-2 ${
-                      conversation.selected
-                        ? 'border-[var(--accent-border)] bg-[var(--accent-surface)]'
-                        : 'border-transparent hover:border-[var(--border-primary)] hover:bg-[var(--bg-secondary)]'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => void refreshConversation(conversation.id)}
-                      className="min-w-0 flex-1 text-left"
-                    >
-                      <div className="truncate text-xs font-semibold text-[var(--text-primary)]">
-                        {conversation.label}
-                      </div>
-                      <div className="mt-1 text-[10px] text-[var(--text-muted)]">
-                        {conversation.messageCount} 条消息
-                      </div>
-                      <div className="mt-0.5 truncate text-[10px] text-[var(--text-muted)]">
-                        {conversation.updatedAt}
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void deleteConversation(conversation.id)}
-                      title="删除会话"
-                      className="rounded p-1 text-[var(--text-muted)] opacity-70 hover:bg-[var(--danger-surface)] hover:text-[var(--danger-primary)] group-hover:opacity-100"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-3 select-text">
-            {showStarterActions && (
-              <div className="space-y-3">
-                <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3 text-xs text-[var(--text-secondary)]">
-                  {resolvedPanelContext.description}
-                  {resolvedPanelContext.surface === 'chapter_editor'
-                    ? ' 直接输入你的写作意图即可；涉及正文和资产的结果会先进入草稿篮。'
-                    : ' 直接输入目标，助手会按当前页面切换建议和输出方式。'}
-                </div>
-                <div className="grid grid-cols-1 gap-2">
-                  {quickActions.map((action) => {
-                    const skill = skills.find((item) => item.key === action.key)
-                    const actionInput = (action as { input?: string }).input
-                    return (
-                    <button
-                      key={action.key}
-                      type="button"
-                      disabled={(!skill && !actionInput) || action.disabled}
-                      onClick={() => {
-                        if (skill) seedQuickAction(skill, actionInput)
-                        else if (actionInput) setInput(actionInput)
-                      }}
-                      className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-2 text-left transition hover:border-[var(--accent-border)] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)]">
-                        <Sparkles size={13} className="text-[var(--accent-primary)]" /> {action.label}
-                      </div>
-                      <div className="mt-1 line-clamp-2 text-[10px] text-[var(--text-muted)]">{action.description}</div>
-                    </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-1.5">
-              {context.chips.map((chip) => (
-                <span
-                  key={chip.id}
-                  className="rounded-full border border-[var(--border-primary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]"
-                >
-                  {chip.label}
-                </span>
-              ))}
-            </div>
-
-            {messages.map((message) => {
-              const display = buildAssistantMessageDisplay(message)
-              const streamingLabel =
-                message.role === 'assistant' && message.streaming
-                  ? message.streamingLabel || 'AI 正在回复...'
-                  : ''
-
-              return (
-                <div
-                  key={message.id}
-                  className={`rounded-lg border p-3 text-sm leading-relaxed whitespace-pre-wrap ${
-                    message.role === 'user'
-                      ? 'ml-8 border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--text-primary)]'
-                      : 'mr-8 border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-secondary)]'
-                  }`}
-                >
-                  {streamingLabel && (
-                    <div className="mb-2 flex items-center gap-1.5 whitespace-normal text-[10px] font-semibold text-[var(--accent-secondary)]">
-                      <Loader2 size={11} className="animate-spin" />
-                      <span>{streamingLabel}</span>
-                    </div>
-                  )}
-                  {display.kind === 'drafts' ? (
-                    <div className="space-y-2 whitespace-normal">
-                      <div className="text-xs text-[var(--text-secondary)]">{display.intro}</div>
-                      <div className="space-y-2">
-                        {display.drafts.map((draft, index) => (
-                          <div
-                            key={`${draft.title}-${index}`}
-                            className="rounded-md border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-2"
-                          >
-                            <div className="font-medium text-[var(--text-primary)]">{draft.title}</div>
-                            {draft.summary && (
-                              <div className="mt-1 line-clamp-4 whitespace-pre-wrap text-xs text-[var(--text-secondary)]">
-                                {draft.summary}
-                              </div>
-                            )}
-                            {draft.fields.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {draft.fields.map((field) => (
-                                  <span
-                                    key={`${draft.title}-${field.label}`}
-                                    className="rounded border border-[var(--border-primary)] px-1.5 py-0.5 text-[10px] text-[var(--text-muted)]"
-                                  >
-                                    {field.label}: {field.value}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    display.text
-                  )}
-                </div>
-              )
-            })}
-
-            {drafts.length > 0 && (
-              <div className="space-y-2 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-surface)] p-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--warning-primary)]">
-                  <ClipboardCheck size={14} /> 草稿篮
-                </div>
-                {drafts.map((draft) => {
-                  const preview = buildDraftPreviewModel(draft)
-                  return (
-                    <div key={draft.id} className="rounded border border-[var(--border-primary)] bg-[var(--bg-primary)] p-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="truncate text-xs font-bold text-[var(--text-primary)]">
-                            {preview.title || draft.title || draft.kind}
-                          </div>
-                          {preview.summary && (
-                            <div className="mt-1 max-h-24 overflow-y-auto text-[11px] leading-relaxed text-[var(--text-muted)] whitespace-pre-wrap">
-                              {preview.summary}
-                            </div>
-                          )}
-                          {preview.fields.length > 0 && (
-                            <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
-                              {preview.fields.map((field) => (
-                                <div
-                                  key={`${draft.id}-${field.label}`}
-                                  className="rounded border border-[var(--border-primary)] px-2 py-1"
-                                >
-                                  <div className="text-[10px] text-[var(--text-muted)]">{field.label}</div>
-                                  <div className="truncate text-[11px] text-[var(--text-secondary)]">{field.value}</div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex shrink-0 gap-1">
-                          <button
-                            type="button"
-                            onClick={() => void applyDraft(draft)}
-                            title="确认应用"
-                            className="rounded bg-[var(--accent-primary)] p-1.5 text-[var(--accent-contrast)] hover:bg-[var(--accent-secondary)]"
-                          >
-                            <Check size={13} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void markDraft(draft.id, 'dismissed')}
-                            title="丢弃草稿"
-                            className="rounded border border-[var(--border-secondary)] p-1.5 text-[var(--text-muted)] hover:text-[var(--danger-primary)]"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+            <DraftListPanel
+              drafts={drafts}
+              onApply={(draft) => void applyDraft(draft)}
+              onDismiss={(draftId) => void markDraft(draftId, 'dismissed')}
+            />
 
             {error && (
               <div className="rounded-lg border border-[var(--danger-border)] bg-[var(--danger-surface)] p-2 text-xs text-[var(--danger-primary)]">
                 {error}
               </div>
             )}
-          </div>
+          </MessageStreamArea>
 
-          <div className="shrink-0 border-t border-[var(--border-primary)] bg-[var(--bg-primary)] p-3">
-            <div className="mb-2 grid grid-cols-3 gap-1.5">
-              {quickActions.map((action) => {
-                const skill = skills.find((item) => item.key === action.key)
-                const actionInput = (action as { input?: string }).input
-                return (
-                  <button
-                    key={action.key}
-                    type="button"
-                    disabled={(!skill && !actionInput) || action.disabled || loading}
-                    onClick={() => {
-                      if (skill) seedQuickAction(skill, actionInput)
-                      else if (actionInput) setInput(actionInput)
-                    }}
-                    className="truncate rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--accent-border)] hover:text-[var(--accent-secondary)] disabled:cursor-not-allowed disabled:opacity-45"
-                    title={action.description}
-                  >
-                    {action.label}
-                  </button>
-                )
-              })}
-            </div>
-            <div className="flex gap-2">
-              <textarea
-                rows={2}
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (shouldSubmitAiAssistantInput(event)) {
-                    event.preventDefault()
-                    void send()
-                  }
-                }}
-                placeholder="直接描述你要 AI 做什么。Enter 发送，Shift + Enter 换行"
-                className="field resize-none text-xs"
-              />
-              <button
-                type="button"
-                disabled={!input.trim() || loading}
-                onClick={() => void send()}
-                className="primary-btn self-stretch px-3"
-                title="发送"
-              >
-                <Send size={15} />
-              </button>
-            </div>
-          </div>
+          <AssistantPanelComposer
+            value={input}
+            onChange={setInput}
+            onSubmit={() => void send()}
+            loading={loading}
+            quickActions={quickActions.map((action) => ({
+              key: action.key,
+              label: action.label,
+              description: action.description,
+              disabled: Boolean(action.disabled),
+              input: (action as { input?: string }).input
+            }))}
+            skills={skills}
+            onSeedSkill={(skill, input) => seedQuickAction(skill, input)}
+            onPrefillInput={(input) => setInput(input)}
+          />
 
         </div>
   )
