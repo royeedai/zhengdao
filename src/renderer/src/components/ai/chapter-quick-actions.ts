@@ -6,6 +6,16 @@ export const START_FIRST_CHAPTER_INPUT =
 const START_CURRENT_CHAPTER_INPUT =
   '基于当前作品设定、本章摘要、人物和剧情节点，起草本章正文。只返回可采纳的正文草稿，不要直接写入正文。'
 
+// CG-A1 v1 — 去 AI 味 quick action 输入文案（按选段 / 全章两档）。
+// 后端 layer2.deslop Skill 实际接收的是 text + genre + mode；这里只是
+// 前端 quick action 的占位文本，dispatch 时由 useAiAssistantRequest
+// 根据 hasSelection 决定附带选段还是整章正文。
+export const REMOVE_AI_TONE_SELECTION_INPUT =
+  '使用 layer2.deslop Skill 对当前选区做"去 AI 味"扫描，按 5 题材独立 prompt + 8 步流程产出 issues + rewritten。改写后的草稿进草稿篮等待我确认。'
+
+export const REMOVE_AI_TONE_CHAPTER_INPUT =
+  '使用 layer2.deslop Skill 对当前章节正文做"去 AI 味"扫描；保护数字 / 命令 / 引用 / BibTeX / 公式不动；输出 issues + rewritten + secondPassAudit。改写后的草稿进草稿篮等待我确认。'
+
 export type ChapterQuickAction = {
   key: string
   label: string
@@ -68,6 +78,17 @@ export function buildChapterEditorQuickActions(input: {
       label: '审核本章',
       description: '检查节奏、毒点、伏笔和人物一致性。',
       disabled: !input.currentChapter
+    },
+    {
+      // CG-A1 — 去 AI 味（5 题材独立 prompt）。
+      // 优先在选区上跑（更精确，cost 更低）；没选区时退回整章。
+      // 没有可用选区且无章节时禁用。
+      key: 'remove_ai_tone',
+      label: input.hasSelection ? '去 AI 味（选区）' : '去 AI 味（本章）',
+      description:
+        '扫描并修复 AI 写作痕迹：5 题材独立 prompt + 保护数字 / 命令 / 引用 / 公式不动 + 二次回读。',
+      disabled: !input.currentChapter && !input.hasSelection,
+      input: input.hasSelection ? REMOVE_AI_TONE_SELECTION_INPUT : REMOVE_AI_TONE_CHAPTER_INPUT
     }
   ]
 }

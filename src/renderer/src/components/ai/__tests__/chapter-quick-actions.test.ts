@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { Chapter, Volume } from '@/types'
 import {
+  REMOVE_AI_TONE_CHAPTER_INPUT,
+  REMOVE_AI_TONE_SELECTION_INPUT,
   START_FIRST_CHAPTER_INPUT,
   buildChapterEditorQuickActions,
   isBlankChapterContent
@@ -53,5 +55,47 @@ describe('chapter quick actions', () => {
       disabled: false,
       input: START_FIRST_CHAPTER_INPUT
     })
+  })
+
+  it('exposes a deslop / 去 AI 味 quick action chapter-mode by default', () => {
+    const ch = chapter({ id: 7, title: '第七章 · 雨夜', content: '<p>正文</p>' })
+    const actions = buildChapterEditorQuickActions({
+      currentChapter: ch,
+      volumes: [volume([ch])],
+      hasSelection: false
+    })
+
+    const removeTone = actions.find((a) => a.key === 'remove_ai_tone')
+    expect(removeTone).toBeDefined()
+    expect(removeTone).toMatchObject({
+      label: '去 AI 味（本章）',
+      disabled: false,
+      input: REMOVE_AI_TONE_CHAPTER_INPUT
+    })
+  })
+
+  it('switches deslop label + input when the user has an active selection', () => {
+    const ch = chapter({ id: 7, content: '<p>正文</p>' })
+    const actions = buildChapterEditorQuickActions({
+      currentChapter: ch,
+      volumes: [volume([ch])],
+      hasSelection: true
+    })
+
+    const removeTone = actions.find((a) => a.key === 'remove_ai_tone')
+    expect(removeTone).toMatchObject({
+      label: '去 AI 味（选区）',
+      input: REMOVE_AI_TONE_SELECTION_INPUT
+    })
+  })
+
+  it('disables deslop when there is no chapter and no selection', () => {
+    const actions = buildChapterEditorQuickActions({
+      currentChapter: null,
+      volumes: [],
+      hasSelection: false
+    })
+    const removeTone = actions.find((a) => a.key === 'remove_ai_tone')
+    expect(removeTone?.disabled).toBe(true)
   })
 })
