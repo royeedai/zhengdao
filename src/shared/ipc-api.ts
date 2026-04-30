@@ -163,6 +163,33 @@ export type IpcInvokeChannel =
   | 'ai:getProviderStatus'
   | 'ai:setupGeminiCli'
 
+  // director:* + visual:* — Pro beta local cache / official backend bridge
+  | 'director:startRun'
+  | 'director:getRun'
+  | 'director:listRuns'
+  | 'director:pauseRun'
+  | 'director:resumeRun'
+  | 'director:cancelRun'
+  | 'director:regenerateStep'
+  | 'director:listChapters'
+  | 'director:acceptChapter'
+  | 'director:rejectChapter'
+  | 'director:subscribeProgress'
+  | 'director:unsubscribeProgress'
+  | 'visual:generate'
+  | 'visual:listAssets'
+
+  // mcp:* — read-only MCP runtime settings, audit, and Canon context bridge
+  | 'mcp:listServers'
+  | 'mcp:saveServer'
+  | 'mcp:deleteServer'
+  | 'mcp:listLinks'
+  | 'mcp:linkCanon'
+  | 'mcp:unlinkCanon'
+  | 'mcp:listAudit'
+  | 'mcp:buildCanonContext'
+  | 'mcp:rejectWriteRequest'
+
   // auth:* — Zhengdao OAuth (registerAuthIpc)
   | 'auth:login'
   | 'auth:getUser'
@@ -180,6 +207,14 @@ export type IpcInvokeChannel =
   | 'team:createInvitation'
   | 'team:revokeInvitation'
   | 'team:acceptInvitation'
+  | 'team:listProjects'
+  | 'team:linkProject'
+  | 'team:getChapterLock'
+  | 'team:acquireChapterLock'
+  | 'team:releaseChapterLock'
+  | 'team:getChapterReview'
+  | 'team:submitChapterForReview'
+  | 'team:decideChapterReview'
 
   // app:* + window:* — auto-updater, native notifications, window chrome
   | 'app:getUpdateState'
@@ -231,7 +266,10 @@ export type IpcReceiveChannel =
   | 'app:updateState'
   | 'ai:streamToken'
   | 'ai:streamComplete'
-  | 'ai:streamError';
+  | 'ai:streamError'
+  | 'director:progressEvent'
+  | 'director:progressError'
+  | 'director:progressDone';
 
 /**
  * Runtime channel inventory — useful when an IDE plugin or test wants to
@@ -282,11 +320,21 @@ export const IPC_INVOKE_CHANNELS: readonly IpcInvokeChannel[] = [
   'ai:getResolvedGlobalConfig', 'ai:getResolvedConfigForBook', 'ai:getResolvedWorkspaceConfig',
   'ai:complete', 'ai:getOfficialProfiles', 'ai:executeSkill', 'ai:submitSkillFeedback',
   'ai:getProviderStatus', 'ai:setupGeminiCli',
+  'director:startRun', 'director:getRun', 'director:listRuns',
+  'director:pauseRun', 'director:resumeRun', 'director:cancelRun',
+  'director:regenerateStep', 'director:listChapters', 'director:acceptChapter',
+  'director:rejectChapter', 'director:subscribeProgress', 'director:unsubscribeProgress',
+  'visual:generate', 'visual:listAssets',
+  'mcp:listServers', 'mcp:saveServer', 'mcp:deleteServer', 'mcp:listLinks',
+  'mcp:linkCanon', 'mcp:unlinkCanon', 'mcp:listAudit', 'mcp:buildCanonContext',
+  'mcp:rejectWriteRequest',
   'auth:login', 'auth:getUser', 'auth:logout', 'auth:getAccessToken',
   'auth:openUpgradePage', 'auth:openAccountPage',
   'team:listMine', 'team:create', 'team:listMembers', 'team:removeMember',
   'team:listInvitations', 'team:createInvitation', 'team:revokeInvitation',
-  'team:acceptInvitation',
+  'team:acceptInvitation', 'team:listProjects', 'team:linkProject',
+  'team:getChapterLock', 'team:acquireChapterLock', 'team:releaseChapterLock',
+  'team:getChapterReview', 'team:submitChapterForReview', 'team:decideChapterReview',
   'app:getUpdateState', 'app:getAppVersion', 'app:checkForUpdates', 'app:downloadUpdate',
   'app:downloadManualInstallerUpdate', 'app:installDownloadedUpdate', 'app:reloadWindow',
   'window:notify', 'window:setFullScreen', 'window:isFullScreen',
@@ -309,5 +357,8 @@ export const IPC_RECEIVE_CHANNELS: readonly IpcReceiveChannel[] = [
   'app:updateState',
   'ai:streamToken',
   'ai:streamComplete',
-  'ai:streamError'
+  'ai:streamError',
+  'director:progressEvent',
+  'director:progressError',
+  'director:progressDone'
 ] as const;

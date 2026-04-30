@@ -12,8 +12,10 @@ import {
   ArrowUpRight,
   AlertCircle,
   BarChart3,
+  Check,
   Lightbulb,
   LayoutDashboard,
+  LayoutPanelTop,
   MoreHorizontal
 } from 'lucide-react'
 import { useUIStore } from '@/stores/ui-store'
@@ -22,6 +24,7 @@ import PomodoroTimer from '@/components/shared/PomodoroTimer'
 import AppBrand from '@/components/shared/AppBrand'
 import AccountSettingsMenu from '@/components/shared/AccountSettingsMenu'
 import { getCurrentTitlebarSafeArea } from '@/utils/window-shell'
+import { BUILTIN_WORKSPACE_LAYOUT_PRESETS, type WorkspaceLayoutPresetId } from '@/utils/workspace-layout'
 
 export default function TopBar() {
   const {
@@ -33,11 +36,19 @@ export default function TopBar() {
     toggleBottomPanel,
     openModal,
     topbarToolsCollapsed,
-    toggleTopbarToolsCollapsed
+    toggleTopbarToolsCollapsed,
+    workspaceLayoutPresetId,
+    customWorkspaceLayoutPresets,
+    applyWorkspaceLayoutPreset,
+    saveCurrentWorkspaceLayoutPreset
   } = useUIStore()
   const { books, currentBookId, closeBook } = useBookStore()
   const [toolMenuOpen, setToolMenuOpen] = useState(false)
+  const [layoutMenuOpen, setLayoutMenuOpen] = useState(false)
+  const [savingLayoutPreset, setSavingLayoutPreset] = useState(false)
+  const [layoutPresetName, setLayoutPresetName] = useState('')
   const toolMenuRef = useRef<HTMLDivElement>(null)
+  const layoutMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!toolMenuOpen) return
@@ -48,12 +59,40 @@ export default function TopBar() {
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [toolMenuOpen])
+
+  useEffect(() => {
+    if (!layoutMenuOpen) return
+    const close = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (!layoutMenuRef.current?.contains(t)) {
+        setLayoutMenuOpen(false)
+        setSavingLayoutPreset(false)
+      }
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [layoutMenuOpen])
   const currentBook = books.find((b) => b.id === currentBookId)
   const titlebarSafeArea = getCurrentTitlebarSafeArea()
 
   const closeToolsAndOpenModal = (modal: Parameters<typeof openModal>[0]) => {
     setToolMenuOpen(false)
     openModal(modal)
+  }
+
+  const handleApplyLayoutPreset = (presetId: WorkspaceLayoutPresetId) => {
+    applyWorkspaceLayoutPreset(presetId)
+    setLayoutMenuOpen(false)
+    setSavingLayoutPreset(false)
+  }
+
+  const handleSaveLayoutPreset = () => {
+    const preset = saveCurrentWorkspaceLayoutPreset(
+      layoutPresetName || `布局 ${customWorkspaceLayoutPresets.length + 1}`
+    )
+    if (!preset) return
+    setLayoutPresetName('')
+    setSavingLayoutPreset(false)
   }
 
   const handleTitlebarDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
@@ -127,6 +166,83 @@ export default function TopBar() {
           >
             {bottomPanelOpen ? <PanelBottomClose size={16} /> : <PanelBottomOpen size={16} />}
           </button>
+          <div className="relative" ref={layoutMenuRef}>
+            <button
+              type="button"
+              onClick={() => setLayoutMenuOpen((open) => !open)}
+              aria-label="布局预设"
+              aria-haspopup="menu"
+              aria-expanded={layoutMenuOpen}
+              title="布局预设"
+              className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-primary)] rounded transition min-h-8 min-w-8"
+            >
+              <LayoutPanelTop size={16} />
+            </button>
+            {layoutMenuOpen && (
+              <div
+                role="menu"
+                className="absolute left-0 top-full z-50 mt-1 w-[236px] rounded-lg border border-[var(--border-primary)] bg-[var(--surface-elevated)] py-1 shadow-xl"
+              >
+                <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  IDE 布局
+                </div>
+                {[...BUILTIN_WORKSPACE_LAYOUT_PRESETS, ...customWorkspaceLayoutPresets].map((preset) => {
+                  const active = workspaceLayoutPresetId === preset.id
+                  return (
+                    <button
+                      key={preset.id}
+                      role="menuitem"
+                      type="button"
+                      onClick={() => handleApplyLayoutPreset(preset.id)}
+                      className="flex w-full items-start gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                    >
+                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center text-[var(--accent-secondary)]">
+                        {active && <Check size={13} />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold">{preset.label}</span>
+                        <span className="block truncate text-[10px] text-[var(--text-muted)]">
+                          {preset.description}
+                        </span>
+                      </span>
+                    </button>
+                  )
+                })}
+                <div className="my-1 border-t border-[var(--border-primary)]" />
+                {savingLayoutPreset ? (
+                  <div className="px-3 py-2">
+                    <input
+                      value={layoutPresetName}
+                      onChange={(event) => setLayoutPresetName(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') handleSaveLayoutPreset()
+                        if (event.key === 'Escape') setSavingLayoutPreset(false)
+                      }}
+                      autoFocus
+                      placeholder="布局名称"
+                      className="h-8 w-full rounded-md border border-[var(--border-primary)] bg-[var(--bg-primary)] px-2 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveLayoutPreset}
+                      className="mt-2 h-8 w-full rounded-md bg-[var(--accent-primary)] text-xs font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-secondary)]"
+                    >
+                      保存布局
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    role="menuitem"
+                    type="button"
+                    onClick={() => setSavingLayoutPreset(true)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
+                  >
+                    <LayoutPanelTop size={14} /> 保存当前布局
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

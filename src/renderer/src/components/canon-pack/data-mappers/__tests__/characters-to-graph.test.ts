@@ -113,4 +113,24 @@ describe('mapCharactersToGraph', () => {
     expect(edges.length).toBeGreaterThan(0)
     expect(elapsed).toBeLessThan(100)
   })
+
+  it('handles 120 characters × 240 relations within 500ms (large-work gate)', () => {
+    const chars: CharacterRow[] = Array.from({ length: 120 }, (_, i) => ({
+      id: i + 1,
+      name: `角色${i + 1}`,
+      isMain: i < 16
+    }))
+    const rels: RelationRow[] = Array.from({ length: 240 }, (_, i) => ({
+      id: i + 1,
+      source_id: ((i * 5) % 120) + 1,
+      target_id: ((i * 11) % 120) + 1,
+      relation_type: i % 3 === 0 ? 'ally' : i % 3 === 1 ? 'rival' : 'family'
+    }))
+    const start = performance.now()
+    const { nodes, edges } = mapCharactersToGraph(chars, rels)
+    const elapsed = performance.now() - start
+    expect(nodes).toHaveLength(120)
+    expect(edges.length).toBeGreaterThan(180)
+    expect(elapsed).toBeLessThan(500)
+  })
 })

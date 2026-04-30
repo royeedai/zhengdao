@@ -218,6 +218,10 @@ export type ModalType =
   | 'referencesBuild'
   | 'teamManagement'
   | 'canonPack'
+  | 'directorPanel'
+  | 'visualStudio'
+  | 'mcpSettings'
+  | 'marketScanDeconstruct'
 
 export interface GenrePreset {
   id: string

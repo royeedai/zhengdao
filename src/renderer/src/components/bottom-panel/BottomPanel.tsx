@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent
+} from 'react'
 import { Activity, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import { useUIStore } from '@/stores/ui-store'
 import { useBookStore } from '@/stores/book-store'
@@ -30,7 +38,11 @@ type DragState = {
   dragging: boolean
 }
 
-export default function BottomPanel() {
+interface BottomPanelProps {
+  embedded?: boolean
+}
+
+export default function BottomPanel({ embedded = false }: BottomPanelProps = {}) {
   const { bottomPanelOpen, bottomPanelHeight, setBottomPanelHeight, setBottomPanelOpen, pushModal } = useUIStore()
   const bookId = useBookStore((s) => s.currentBookId)
   const plotNodes = usePlotStore((s) => s.plotNodes)
@@ -118,45 +130,48 @@ export default function BottomPanel() {
 
   const usePlotlineColors = plotlines.length > 0
 
-  const nodeStyle = useCallback((node: PlotNode) => {
-    const isHigh = node.score > 0
-    const isLow = node.score < 0
-    const plotline = node.plotline_id ? plotlineMap.get(node.plotline_id) : undefined
-    const lineColor = usePlotlineColors && plotline ? plotline.color : null
+  const nodeStyle = useCallback(
+    (node: PlotNode) => {
+      const isHigh = node.score > 0
+      const isLow = node.score < 0
+      const plotline = node.plotline_id ? plotlineMap.get(node.plotline_id) : undefined
+      const lineColor = usePlotlineColors && plotline ? plotline.color : null
 
-    if (lineColor) {
+      if (lineColor) {
+        return {
+          borderClass: 'border',
+          borderStyle: { borderColor: lineColor } as CSSProperties,
+          scoreClass: isHigh
+            ? 'text-[var(--success-primary)]'
+            : isLow
+              ? 'text-[var(--danger-primary)]'
+              : 'text-[var(--warning-primary)]',
+          dotStyle: { backgroundColor: lineColor } as CSSProperties
+        }
+      }
+
       return {
-        borderClass: 'border',
-        borderStyle: { borderColor: lineColor } as CSSProperties,
+        borderClass: isHigh
+          ? 'border-[var(--success-border)] hover:border-[var(--success-primary)]'
+          : isLow
+            ? 'border-[var(--danger-border)] hover:border-[var(--danger-primary)]'
+            : 'border-[var(--warning-border)] hover:border-[var(--warning-primary)]',
+        borderStyle: {} as CSSProperties,
         scoreClass: isHigh
           ? 'text-[var(--success-primary)]'
           : isLow
             ? 'text-[var(--danger-primary)]'
             : 'text-[var(--warning-primary)]',
-        dotStyle: { backgroundColor: lineColor } as CSSProperties
+        dotStyle: {} as CSSProperties,
+        dotClass: isHigh
+          ? 'bg-[var(--success-primary)]'
+          : isLow
+            ? 'bg-[var(--danger-primary)]'
+            : 'bg-[var(--warning-primary)]'
       }
-    }
-
-    return {
-      borderClass: isHigh
-        ? 'border-[var(--success-border)] hover:border-[var(--success-primary)]'
-        : isLow
-          ? 'border-[var(--danger-border)] hover:border-[var(--danger-primary)]'
-          : 'border-[var(--warning-border)] hover:border-[var(--warning-primary)]',
-      borderStyle: {} as CSSProperties,
-      scoreClass: isHigh
-        ? 'text-[var(--success-primary)]'
-        : isLow
-          ? 'text-[var(--danger-primary)]'
-          : 'text-[var(--warning-primary)]',
-      dotStyle: {} as CSSProperties,
-      dotClass: isHigh
-        ? 'bg-[var(--success-primary)]'
-        : isLow
-          ? 'bg-[var(--danger-primary)]'
-          : 'bg-[var(--warning-primary)]'
-    }
-  }, [plotlineMap, usePlotlineColors])
+    },
+    [plotlineMap, usePlotlineColors]
+  )
 
   const scrollToChapter = useCallback(
     (chapter: number, behavior: ScrollBehavior = 'smooth') => {
@@ -319,6 +334,7 @@ export default function BottomPanel() {
   }, [setBottomPanelHeight])
 
   if (!bottomPanelOpen) {
+    if (embedded) return null
     return (
       <div className="bottom-panel-entry h-9 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] shrink-0 shadow-sm">
         <button
@@ -350,22 +366,26 @@ export default function BottomPanel() {
 
   return (
     <div
-      className="bottom-panel-entry border-t border-[var(--border-primary)] bg-[var(--bg-primary)] shrink-0 flex flex-col transition-all duration-300 ease-in-out opacity-100 z-20"
-      style={{ height: `${bottomPanelHeight}px` }}
+      className={`bottom-panel-entry border-t border-[var(--border-primary)] bg-[var(--bg-primary)] flex flex-col transition-all duration-300 ease-in-out opacity-100 z-20 ${
+        embedded ? 'h-full min-h-0' : 'shrink-0'
+      }`}
+      style={embedded ? undefined : { height: `${bottomPanelHeight}px` }}
     >
-      <button
-        type="button"
-        aria-label="调整沙盘高度"
-        title="拖拽调整沙盘高度"
-        onMouseDown={(event) => {
-          resizeStateRef.current = { startY: event.clientY, startHeight: bottomPanelHeight }
-          document.body.style.cursor = 'ns-resize'
-          document.body.style.userSelect = 'none'
-        }}
-        className="h-4 flex items-center justify-center border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] cursor-ns-resize shrink-0"
-      >
-        <span className="h-1 w-14 rounded-full bg-[var(--border-secondary)]" />
-      </button>
+      {!embedded && (
+        <button
+          type="button"
+          aria-label="调整沙盘高度"
+          title="拖拽调整沙盘高度"
+          onMouseDown={(event) => {
+            resizeStateRef.current = { startY: event.clientY, startHeight: bottomPanelHeight }
+            document.body.style.cursor = 'ns-resize'
+            document.body.style.userSelect = 'none'
+          }}
+          className="h-4 flex items-center justify-center border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] cursor-ns-resize shrink-0"
+        >
+          <span className="h-1 w-14 rounded-full bg-[var(--border-secondary)]" />
+        </button>
+      )}
 
       <div className="h-10 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] flex items-center px-6 justify-between shrink-0 shadow-sm">
         <div className="flex min-w-0 items-center gap-2 text-sm font-bold tracking-wide text-[var(--accent-secondary)]">
@@ -466,7 +486,8 @@ export default function BottomPanel() {
                     onConfirm: async () => {
                       await deletePlotline(plotline.id)
                     }
-                  })}
+                  })
+                }
               />
             ))
           )}
@@ -500,7 +521,9 @@ export default function BottomPanel() {
                   className="absolute top-0 h-full border-l border-[var(--border-primary)]"
                   style={{ left: `${chapterToTimelineX(chapter)}px` }}
                 >
-                  <span className="absolute left-2 top-2 text-[10px] font-mono text-[var(--text-muted)]">Ch {chapter}</span>
+                  <span className="absolute left-2 top-2 text-[10px] font-mono text-[var(--text-muted)]">
+                    Ch {chapter}
+                  </span>
                 </div>
               ))}
 
@@ -548,7 +571,9 @@ export default function BottomPanel() {
               const dotRing = 'dotClass' in style && style.dotClass ? style.dotClass : ''
               const dotPos = isHigh ? '-bottom-1.5' : node.score < 0 ? '-top-1.5' : 'top-1/2 -mt-1.5'
               const assocIds = plotNodeCharacterIds[node.id] ?? []
-              const assocChars = assocIds.map((id) => characters.find((character) => character.id === id)).filter(Boolean)
+              const assocChars = assocIds
+                .map((id) => characters.find((character) => character.id === id))
+                .filter(Boolean)
               const draggingThisNode = dragState?.nodeId === node.id
 
               return (
@@ -602,7 +627,9 @@ export default function BottomPanel() {
                           {character!.name.slice(0, 1)}
                         </span>
                       ))}
-                      {assocChars.length > 5 && <span className="text-[8px] text-[var(--text-muted)]">+{assocChars.length - 5}</span>}
+                      {assocChars.length > 5 && (
+                        <span className="text-[8px] text-[var(--text-muted)]">+{assocChars.length - 5}</span>
+                      )}
                     </div>
                   )}
 

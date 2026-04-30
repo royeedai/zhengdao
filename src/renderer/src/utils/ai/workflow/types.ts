@@ -100,16 +100,15 @@ export type AiAssistantContext = {
 }
 
 /**
- * DI-07 v3.3 — Canon Pack contract version bump to v0.2.
+ * DI-07 v4 — Canon / Reference Pack v2 contract.
  *
- * v0.2 adds three optional asset bundles so CG-A3 visual views and the
- * world-consistency Skill can reason over relationships, timeline events
- * and organization hierarchy. The fields are optional so v0.1 backend
- * Skills (which only inspected `canonPackLocks` on the work profile)
- * still parse a v0.2 pack without changes — they simply ignore unknown
- * keys.
+ * v2 keeps the v0.1/v0.2 fields intact and adds an explicit pack kind:
+ * fiction genres use Canon Pack, while academic/professional works use
+ * Reference Pack. New fields stay optional so older backend Skills can
+ * ignore unknown keys, and v1 lock data remains available for fallback.
  */
-export type AiCanonPackVersion = 'canon-pack.v0.1' | 'canon-pack.v0.2'
+export type AiCanonPackVersion = 'canon-pack.v0.1' | 'canon-pack.v0.2' | 'canon-pack.v2'
+export type AiCanonPackKind = 'canon' | 'reference'
 
 export interface AiCanonPackRelation {
   fromId: string
@@ -139,8 +138,16 @@ export interface AiCanonPackOrganization {
   memberIds?: string[]
 }
 
+export interface AiReferencePackEntry {
+  id: string
+  label: string
+  value: string
+  source?: 'citation' | 'genre_meta' | 'canon_pack_locks'
+}
+
 export type AiCanonPack = {
   version: AiCanonPackVersion
+  kind: AiCanonPackKind
   bookId: number
   style: {
     styleGuide?: string
@@ -167,6 +174,13 @@ export type AiCanonPack = {
     events?: AiCanonPackEvent[]
     /** DI-07 v3.3 — optional in v0.2; absent in v0.1 packs. */
     organizations?: AiCanonPackOrganization[]
+    /** DI-07 v2 — Reference Pack citation metadata for academic/professional works. */
+    references?: AiReferencePackEntry[]
+    terminology?: AiReferencePackEntry[]
+    keyArguments?: AiReferencePackEntry[]
+    policies?: AiReferencePackEntry[]
+    /** v1 fallback locks kept for rollback / Skill compatibility. */
+    canonLocks?: CanonLockEntry[]
   }
   retrieval: {
     mode: 'local_keyword' | 'off'

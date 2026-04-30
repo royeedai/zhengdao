@@ -75,6 +75,54 @@ describe('runMigrations', () => {
     }
   })
 
+  it('creates Pro beta cache tables for director, visual assets, read-only MCP links, and collaboration mirrors', () => {
+    const db = new BetterSqlite3(':memory:') as Database.Database
+
+    try {
+      createSchema(db)
+
+      expect(() => runMigrations(db)).not.toThrow()
+
+      const tableRows = db
+        .prepare(
+          `SELECT name FROM sqlite_master
+           WHERE type='table'
+             AND name IN (
+               'director_run_links',
+               'director_run_chapter_cache',
+               'visual_assets',
+               'mcp_servers',
+               'mcp_canon_links',
+               'mcp_audit_log',
+               'team_project_links',
+               'chapter_lock_mirrors',
+               'chapter_review_mirrors'
+             )
+           ORDER BY name`
+        )
+        .all() as { name: string }[]
+
+      expect(tableRows.map((row) => row.name)).toEqual([
+        'chapter_lock_mirrors',
+        'chapter_review_mirrors',
+        'director_run_chapter_cache',
+        'director_run_links',
+        'mcp_audit_log',
+        'mcp_canon_links',
+        'mcp_servers',
+        'team_project_links',
+        'visual_assets'
+      ])
+
+      const visualColumns = db.prepare('PRAGMA table_info(visual_assets)').all() as { name: string }[]
+      expect(visualColumns.map((column) => column.name)).toEqual(
+        expect.arrayContaining(['local_path', 'mime_type', 'sha256', 'file_size'])
+      )
+    } finally {
+      db.close()
+    }
+  })
+
   it('seeds genre templates, system defaults, and daily goal mode on fresh schema', () => {
     const db = new BetterSqlite3(':memory:') as Database.Database
 

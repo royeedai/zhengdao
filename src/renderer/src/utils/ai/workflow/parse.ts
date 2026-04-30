@@ -1,3 +1,4 @@
+import JSON5 from 'json5'
 import { nonEmpty } from './helpers'
 import {
   ALLOWED_DRAFT_KINDS,
@@ -38,9 +39,6 @@ function tryParseJson(text: string): unknown | undefined {
     /* fall through to json5 lenient parse */
   }
   try {
-    // Lazy import 避免顶部 import 循环和体积负担。
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const JSON5 = require('json5') as { parse: (input: string) => unknown }
     return JSON5.parse(text)
   } catch {
     return undefined

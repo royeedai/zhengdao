@@ -1,10 +1,14 @@
 import {
   BookOpen,
   Bot,
+  Clapperboard,
+  Image,
   MessageSquare,
   MessageSquarePlus,
   MessagesSquare,
   Network,
+  Search,
+  ServerCog,
   Settings2,
   ShieldCheck,
   Trash2,
@@ -38,6 +42,10 @@ export interface AssistantPanelHeaderProps {
   onOpenWorldConsistency: () => void
   onOpenCitationsManager: () => void
   onOpenTeamManagement: () => void
+  onOpenDirectorPanel: () => void
+  onOpenVisualStudio: () => void
+  onOpenMcpSettings: () => void
+  onOpenMarketScanDeconstruct: () => void
   onOpenAiSettings: () => void
   onOpenCanonPack: () => void
   onClose: () => void
@@ -104,11 +112,43 @@ export function AssistantPanelHeader(props: AssistantPanelHeaderProps): JSX.Elem
         </button>
         <button
           type="button"
+          onClick={() => props.onOpenDirectorPanel()}
+          title="Pro 自动导演"
+          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
+        >
+          <Clapperboard size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={() => props.onOpenVisualStudio()}
+          title="视觉资产"
+          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
+        >
+          <Image size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={() => props.onOpenMarketScanDeconstruct()}
+          title="网文扫榜 / 授权拆文"
+          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
+        >
+          <Search size={16} />
+        </button>
+        <button
+          type="button"
           onClick={() => props.onOpenCanonPack()}
           title="Canon Pack 视图 (关系图谱 / 时间线 / 组织架构)"
           className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
         >
           <Network size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={() => props.onOpenMcpSettings()}
+          title="MCP 只读桥接"
+          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
+        >
+          <ServerCog size={16} />
         </button>
         {props.profileGenre === 'academic' && (
           <button

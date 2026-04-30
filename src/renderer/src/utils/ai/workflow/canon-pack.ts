@@ -3,6 +3,8 @@ import type {
   AiCanonPack,
   AiCanonPackEvent,
   AiCanonPackOrganization,
+  AiReferencePackEntry,
+  CanonLockEntry,
   AiCanonPackRelation,
   AiWorkProfile
 } from './types'
@@ -14,13 +16,27 @@ import type {
  * + characters + foreshadowings + plot nodes + local citations + DI-07 v3
  * relations / events / organizations) into the JSON contract the backend
  * Skill execution layer + DI-07 v1 lock panel + CG-A3 visual views all
- * consume. v0.2 keeps the v0.1 fields untouched and only adds three
- * optional asset bundles.
+ * consume. v2 keeps the v0.1/v0.2 fields untouched, then adds an explicit
+ * Canon vs Reference Pack kind so academic/professional projects can pass
+ * citations, terminology and key arguments without pretending they are
+ * fiction-world facts.
  */
 
 const RELATIONS_CAP = 100
 const EVENTS_CAP = 50
 const ORGS_CAP = 30
+const REFERENCE_CAP = 80
+
+interface ReferencePackMeta {
+  terminology?: unknown
+  keyArguments?: unknown
+  policies?: unknown
+  referencePack?: {
+    terminology?: unknown
+    keyArguments?: unknown
+    policies?: unknown
+  }
+}
 
 export interface DesktopRelationInput {
   fromId: number
@@ -71,6 +87,11 @@ export function buildDesktopCanonPack(input: {
   generatedAt?: string
 }): AiCanonPack {
   const profile = input.profile
+  const kind = isReferenceGenre(profile?.genre) ? 'reference' : 'canon'
+  const canonLocks = parseCanonLocks(profile?.canon_pack_locks)
+  const referencePack = kind === 'reference'
+    ? buildReferencePack(profile, input.localCitations || [], canonLocks)
+    : undefined
   const relations = input.relations
     ? input.relations.slice(0, RELATIONS_CAP).map<AiCanonPackRelation>((relation) => ({
         fromId: String(relation.fromId),
@@ -105,7 +126,8 @@ export function buildDesktopCanonPack(input: {
     : undefined
 
   return {
-    version: 'canon-pack.v0.2',
+    version: 'canon-pack.v2',
+    kind,
     bookId: input.bookId,
     style: {
       styleGuide: profile?.style_guide || undefined,
@@ -143,7 +165,12 @@ export function buildDesktopCanonPack(input: {
       })),
       relations,
       events,
-      organizations
+      organizations,
+      canonLocks: canonLocks.length > 0 ? canonLocks : undefined,
+      references: referencePack?.references,
+      terminology: referencePack?.terminology,
+      keyArguments: referencePack?.keyArguments,
+      policies: referencePack?.policies
     },
     retrieval: {
       mode: (input.localCitations || []).length > 0 ? 'local_keyword' : 'off',
@@ -155,4 +182,93 @@ export function buildDesktopCanonPack(input: {
       userConfirmedOnly: true
     }
   }
+}
+
+export function isReferenceGenre(genre?: string | null): boolean {
+  return genre === 'academic' || genre === 'professional'
+}
+
+function parseCanonLocks(raw?: string): CanonLockEntry[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter((item): item is CanonLockEntry => {
+        if (!item || typeof item !== 'object') return false
+        const row = item as Partial<CanonLockEntry>
+        return typeof row.id === 'string' && typeof row.label === 'string' && typeof row.value === 'string'
+      })
+      .slice(0, 100)
+  } catch {
+    return []
+  }
+}
+
+function parseGenreMeta(raw?: string): ReferencePackMeta {
+  if (!raw) return {}
+  try {
+    const parsed = JSON.parse(raw) as ReferencePackMeta
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function normalizeEntries(value: unknown, source: AiReferencePackEntry['source']): AiReferencePackEntry[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item, index): AiReferencePackEntry | null => {
+      if (typeof item === 'string') {
+        const trimmed = item.trim()
+        return trimmed ? { id: `${source}-${index + 1}`, label: trimmed.slice(0, 80), value: trimmed, source } : null
+      }
+      if (!item || typeof item !== 'object') return null
+      const row = item as Record<string, unknown>
+      const label = String(row.label || row.term || row.title || row.name || `条目 ${index + 1}`).trim()
+      const valueText = String(row.value || row.definition || row.description || row.text || '').trim()
+      if (!label || !valueText) return null
+      return {
+        id: String(row.id || `${source}-${index + 1}`),
+        label,
+        value: valueText,
+        source
+      }
+    })
+    .filter((item): item is AiReferencePackEntry => Boolean(item))
+    .slice(0, REFERENCE_CAP)
+}
+
+function buildReferencePack(
+  profile: AiWorkProfile | null | undefined,
+  localCitations: Array<{ ref: string; sourceId: string; title?: string; excerpt: string; score?: number }>,
+  canonLocks: CanonLockEntry[]
+) {
+  const meta = parseGenreMeta(profile?.genre_meta)
+  const referenceMeta = meta.referencePack || meta
+  const references = localCitations.slice(0, REFERENCE_CAP).map<AiReferencePackEntry>((citation) => ({
+    id: citation.sourceId,
+    label: citation.title || citation.ref,
+    value: citation.excerpt,
+    source: 'citation'
+  }))
+  const terminology = normalizeEntries(referenceMeta.terminology, 'genre_meta')
+  const keyArguments = normalizeEntries(referenceMeta.keyArguments, 'genre_meta')
+  const policies = normalizeEntries(referenceMeta.policies, 'genre_meta')
+
+  if (terminology.length === 0 && keyArguments.length === 0 && canonLocks.length > 0) {
+    return {
+      references,
+      terminology,
+      keyArguments: canonLocks.slice(0, 30).map<AiReferencePackEntry>((lock) => ({
+        id: lock.id,
+        label: lock.label,
+        value: lock.value,
+        source: 'canon_pack_locks'
+      })),
+      policies
+    }
+  }
+
+  return { references, terminology, keyArguments, policies }
 }

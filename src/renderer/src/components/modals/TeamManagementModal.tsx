@@ -1,18 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  CheckCircle2,
+  ClipboardCheck,
   Copy,
+  Link2,
   Loader2,
+  Lock,
   Mail,
   Plus,
   ShieldCheck,
   Trash2,
+  Unlock,
   UserPlus,
   Users,
+  XCircle,
   X
 } from 'lucide-react'
 import { useUIStore } from '@/stores/ui-store'
 import { useToastStore } from '@/stores/toast-store'
+import type {
+  ChapterLockMirror,
+  ChapterReviewMirror,
+  TeamInvitationRole,
+  TeamProjectSummary,
+  TeamRole
+} from '../../../../shared/team-collaboration'
 
 /**
  * DI-06 v2 — 桌面端团队管理 modal
@@ -34,14 +47,14 @@ interface TeamSummary {
   plan: string
   seatLimit: number
   ownerUserId: string
-  myRole?: 'owner' | 'admin' | 'member'
+  myRole?: TeamRole
   joinedAt?: string
   createdAt: string
 }
 
 interface Member {
   userId: string
-  role: 'owner' | 'admin' | 'member'
+  role: TeamRole
   joinedAt: string
 }
 
@@ -49,7 +62,7 @@ interface Invitation {
   id: string
   teamId: string
   email: string
-  role: 'admin' | 'member'
+  role: TeamInvitationRole
   status: 'pending' | 'accepted' | 'revoked' | 'expired'
   token?: string
   expiresAt: string
@@ -76,18 +89,25 @@ export default function TeamManagementModal() {
 
   const [teams, setTeams] = useState<TeamSummary[]>([])
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null)
-  const [tab, setTab] = useState<'members' | 'invitations'>('members')
+  const [tab, setTab] = useState<'members' | 'invitations' | 'projects'>('members')
 
   const [loadingTeams, setLoadingTeams] = useState(true)
   const [members, setMembers] = useState<Member[]>([])
   const [invitations, setInvitations] = useState<Invitation[]>([])
+  const [projects, setProjects] = useState<TeamProjectSummary[]>([])
   const [loadingDetail, setLoadingDetail] = useState(false)
 
   const [creatingTeamName, setCreatingTeamName] = useState('')
   const [acceptToken, setAcceptToken] = useState('')
 
   const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteRole, setInviteRole] = useState<'admin' | 'member'>('member')
+  const [inviteRole, setInviteRole] = useState<TeamInvitationRole>('member')
+  const [projectIdInput, setProjectIdInput] = useState('')
+  const [chapterIdInput, setChapterIdInput] = useState('')
+  const [activeProjectId, setActiveProjectId] = useState('')
+  const [chapterLock, setChapterLock] = useState<ChapterLockMirror | null>(null)
+  const [chapterReview, setChapterReview] = useState<ChapterReviewMirror | null>(null)
+  const [reviewComments, setReviewComments] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const activeTeam = useMemo(() => teams.find((t) => t.id === activeTeamId) || null, [
@@ -121,21 +141,30 @@ export default function TeamManagementModal() {
     async (teamId: string) => {
       setLoadingDetail(true)
       try {
-        const [mRes, iRes] = await Promise.all([
+        const [mRes, iRes, pRes] = await Promise.all([
           window.api.teamListMembers(teamId) as Promise<ApiResult<{ members: Member[] }>>,
-          window.api.teamListInvitations(teamId) as Promise<ApiResult<{ invitations: Invitation[] }>>
+          window.api.teamListInvitations(teamId) as Promise<ApiResult<{ invitations: Invitation[] }>>,
+          window.api.teamListProjects(teamId) as Promise<ApiResult<{ projects: TeamProjectSummary[] }>>
         ])
         if (mRes.ok) setMembers(mRes.data?.members || [])
         if (iRes.ok) setInvitations(iRes.data?.invitations || [])
+        if (pRes.ok) {
+          const nextProjects = pRes.data?.projects || []
+          setProjects(nextProjects)
+          if (nextProjects.length > 0 && !nextProjects.some((project) => project.id === activeProjectId)) {
+            setActiveProjectId(nextProjects[0].id)
+          }
+        }
         if (!mRes.ok) addToast('error', mRes.error || '加载成员失败')
         if (!iRes.ok && iRes.code !== 'INSUFFICIENT_TEAM_ROLE') {
           addToast('error', iRes.error || '加载邀请失败')
         }
+        if (!pRes.ok) addToast('error', pRes.error || '加载团队项目失败')
       } finally {
         setLoadingDetail(false)
       }
     },
-    [addToast]
+    [activeProjectId, addToast]
   )
 
   useEffect(() => {
@@ -254,6 +283,112 @@ export default function TeamManagementModal() {
     }
     addToast('success', '邀请已撤销')
     await refreshDetail(activeTeam.id)
+  }
+
+  const handleLinkProject = async () => {
+    if (!activeTeam) return
+    const projectId = projectIdInput.trim()
+    if (!projectId) {
+      addToast('error', '请填写 backend projectId')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const r = (await window.api.teamLinkProject(activeTeam.id, projectId)) as ApiResult<{
+        project: TeamProjectSummary
+      }>
+      if (!r.ok) {
+        addToast('error', r.error || '绑定项目失败')
+        return
+      }
+      addToast('success', '项目已绑定到团队')
+      setProjectIdInput('')
+      setActiveProjectId(r.data?.project.id || projectId)
+      await refreshDetail(activeTeam.id)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const readCollaborationState = async () => {
+    if (!activeTeam || !activeProjectId || !chapterIdInput.trim()) return
+    const params = {
+      teamId: activeTeam.id,
+      projectId: activeProjectId,
+      chapterId: chapterIdInput.trim()
+    }
+    const [lockRes, reviewRes] = await Promise.all([
+      window.api.teamGetChapterLock(params) as Promise<ApiResult<{ lock: ChapterLockMirror | null }>>,
+      window.api.teamGetChapterReview(params) as Promise<ApiResult<{ review: ChapterReviewMirror | null }>>
+    ])
+    if (lockRes.ok) setChapterLock(lockRes.data?.lock || null)
+    else addToast('error', lockRes.error || '读取章节锁失败')
+    if (reviewRes.ok) setChapterReview(reviewRes.data?.review || null)
+    else if (reviewRes.code !== 'REVIEW_REQUEST_NOT_FOUND') addToast('error', reviewRes.error || '读取审稿流失败')
+  }
+
+  const handleAcquireLock = async () => {
+    if (!activeTeam || !activeProjectId || !chapterIdInput.trim()) return
+    const r = (await window.api.teamAcquireChapterLock({
+      teamId: activeTeam.id,
+      projectId: activeProjectId,
+      chapterId: chapterIdInput.trim()
+    })) as ApiResult<{ lock: ChapterLockMirror | null }>
+    if (!r.ok) {
+      addToast('error', r.code === 'LOCK_HELD_BY_OTHER_USER' ? '章节锁已被其他协作者持有' : r.error || '获取章节锁失败')
+      return
+    }
+    setChapterLock(r.data?.lock || null)
+    addToast('success', '章节锁已获取')
+  }
+
+  const handleReleaseLock = async () => {
+    if (!activeTeam || !activeProjectId || !chapterIdInput.trim()) return
+    const r = (await window.api.teamReleaseChapterLock({
+      teamId: activeTeam.id,
+      projectId: activeProjectId,
+      chapterId: chapterIdInput.trim()
+    })) as ApiResult<unknown>
+    if (!r.ok) {
+      addToast('error', r.error || '释放章节锁失败')
+      return
+    }
+    setChapterLock(null)
+    addToast('success', '章节锁已释放')
+  }
+
+  const handleSubmitReview = async () => {
+    if (!activeTeam || !activeProjectId || !chapterIdInput.trim()) return
+    const r = (await window.api.teamSubmitChapterForReview({
+      teamId: activeTeam.id,
+      projectId: activeProjectId,
+      chapterId: chapterIdInput.trim()
+    })) as ApiResult<{ review: ChapterReviewMirror | null }>
+    if (!r.ok) {
+      addToast('error', r.error || '提交审稿失败')
+      return
+    }
+    setChapterReview(r.data?.review || null)
+    addToast('success', '章节已提交审稿')
+  }
+
+  const handleReviewDecision = async (decision: 'approved' | 'rejected') => {
+    if (!activeTeam || !activeProjectId || !chapterIdInput.trim() || !chapterReview) return
+    const r = (await window.api.teamDecideChapterReview({
+      teamId: activeTeam.id,
+      projectId: activeProjectId,
+      chapterId: chapterIdInput.trim(),
+      reviewId: chapterReview.id,
+      decision,
+      reviewComments: reviewComments.trim() || undefined
+    })) as ApiResult<{ review: ChapterReviewMirror | null }>
+    if (!r.ok) {
+      addToast('error', r.code === 'INSUFFICIENT_REVIEW_ROLE' ? '只有 owner/admin/reviewer 可审稿' : r.error || '审稿处理失败')
+      return
+    }
+    setChapterReview(r.data?.review || null)
+    setReviewComments('')
+    addToast('success', decision === 'approved' ? '审稿已通过' : '审稿已驳回')
   }
 
   const canManage = activeTeam?.myRole === 'owner' || activeTeam?.myRole === 'admin'
@@ -392,6 +527,9 @@ export default function TeamManagementModal() {
                     <TabButton active={tab === 'invitations'} onClick={() => setTab('invitations')}>
                       <Mail size={12} /> 邀请 ({invitations.length})
                     </TabButton>
+                    <TabButton active={tab === 'projects'} onClick={() => setTab('projects')}>
+                      <Link2 size={12} /> 项目 ({projects.length})
+                    </TabButton>
                   </div>
                 </header>
 
@@ -407,7 +545,7 @@ export default function TeamManagementModal() {
                       ownerUserId={activeTeam.ownerUserId}
                       onRemove={(uid) => void handleRemoveMember(uid)}
                     />
-                  ) : (
+                  ) : tab === 'invitations' ? (
                     <InvitationsTab
                       activeTeam={activeTeam}
                       invitations={invitations}
@@ -427,6 +565,29 @@ export default function TeamManagementModal() {
                           addToast('error', '复制失败')
                         }
                       }}
+                    />
+                  ) : (
+                    <ProjectsTab
+                      activeTeam={activeTeam}
+                      projects={projects}
+                      canManage={Boolean(canManage)}
+                      submitting={submitting}
+                      projectIdInput={projectIdInput}
+                      setProjectIdInput={setProjectIdInput}
+                      activeProjectId={activeProjectId}
+                      setActiveProjectId={setActiveProjectId}
+                      chapterIdInput={chapterIdInput}
+                      setChapterIdInput={setChapterIdInput}
+                      chapterLock={chapterLock}
+                      chapterReview={chapterReview}
+                      reviewComments={reviewComments}
+                      setReviewComments={setReviewComments}
+                      onLinkProject={() => void handleLinkProject()}
+                      onReadState={() => void readCollaborationState()}
+                      onAcquireLock={() => void handleAcquireLock()}
+                      onReleaseLock={() => void handleReleaseLock()}
+                      onSubmitReview={() => void handleSubmitReview()}
+                      onReviewDecision={(decision) => void handleReviewDecision(decision)}
                     />
                   )}
                 </div>
@@ -538,12 +699,18 @@ function InvitationsTab({
   submitting: boolean
   inviteEmail: string
   setInviteEmail: (v: string) => void
-  inviteRole: 'admin' | 'member'
-  setInviteRole: (v: 'admin' | 'member') => void
+  inviteRole: TeamInvitationRole
+  setInviteRole: (v: TeamInvitationRole) => void
   onSendInvite: () => void
   onRevoke: (id: string) => void
   onCopyLink: (token: string) => void
 }) {
+  const [nowMs, setNowMs] = useState(0)
+
+  useEffect(() => {
+    setNowMs(Date.now())
+  }, [invitations])
+
   return (
     <div className="space-y-4">
       {canManage ? (
@@ -559,10 +726,12 @@ function InvitationsTab({
             />
             <select
               value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value as 'admin' | 'member')}
+              onChange={(e) => setInviteRole(e.target.value as TeamInvitationRole)}
               className="field text-xs"
             >
               <option value="member">成员 (member)</option>
+              <option value="editor">编辑 (editor)</option>
+              <option value="reviewer">审稿 (reviewer)</option>
               <option value="admin">管理员 (admin)</option>
             </select>
             <button
@@ -596,7 +765,7 @@ function InvitationsTab({
         ) : (
           <ul className="divide-y divide-[var(--border-primary)] rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)]">
             {invitations.map((inv) => {
-              const expired = new Date(inv.expiresAt).getTime() < Date.now()
+              const expired = nowMs > 0 && new Date(inv.expiresAt).getTime() < nowMs
               return (
                 <li key={inv.id} className="flex items-center justify-between gap-3 p-3 text-xs">
                   <div className="min-w-0 flex-1">
@@ -647,6 +816,244 @@ function InvitationsTab({
             })}
           </ul>
         )}
+      </section>
+    </div>
+  )
+}
+
+function ProjectsTab({
+  activeTeam,
+  projects,
+  canManage,
+  submitting,
+  projectIdInput,
+  setProjectIdInput,
+  activeProjectId,
+  setActiveProjectId,
+  chapterIdInput,
+  setChapterIdInput,
+  chapterLock,
+  chapterReview,
+  reviewComments,
+  setReviewComments,
+  onLinkProject,
+  onReadState,
+  onAcquireLock,
+  onReleaseLock,
+  onSubmitReview,
+  onReviewDecision
+}: {
+  activeTeam: TeamSummary
+  projects: TeamProjectSummary[]
+  canManage: boolean
+  submitting: boolean
+  projectIdInput: string
+  setProjectIdInput: (value: string) => void
+  activeProjectId: string
+  setActiveProjectId: (value: string) => void
+  chapterIdInput: string
+  setChapterIdInput: (value: string) => void
+  chapterLock: ChapterLockMirror | null
+  chapterReview: ChapterReviewMirror | null
+  reviewComments: string
+  setReviewComments: (value: string) => void
+  onLinkProject: () => void
+  onReadState: () => void
+  onAcquireLock: () => void
+  onReleaseLock: () => void
+  onSubmitReview: () => void
+  onReviewDecision: (decision: 'approved' | 'rejected') => void
+}) {
+  const selectedProject = projects.find((project) => project.id === activeProjectId) || null
+  const canUseChapterFlow = Boolean(activeProjectId && chapterIdInput.trim())
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <section className="space-y-3">
+        {canManage ? (
+          <div className="rounded-lg border border-[var(--accent-border)] bg-[var(--accent-surface)]/30 p-3">
+            <div className="mb-2 text-xs font-bold text-[var(--accent-secondary)]">绑定 backend 项目</div>
+            <div className="flex gap-2">
+              <input
+                value={projectIdInput}
+                onChange={(e) => setProjectIdInput(e.target.value)}
+                placeholder="project UUID"
+                className="field flex-1 font-mono text-xs"
+              />
+              <button
+                type="button"
+                onClick={onLinkProject}
+                disabled={submitting || !projectIdInput.trim()}
+                className="inline-flex items-center gap-1 rounded bg-[var(--accent-primary)] px-3 text-xs text-[var(--accent-contrast)] hover:bg-[var(--accent-secondary)] disabled:opacity-40"
+              >
+                <Link2 size={12} />
+                绑定
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-[var(--warning-border)] bg-[var(--warning-surface)]/30 p-3 text-xs text-[var(--warning-primary)]">
+            <AlertCircle size={12} className="mr-1 inline" />
+            只有 owner / admin 可绑定项目。当前团队角色: {activeTeam.myRole || 'member'}。
+          </div>
+        )}
+
+        <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)]">
+          <div className="border-b border-[var(--border-primary)] px-3 py-2 text-xs font-bold text-[var(--text-primary)]">
+            团队项目 ({projects.length})
+          </div>
+          {projects.length === 0 ? (
+            <div className="p-4 text-center text-xs text-[var(--text-muted)]">
+              还没有绑定项目。绑定后可使用章节锁与审稿流。
+            </div>
+          ) : (
+            <ul className="divide-y divide-[var(--border-primary)]">
+              {projects.map((project) => {
+                const selected = project.id === activeProjectId
+                return (
+                  <li key={project.id}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveProjectId(project.id)}
+                      className={`flex w-full flex-col gap-1 p-3 text-left text-xs ${
+                        selected
+                          ? 'bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+                          : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+                      }`}
+                    >
+                      <span className="font-mono">{project.id}</span>
+                      <span className="text-[10px] text-[var(--text-muted)]">
+                        {project.name || '未命名项目'} · linked {project.linkedAt ? new Date(project.linkedAt).toLocaleString() : 'unknown'}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="text-xs font-bold text-[var(--text-primary)]">章节锁 / 审稿流</div>
+            <button
+              type="button"
+              onClick={onReadState}
+              disabled={!canUseChapterFlow}
+              className="rounded border border-[var(--border-primary)] px-2 py-1 text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-40"
+            >
+              刷新状态
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            <label className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+              Project
+              <input
+                value={activeProjectId}
+                onChange={(e) => setActiveProjectId(e.target.value)}
+                placeholder={selectedProject?.id || 'project UUID'}
+                className="field mt-1 w-full font-mono text-xs"
+              />
+            </label>
+            <label className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+              Chapter
+              <input
+                value={chapterIdInput}
+                onChange={(e) => setChapterIdInput(e.target.value)}
+                placeholder="chapter UUID"
+                className="field mt-1 w-full font-mono text-xs"
+              />
+            </label>
+          </div>
+
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-3">
+              <div className="mb-2 flex items-center gap-1 text-xs font-bold text-[var(--text-primary)]">
+                <Lock size={13} /> 章节锁
+              </div>
+              {chapterLock ? (
+                <div className="space-y-1 text-[11px] text-[var(--text-muted)]">
+                  <div>持有人: <span className="font-mono">{chapterLock.lockedBy}</span></div>
+                  <div>过期: {new Date(chapterLock.expiresAt).toLocaleString()}</div>
+                </div>
+              ) : (
+                <div className="text-[11px] text-[var(--text-muted)]">当前没有本地已知锁。</div>
+              )}
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={onAcquireLock}
+                  disabled={!canUseChapterFlow}
+                  className="inline-flex items-center gap-1 rounded bg-[var(--accent-primary)] px-2 py-1 text-[11px] text-[var(--accent-contrast)] disabled:opacity-40"
+                >
+                  <Lock size={12} /> 获取
+                </button>
+                <button
+                  type="button"
+                  onClick={onReleaseLock}
+                  disabled={!canUseChapterFlow}
+                  className="inline-flex items-center gap-1 rounded border border-[var(--border-primary)] px-2 py-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-40"
+                >
+                  <Unlock size={12} /> 释放
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-3">
+              <div className="mb-2 flex items-center gap-1 text-xs font-bold text-[var(--text-primary)]">
+                <ClipboardCheck size={13} /> 审稿
+              </div>
+              {chapterReview ? (
+                <div className="space-y-1 text-[11px] text-[var(--text-muted)]">
+                  <div>
+                    状态:{' '}
+                    <span className="rounded bg-[var(--bg-tertiary)] px-1.5 py-0.5 font-mono">
+                      {chapterReview.status}
+                    </span>
+                  </div>
+                  <div>提交人: <span className="font-mono">{chapterReview.submittedBy}</span></div>
+                  {chapterReview.reviewComments && <div>意见: {chapterReview.reviewComments}</div>}
+                </div>
+              ) : (
+                <div className="text-[11px] text-[var(--text-muted)]">当前没有本地已知审稿请求。</div>
+              )}
+              <textarea
+                value={reviewComments}
+                onChange={(e) => setReviewComments(e.target.value)}
+                placeholder="审稿意见"
+                className="field mt-3 min-h-[72px] w-full resize-none text-xs"
+              />
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={onSubmitReview}
+                  disabled={!canUseChapterFlow}
+                  className="inline-flex items-center gap-1 rounded bg-[var(--accent-primary)] px-2 py-1 text-[11px] text-[var(--accent-contrast)] disabled:opacity-40"
+                >
+                  <ClipboardCheck size={12} /> 提交
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onReviewDecision('approved')}
+                  disabled={!canUseChapterFlow || !chapterReview || chapterReview.status !== 'pending'}
+                  className="inline-flex items-center gap-1 rounded border border-[var(--success-border)] px-2 py-1 text-[11px] text-[var(--success-primary)] disabled:opacity-40"
+                >
+                  <CheckCircle2 size={12} /> 通过
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onReviewDecision('rejected')}
+                  disabled={!canUseChapterFlow || !chapterReview || chapterReview.status !== 'pending'}
+                  className="inline-flex items-center gap-1 rounded border border-[var(--danger-border)] px-2 py-1 text-[11px] text-[var(--danger-primary)] disabled:opacity-40"
+                >
+                  <XCircle size={12} /> 驳回
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   )

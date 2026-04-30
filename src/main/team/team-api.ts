@@ -6,44 +6,27 @@
 // 所有方法返回 { ok, data?, error?, code? } 结构, IPC handler 把 ok=false
 // 的情况转成业务字段, 桌面端 store 按 code 做 i18n。
 
+import {
+  deleteChapterLock,
+  replaceTeamProjects,
+  upsertChapterLock,
+  upsertChapterReview,
+  upsertTeamProject
+} from '../database/collaboration-repo'
+import type {
+  ChapterLockMirror,
+  ChapterReviewMirror,
+  TeamApiResult,
+  TeamInvitation,
+  TeamInvitationRole,
+  TeamMember,
+  TeamProjectSummary,
+  TeamRole,
+  TeamSummary
+} from '../../shared/team-collaboration'
+
 const WEBSITE_URL = (process.env.ZHENGDAO_WEBSITE_URL || 'https://agent.xiangweihu.com').replace(/\/$/, '')
 const API_BASE = (process.env.ZHENGDAO_API_URL || `${WEBSITE_URL}/api/v1`).replace(/\/$/, '')
-
-export interface TeamSummary {
-  id: string
-  name: string
-  plan: string
-  seatLimit: number
-  ownerUserId: string
-  myRole?: 'owner' | 'admin' | 'member'
-  joinedAt?: string
-  createdAt: string
-}
-
-export interface TeamMember {
-  userId: string
-  role: 'owner' | 'admin' | 'member'
-  joinedAt: string
-}
-
-export interface TeamInvitation {
-  id: string
-  teamId: string
-  email: string
-  role: 'admin' | 'member'
-  status: 'pending' | 'accepted' | 'revoked' | 'expired'
-  token?: string
-  expiresAt: string
-  createdAt: string
-  acceptedAt: string | null
-}
-
-export interface TeamApiResult<T> {
-  ok: boolean
-  data?: T
-  error?: string
-  code?: string
-}
 
 async function apiRequest<T>(
   method: string,
@@ -128,7 +111,7 @@ export function listTeamInvitations(token: string | null, teamId: string) {
 export function createTeamInvitation(
   token: string | null,
   teamId: string,
-  body: { email: string; role?: 'admin' | 'member'; expiresInHours?: number }
+  body: { email: string; role?: TeamInvitationRole; expiresInHours?: number }
 ) {
   return apiRequest<{ invitation: TeamInvitation }>(
     'POST',
@@ -147,9 +130,231 @@ export function revokeTeamInvitation(token: string | null, teamId: string, invit
 }
 
 export function acceptInvitationByToken(token: string | null, invitationToken: string) {
-  return apiRequest<{ team: TeamSummary; role: 'owner' | 'admin' | 'member' }>(
+  return apiRequest<{ team: TeamSummary; role: TeamRole }>(
     'POST',
     `/teams/invitations/${encodeURIComponent(invitationToken)}/accept`,
     token
   )
+}
+
+function normalizeProject(teamId: string, project: Record<string, unknown>): TeamProjectSummary {
+  const projectId = typeof project.projectId === 'string'
+    ? project.projectId
+    : typeof project.id === 'string'
+      ? project.id
+      : ''
+  return {
+    id: projectId,
+    name: typeof project.name === 'string' ? project.name : projectId,
+    ownerUserId:
+      typeof project.ownerUserId === 'string'
+        ? project.ownerUserId
+        : typeof project.linkedBy === 'string'
+          ? project.linkedBy
+          : '',
+    linkedAt:
+      typeof project.createdAt === 'string'
+        ? project.createdAt
+        : typeof project.linkedAt === 'string'
+          ? project.linkedAt
+          : undefined,
+    updatedAt: typeof project.updatedAt === 'string' ? project.updatedAt : undefined
+  }
+}
+
+function normalizeLock(teamId: string, projectId: string, chapterId: string, payload: unknown): ChapterLockMirror | null {
+  if (!payload || typeof payload !== 'object') return null
+  const record = payload as Record<string, unknown>
+  const source = record.lock && typeof record.lock === 'object' ? record.lock as Record<string, unknown> : record
+  const lockedBy = source.lockedBy
+  const expiresAt = source.expiresAt
+  if (typeof lockedBy !== 'string' || typeof expiresAt !== 'string') return null
+  return { teamId, projectId, chapterId, lockedBy, expiresAt }
+}
+
+function normalizeReview(
+  teamId: string,
+  projectId: string,
+  chapterId: string,
+  payload: unknown
+): ChapterReviewMirror | null {
+  if (!payload || typeof payload !== 'object') return null
+  const record = payload as Record<string, unknown>
+  const source =
+    record.review && typeof record.review === 'object'
+      ? record.review as Record<string, unknown>
+      : record.reviewRequest && typeof record.reviewRequest === 'object'
+        ? record.reviewRequest as Record<string, unknown>
+        : record
+  const id = source.id
+  const submittedBy = source.submittedBy
+  const status = source.status
+  const createdAt = source.createdAt
+  const updatedAt = source.updatedAt
+  if (
+    typeof id !== 'string' ||
+    typeof submittedBy !== 'string' ||
+    (status !== 'pending' && status !== 'approved' && status !== 'rejected') ||
+    typeof createdAt !== 'string' ||
+    typeof updatedAt !== 'string'
+  ) {
+    return null
+  }
+  return {
+    id,
+    teamId,
+    projectId,
+    chapterId,
+    submittedBy,
+    status,
+    reviewComments: typeof source.reviewComments === 'string' ? source.reviewComments : '',
+    createdAt,
+    updatedAt,
+    decidedAt: typeof source.decidedAt === 'string' ? source.decidedAt : null
+  }
+}
+
+export async function listTeamProjects(token: string | null, teamId: string) {
+  const result = await apiRequest<{ projects: Array<Record<string, unknown>> }>(
+    'GET',
+    `/teams/${encodeURIComponent(teamId)}/projects`,
+    token
+  )
+  if (result.ok) {
+    const projects = (result.data?.projects || []).map((project) => normalizeProject(teamId, project))
+    replaceTeamProjects(teamId, projects)
+    return { ...result, data: { projects } }
+  }
+  return result as unknown as TeamApiResult<{ projects: TeamProjectSummary[] }>
+}
+
+export async function linkTeamProject(token: string | null, teamId: string, projectId: string) {
+  const result = await apiRequest<{ project: Record<string, unknown> }>(
+    'POST',
+    `/teams/${encodeURIComponent(teamId)}/projects`,
+    token,
+    { projectId }
+  )
+  if (result.ok && result.data?.project) {
+    const project = normalizeProject(teamId, result.data.project)
+    upsertTeamProject(teamId, project)
+    return { ...result, data: { project } }
+  }
+  return result as unknown as TeamApiResult<{ project: TeamProjectSummary }>
+}
+
+export async function getChapterLock(
+  token: string | null,
+  params: { teamId: string; projectId: string; chapterId: string }
+) {
+  const query = `teamId=${encodeURIComponent(params.teamId)}`
+  const result = await apiRequest<unknown>(
+    'GET',
+    `/projects/${encodeURIComponent(params.projectId)}/chapters/${encodeURIComponent(params.chapterId)}/lock?${query}`,
+    token
+  )
+  if (result.ok) {
+    const lock = normalizeLock(params.teamId, params.projectId, params.chapterId, result.data)
+    if (lock) upsertChapterLock(lock)
+    return { ...result, data: { lock } }
+  }
+  return result as TeamApiResult<{ lock: ChapterLockMirror | null }>
+}
+
+export async function acquireChapterLock(
+  token: string | null,
+  params: { teamId: string; projectId: string; chapterId: string }
+) {
+  const result = await apiRequest<unknown>(
+    'POST',
+    `/projects/${encodeURIComponent(params.projectId)}/chapters/${encodeURIComponent(params.chapterId)}/lock`,
+    token,
+    { teamId: params.teamId }
+  )
+  if (result.ok) {
+    const lock = normalizeLock(params.teamId, params.projectId, params.chapterId, result.data)
+    if (lock) upsertChapterLock(lock)
+    return { ...result, data: { lock } }
+  }
+  return result as TeamApiResult<{ lock: ChapterLockMirror | null }>
+}
+
+export async function releaseChapterLock(
+  token: string | null,
+  params: { teamId: string; projectId: string; chapterId: string }
+) {
+  const result = await apiRequest<{ ok: true }>(
+    'DELETE',
+    `/projects/${encodeURIComponent(params.projectId)}/chapters/${encodeURIComponent(params.chapterId)}/lock`,
+    token,
+    { teamId: params.teamId }
+  )
+  if (result.ok) deleteChapterLock(params.teamId, params.projectId, params.chapterId)
+  return result
+}
+
+export async function getChapterReview(
+  token: string | null,
+  params: { teamId: string; projectId: string; chapterId: string }
+) {
+  const query = `teamId=${encodeURIComponent(params.teamId)}`
+  const result = await apiRequest<unknown>(
+    'GET',
+    `/projects/${encodeURIComponent(params.projectId)}/chapters/${encodeURIComponent(params.chapterId)}/review-request?${query}`,
+    token
+  )
+  if (result.ok) {
+    const review = normalizeReview(params.teamId, params.projectId, params.chapterId, result.data)
+    if (review) upsertChapterReview(review)
+    return { ...result, data: { review } }
+  }
+  return result as TeamApiResult<{ review: ChapterReviewMirror | null }>
+}
+
+export async function submitChapterForReview(
+  token: string | null,
+  params: { teamId: string; projectId: string; chapterId: string }
+) {
+  const result = await apiRequest<unknown>(
+    'POST',
+    `/projects/${encodeURIComponent(params.projectId)}/chapters/${encodeURIComponent(params.chapterId)}/submit-for-review`,
+    token,
+    { teamId: params.teamId }
+  )
+  if (result.ok) {
+    const review = normalizeReview(params.teamId, params.projectId, params.chapterId, result.data)
+    if (review) upsertChapterReview(review)
+    return { ...result, data: { review } }
+  }
+  return result as TeamApiResult<{ review: ChapterReviewMirror | null }>
+}
+
+export async function decideChapterReview(
+  token: string | null,
+  params: {
+    teamId: string
+    projectId: string
+    chapterId: string
+    reviewId: string
+    decision: 'approved' | 'rejected'
+    reviewComments?: string
+  }
+) {
+  const result = await apiRequest<unknown>(
+    'POST',
+    `/projects/${encodeURIComponent(params.projectId)}/chapters/${encodeURIComponent(params.chapterId)}/review-decision`,
+    token,
+    {
+      teamId: params.teamId,
+      reviewId: params.reviewId,
+      decision: params.decision,
+      reviewComments: params.reviewComments
+    }
+  )
+  if (result.ok) {
+    const review = normalizeReview(params.teamId, params.projectId, params.chapterId, result.data)
+    if (review) upsertChapterReview(review)
+    return { ...result, data: { review } }
+  }
+  return result as TeamApiResult<{ review: ChapterReviewMirror | null }>
 }

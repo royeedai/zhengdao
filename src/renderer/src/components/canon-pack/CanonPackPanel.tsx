@@ -1,5 +1,6 @@
-import { lazy, Suspense, useState } from 'react'
-import { Building2, CalendarClock, Loader2, Network } from 'lucide-react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { BookMarked, Building2, CalendarClock, Loader2, Network, UserRound } from 'lucide-react'
+import type { AiWorkProfile } from '@/utils/ai/assistant-workflow'
 
 /**
  * CG-A3.2 — CanonPackPanel.
@@ -12,19 +13,30 @@ import { Building2, CalendarClock, Loader2, Network } from 'lucide-react'
 const RelationGraphView = lazy(() => import('./RelationGraphView'))
 const TimelineView = lazy(() => import('./TimelineView'))
 const OrgChartView = lazy(() => import('./OrgChartView'))
+const CharacterCardsView = lazy(() => import('./CharacterCardsView'))
+const ReferencePackView = lazy(() => import('./ReferencePackView'))
 
-export type CanonPackTab = 'relations' | 'timeline' | 'orgchart'
+export type CanonPackTab = 'cards' | 'relations' | 'timeline' | 'orgchart' | 'reference'
+export type CanonPackKind = 'canon' | 'reference'
 
 interface Props {
   bookId: number
   initialTab?: CanonPackTab
+  packKind?: CanonPackKind
+  profile?: AiWorkProfile | null
+  onProfileUpdated?: (profile: AiWorkProfile | null) => void
   onSelectChapter?: (chapterNumber: number) => void
 }
 
-const TABS: Array<{ id: CanonPackTab; label: string; Icon: typeof Network }> = [
+const CANON_TABS: Array<{ id: CanonPackTab; label: string; Icon: typeof Network }> = [
+  { id: 'cards', label: '角色卡', Icon: UserRound },
   { id: 'relations', label: '关系图谱', Icon: Network },
   { id: 'timeline', label: '事件时间线', Icon: CalendarClock },
   { id: 'orgchart', label: '组织架构', Icon: Building2 }
+]
+
+const REFERENCE_TABS: Array<{ id: CanonPackTab; label: string; Icon: typeof Network }> = [
+  { id: 'reference', label: 'Reference Pack', Icon: BookMarked }
 ]
 
 function FallbackSpinner() {
@@ -36,13 +48,27 @@ function FallbackSpinner() {
   )
 }
 
-export default function CanonPackPanel({ bookId, initialTab = 'relations', onSelectChapter }: Props) {
+export default function CanonPackPanel({
+  bookId,
+  initialTab = 'cards',
+  packKind = 'canon',
+  profile,
+  onProfileUpdated,
+  onSelectChapter
+}: Props) {
   const [tab, setTab] = useState<CanonPackTab>(initialTab)
+  const tabs = useMemo(() => (packKind === 'reference' ? REFERENCE_TABS : CANON_TABS), [packKind])
+
+  useEffect(() => {
+    if (!tabs.some((item) => item.id === tab)) {
+      setTab(tabs[0]?.id ?? 'cards')
+    }
+  }, [tab, tabs])
 
   return (
     <div className="flex h-full w-full flex-col">
       <div className="flex shrink-0 items-center gap-1 border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-2 py-1">
-        {TABS.map(({ id, label, Icon }) => (
+        {tabs.map(({ id, label, Icon }) => (
           <button
             key={id}
             type="button"
@@ -59,9 +85,13 @@ export default function CanonPackPanel({ bookId, initialTab = 'relations', onSel
       </div>
       <div className="relative flex-1">
         <Suspense fallback={<FallbackSpinner />}>
+          {tab === 'cards' && <CharacterCardsView bookId={bookId} />}
           {tab === 'relations' && <RelationGraphView bookId={bookId} />}
           {tab === 'timeline' && <TimelineView bookId={bookId} onSelectChapter={onSelectChapter} />}
           {tab === 'orgchart' && <OrgChartView bookId={bookId} />}
+          {tab === 'reference' && (
+            <ReferencePackView bookId={bookId} profile={profile} onProfileUpdated={onProfileUpdated} />
+          )}
         </Suspense>
       </div>
     </div>

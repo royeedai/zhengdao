@@ -856,6 +856,157 @@ const migrations: Migration[] = [
         CREATE INDEX IF NOT EXISTS idx_canon_char_orgs_organization ON canon_character_organizations(organization_id);
       `)
     }
+  },
+  {
+    version: 25,
+    description: 'CG-A2c/CG-A4b/CG-A6b: add director cache, visual assets, and read-only MCP link tables',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS director_run_links (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          book_id INTEGER NOT NULL,
+          remote_run_id TEXT NOT NULL UNIQUE,
+          seed TEXT NOT NULL DEFAULT '',
+          genre TEXT NOT NULL DEFAULT 'webnovel',
+          status TEXT NOT NULL DEFAULT 'pending'
+            CHECK(status IN ('pending','running','paused','awaiting_accept','completed','failed','cancelled','quota_exceeded')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_director_run_links_book ON director_run_links(book_id, updated_at);
+
+        CREATE TABLE IF NOT EXISTS director_run_chapter_cache (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          director_run_link_id INTEGER NOT NULL,
+          remote_chapter_id TEXT NOT NULL,
+          chapter_index INTEGER NOT NULL DEFAULT 0,
+          title TEXT NOT NULL DEFAULT '',
+          content TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'draft'
+            CHECK(status IN ('draft','accepted','rejected','regenerating')),
+          metadata TEXT NOT NULL DEFAULT '{}',
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          UNIQUE(director_run_link_id, remote_chapter_id),
+          FOREIGN KEY (director_run_link_id) REFERENCES director_run_links(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_director_chapter_cache_run ON director_run_chapter_cache(director_run_link_id, chapter_index);
+
+        CREATE TABLE IF NOT EXISTS visual_assets (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          book_id INTEGER NOT NULL,
+          skill_id TEXT NOT NULL,
+          remote_run_id TEXT NOT NULL DEFAULT '',
+          provider TEXT NOT NULL DEFAULT '',
+          url TEXT NOT NULL DEFAULT '',
+          prompt_used TEXT NOT NULL DEFAULT '',
+          width INTEGER NOT NULL DEFAULT 0,
+          height INTEGER NOT NULL DEFAULT 0,
+          status TEXT NOT NULL DEFAULT 'created' CHECK(status IN ('created','failed')),
+          metadata TEXT NOT NULL DEFAULT '{}',
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_visual_assets_book ON visual_assets(book_id, created_at);
+
+        CREATE TABLE IF NOT EXISTS mcp_servers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          command TEXT NOT NULL DEFAULT '',
+          args TEXT NOT NULL DEFAULT '[]',
+          status TEXT NOT NULL DEFAULT 'disabled' CHECK(status IN ('disabled','enabled','error')),
+          readonly INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        );
+
+        CREATE TABLE IF NOT EXISTS mcp_canon_links (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          server_id INTEGER NOT NULL,
+          book_id INTEGER NOT NULL,
+          scope TEXT NOT NULL DEFAULT 'canon_pack',
+          readonly INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          UNIQUE(server_id, book_id, scope),
+          FOREIGN KEY (server_id) REFERENCES mcp_servers(id) ON DELETE CASCADE,
+          FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+        );
+      `)
+    }
+  },
+  {
+    version: 26,
+    description: 'portfolio-overhaul closeout: visual local files, collaboration mirrors, and MCP audit log',
+    up: (db) => {
+      const visualColumns = db.prepare('PRAGMA table_info(visual_assets)').all() as { name: string }[]
+      const existingVisualColumns = new Set(visualColumns.map((column) => column.name))
+      const addVisualColumn = (name: string, definition: string) => {
+        if (!existingVisualColumns.has(name)) {
+          db.exec(`ALTER TABLE visual_assets ADD COLUMN ${name} ${definition}`)
+        }
+      }
+
+      addVisualColumn('local_path', "TEXT NOT NULL DEFAULT ''")
+      addVisualColumn('mime_type', "TEXT NOT NULL DEFAULT ''")
+      addVisualColumn('sha256', "TEXT NOT NULL DEFAULT ''")
+      addVisualColumn('file_size', 'INTEGER NOT NULL DEFAULT 0')
+
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS mcp_audit_log (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          server_id INTEGER,
+          book_id INTEGER,
+          action TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'ok' CHECK(status IN ('ok','denied','error')),
+          detail TEXT NOT NULL DEFAULT '{}',
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          FOREIGN KEY (server_id) REFERENCES mcp_servers(id) ON DELETE SET NULL,
+          FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE SET NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_mcp_audit_log_book ON mcp_audit_log(book_id, created_at);
+
+        CREATE TABLE IF NOT EXISTS team_project_links (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          team_id TEXT NOT NULL,
+          project_id TEXT NOT NULL,
+          name TEXT NOT NULL DEFAULT '',
+          owner_user_id TEXT NOT NULL DEFAULT '',
+          linked_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          UNIQUE(team_id, project_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_team_project_links_team ON team_project_links(team_id, updated_at);
+
+        CREATE TABLE IF NOT EXISTS chapter_lock_mirrors (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          team_id TEXT NOT NULL,
+          project_id TEXT NOT NULL,
+          chapter_id TEXT NOT NULL,
+          locked_by TEXT NOT NULL DEFAULT '',
+          expires_at TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          UNIQUE(team_id, project_id, chapter_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_chapter_lock_mirrors_project ON chapter_lock_mirrors(project_id, chapter_id);
+
+        CREATE TABLE IF NOT EXISTS chapter_review_mirrors (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          review_id TEXT NOT NULL UNIQUE,
+          team_id TEXT NOT NULL,
+          project_id TEXT NOT NULL,
+          chapter_id TEXT NOT NULL,
+          submitted_by TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
+          review_comments TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          decided_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_chapter_review_mirrors_project ON chapter_review_mirrors(project_id, chapter_id, status);
+      `)
+    }
   }
 ]
 

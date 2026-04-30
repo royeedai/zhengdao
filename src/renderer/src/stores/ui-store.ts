@@ -3,10 +3,21 @@ import type { ModalType } from '@/types'
 import { isThemeId, resolveThemeMode, type ThemeId } from '@/utils/themes'
 import {
   clampWorkspacePanelWidth,
+  clampWorkspaceLayoutPanelSizes,
+  createClassicWorkspaceLayoutSnapshot,
   getDefaultWorkspacePanelWidth,
+  isWorkspaceLayoutPresetId,
   isRightPanelTab,
   resolveDefaultBottomPanelOpen,
+  resolveWorkspaceLayoutPresetSnapshot,
+  sanitizeWorkspaceLayoutSnapshot,
+  terminalPercentToHeight,
+  workspacePanelPercentToWidth,
   type RightPanelTab,
+  type WorkspaceLayoutPanelSizes,
+  type WorkspaceLayoutPresetDefinition,
+  type WorkspaceLayoutPresetId,
+  type WorkspaceLayoutSnapshot,
   type WorkspacePanelKind
 } from '@/utils/workspace-layout'
 import {
@@ -29,6 +40,11 @@ const RIGHT_PANEL_TAB_STORAGE_KEY = 'write-right-panel-tab'
 const TOPBAR_TOOLS_COLLAPSED_STORAGE_KEY = 'write-topbar-tools-collapsed'
 const AI_ASSISTANT_PANEL_RECT_STORAGE_KEY = 'write-ai-assistant-panel-rect'
 const AI_ASSISTANT_LAUNCHER_POSITION_STORAGE_KEY = 'write-ai-assistant-launcher-position'
+const WORKSPACE_LAYOUT_ACTIVE_PRESET_STORAGE_KEY = 'write-workspace-layout-active-preset'
+const WORKSPACE_LAYOUT_CURRENT_SNAPSHOT_STORAGE_KEY = 'write-workspace-layout-current-snapshot'
+const WORKSPACE_LAYOUT_CLASSIC_SNAPSHOT_STORAGE_KEY = 'write-workspace-layout-classic-snapshot'
+const WORKSPACE_LAYOUT_CUSTOM_PRESETS_STORAGE_KEY = 'write-workspace-layout-custom-presets'
+const WORKSPACE_LAYOUT_MIGRATED_STORAGE_KEY = 'write-workspace-layout-v2-migrated'
 
 function clampBottomPanelHeight(height: number): number {
   if (typeof window === 'undefined') {
@@ -132,6 +148,176 @@ function persistRightPanelTab(tab: RightPanelTab): void {
   }
 }
 
+function getViewportWidth(): number {
+  return typeof window === 'undefined' ? 1440 : window.innerWidth
+}
+
+function getViewportHeight(): number {
+  return typeof window === 'undefined' ? 900 : window.innerHeight
+}
+
+function readStoredWorkspaceLayoutPresetId(): WorkspaceLayoutPresetId {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_LAYOUT_ACTIVE_PRESET_STORAGE_KEY)
+    if (raw && isWorkspaceLayoutPresetId(raw)) return raw
+  } catch {
+    void 0
+  }
+  return 'default'
+}
+
+function persistWorkspaceLayoutPresetId(presetId: WorkspaceLayoutPresetId): void {
+  try {
+    localStorage.setItem(WORKSPACE_LAYOUT_ACTIVE_PRESET_STORAGE_KEY, presetId)
+  } catch {
+    void 0
+  }
+}
+
+function readStoredWorkspaceLayoutSnapshot(): WorkspaceLayoutSnapshot | null {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_LAYOUT_CURRENT_SNAPSHOT_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<WorkspaceLayoutSnapshot>
+    return sanitizeWorkspaceLayoutSnapshot(parsed)
+  } catch {
+    return null
+  }
+}
+
+function readStoredClassicWorkspaceLayoutSnapshot(): WorkspaceLayoutSnapshot | null {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_LAYOUT_CLASSIC_SNAPSHOT_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<WorkspaceLayoutSnapshot>
+    return sanitizeWorkspaceLayoutSnapshot(parsed)
+  } catch {
+    return null
+  }
+}
+
+function persistClassicWorkspaceLayoutSnapshot(snapshot: WorkspaceLayoutSnapshot): void {
+  try {
+    localStorage.setItem(
+      WORKSPACE_LAYOUT_CLASSIC_SNAPSHOT_STORAGE_KEY,
+      JSON.stringify(sanitizeWorkspaceLayoutSnapshot(snapshot))
+    )
+  } catch {
+    void 0
+  }
+}
+
+function persistWorkspaceLayoutSnapshot(snapshot: WorkspaceLayoutSnapshot): void {
+  try {
+    localStorage.setItem(
+      WORKSPACE_LAYOUT_CURRENT_SNAPSHOT_STORAGE_KEY,
+      JSON.stringify(sanitizeWorkspaceLayoutSnapshot(snapshot))
+    )
+  } catch {
+    void 0
+  }
+}
+
+function createCurrentWorkspaceLayoutSnapshot(input: {
+  leftPanelOpen: boolean
+  rightPanelOpen: boolean
+  bottomPanelOpen: boolean
+  sizes: WorkspaceLayoutPanelSizes
+}): WorkspaceLayoutSnapshot {
+  return sanitizeWorkspaceLayoutSnapshot(input)
+}
+
+function readStoredCustomWorkspaceLayoutPresets(): WorkspaceLayoutPresetDefinition[] {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_LAYOUT_CUSTOM_PRESETS_STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .map((item): WorkspaceLayoutPresetDefinition | null => {
+        if (!item || typeof item !== 'object') return null
+        const id = typeof item.id === 'string' && item.id.startsWith('custom:') ? item.id : null
+        const label = typeof item.label === 'string' && item.label.trim() ? item.label.trim().slice(0, 24) : null
+        if (!id || !label) return null
+        return {
+          id: id as `custom:${string}`,
+          label,
+          description: '自定义工作区布局',
+          builtin: false,
+          snapshot: sanitizeWorkspaceLayoutSnapshot((item as { snapshot?: Partial<WorkspaceLayoutSnapshot> }).snapshot)
+        }
+      })
+      .filter((item): item is WorkspaceLayoutPresetDefinition => Boolean(item))
+      .slice(0, 12)
+  } catch {
+    return []
+  }
+}
+
+function persistCustomWorkspaceLayoutPresets(presets: WorkspaceLayoutPresetDefinition[]): void {
+  try {
+    localStorage.setItem(WORKSPACE_LAYOUT_CUSTOM_PRESETS_STORAGE_KEY, JSON.stringify(presets.slice(0, 12)))
+  } catch {
+    void 0
+  }
+}
+
+function readStoredWorkspaceLayoutMigrated(): boolean {
+  try {
+    return localStorage.getItem(WORKSPACE_LAYOUT_MIGRATED_STORAGE_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function persistWorkspaceLayoutMigrated(): void {
+  try {
+    localStorage.setItem(WORKSPACE_LAYOUT_MIGRATED_STORAGE_KEY, 'true')
+  } catch {
+    void 0
+  }
+}
+
+const initialWorkspaceLayoutMigrated = readStoredWorkspaceLayoutMigrated()
+const initialClassicWorkspaceLayoutSnapshot =
+  readStoredClassicWorkspaceLayoutSnapshot() ??
+  createClassicWorkspaceLayoutSnapshot({
+    leftPanelWidth: readStoredWorkspacePanelWidth('left'),
+    rightPanelWidth: readStoredWorkspacePanelWidth('right'),
+    bottomPanelHeight: readStoredBottomPanelHeight(),
+    bottomPanelOpen: readStoredBottomPanelOpen(),
+    viewportWidth: getViewportWidth(),
+    viewportHeight: getViewportHeight()
+  })
+if (!initialWorkspaceLayoutMigrated) {
+  persistClassicWorkspaceLayoutSnapshot(initialClassicWorkspaceLayoutSnapshot)
+}
+const initialWorkspaceLayoutSnapshot =
+  readStoredWorkspaceLayoutSnapshot() ??
+  (initialWorkspaceLayoutMigrated
+    ? initialClassicWorkspaceLayoutSnapshot
+    : {
+        ...resolveWorkspaceLayoutPresetSnapshot('default'),
+        bottomPanelOpen: readStoredBottomPanelOpen()
+      })
+
+function persistWorkspaceLayoutState(presetId: WorkspaceLayoutPresetId, snapshot: WorkspaceLayoutSnapshot): void {
+  const next = sanitizeWorkspaceLayoutSnapshot(snapshot)
+  persistWorkspaceLayoutPresetId(presetId)
+  persistWorkspaceLayoutSnapshot(next)
+  persistBottomPanelOpen(next.bottomPanelOpen)
+  persistWorkspacePanelWidth('left', workspacePanelPercentToWidth('left', next.sizes.left, getViewportWidth()))
+  persistWorkspacePanelWidth('right', workspacePanelPercentToWidth('right', next.sizes.right, getViewportWidth()))
+  try {
+    localStorage.setItem(
+      BOTTOM_PANEL_HEIGHT_STORAGE_KEY,
+      String(terminalPercentToHeight(next.sizes.terminal, getViewportHeight()))
+    )
+  } catch {
+    void 0
+  }
+}
+
 function readStoredTopbarToolsCollapsed(): boolean {
   try {
     return localStorage.getItem(TOPBAR_TOOLS_COLLAPSED_STORAGE_KEY) === 'true'
@@ -192,7 +378,11 @@ function readStoredAiAssistantLauncherPosition(): AiAssistantLauncherPosition {
     if (typeof parsed.x !== 'number' || typeof parsed.y !== 'number') {
       return createDefaultAiAssistantLauncherPosition(window.innerWidth, window.innerHeight)
     }
-    return clampAiAssistantLauncherPosition(parsed as AiAssistantLauncherPosition, window.innerWidth, window.innerHeight)
+    return clampAiAssistantLauncherPosition(
+      parsed as AiAssistantLauncherPosition,
+      window.innerWidth,
+      window.innerHeight
+    )
   } catch {
     return createDefaultAiAssistantLauncherPosition(window.innerWidth, window.innerHeight)
   }
@@ -271,6 +461,10 @@ interface UIStore {
   rightPanelTab: RightPanelTab
   bottomPanelOpen: boolean
   bottomPanelHeight: number
+  workspaceLayoutPresetId: WorkspaceLayoutPresetId
+  workspaceLayoutPanelSizes: WorkspaceLayoutPanelSizes
+  customWorkspaceLayoutPresets: WorkspaceLayoutPresetDefinition[]
+  workspaceLayoutMigrated: boolean
   topbarToolsCollapsed: boolean
   blackRoomMode: boolean
   blackRoomTextColor: 'green' | 'white'
@@ -307,6 +501,11 @@ interface UIStore {
   toggleBottomPanel: () => void
   setBottomPanelHeight: (height: number) => void
   resetBottomPanelHeight: () => void
+  setWorkspaceLayoutPanelSizes: (sizes: Partial<WorkspaceLayoutPanelSizes>) => void
+  applyWorkspaceLayoutPreset: (presetId: WorkspaceLayoutPresetId) => void
+  saveCurrentWorkspaceLayoutPreset: (name: string) => WorkspaceLayoutPresetDefinition | null
+  deleteCustomWorkspaceLayoutPreset: (presetId: WorkspaceLayoutPresetId) => void
+  markWorkspaceLayoutMigrated: () => void
   setTopbarToolsCollapsed: (collapsed: boolean) => void
   toggleTopbarToolsCollapsed: () => void
   setBlackRoomMode: (flag: boolean) => void
@@ -333,7 +532,9 @@ interface UIStore {
   setInlineAiDraft: (draft: InlineAiDraft | null) => void
   clearInlineAiDraft: (draftId?: number | null) => void
   setAiChapterDraft: (draft: AiChapterDraft | null) => void
-  updateAiChapterDraft: (updates: Partial<Pick<AiChapterDraft, 'title' | 'content' | 'summary' | 'volumeId' | 'volumeTitle'>>) => void
+  updateAiChapterDraft: (
+    updates: Partial<Pick<AiChapterDraft, 'title' | 'content' | 'summary' | 'volumeId' | 'volumeTitle'>>
+  ) => void
   clearAiChapterDraft: (draftId?: number | null) => void
   setChapterSaveStatus: (status: ChapterSaveStatus) => void
   markChapterDirty: (chapterId: number) => void
@@ -353,13 +554,17 @@ interface UIStore {
 }
 
 export const useUIStore = create<UIStore>((set, get) => ({
-  leftPanelOpen: true,
+  leftPanelOpen: initialWorkspaceLayoutSnapshot.leftPanelOpen,
   leftPanelWidth: readStoredWorkspacePanelWidth('left'),
-  rightPanelOpen: true,
+  rightPanelOpen: initialWorkspaceLayoutSnapshot.rightPanelOpen,
   rightPanelWidth: readStoredWorkspacePanelWidth('right'),
   rightPanelTab: readStoredRightPanelTab(),
-  bottomPanelOpen: readStoredBottomPanelOpen(),
+  bottomPanelOpen: initialWorkspaceLayoutSnapshot.bottomPanelOpen,
   bottomPanelHeight: readStoredBottomPanelHeight(),
+  workspaceLayoutPresetId: readStoredWorkspaceLayoutPresetId(),
+  workspaceLayoutPanelSizes: initialWorkspaceLayoutSnapshot.sizes,
+  customWorkspaceLayoutPresets: readStoredCustomWorkspaceLayoutPresets(),
+  workspaceLayoutMigrated: initialWorkspaceLayoutMigrated,
   topbarToolsCollapsed: readStoredTopbarToolsCollapsed(),
   blackRoomMode: false,
   blackRoomTextColor: 'green',
@@ -388,17 +593,36 @@ export const useUIStore = create<UIStore>((set, get) => ({
   modalStack: [],
 
   onboardingTourSignal: 0,
-  triggerOnboardingTour: () =>
-    set((s) => ({ onboardingTourSignal: s.onboardingTourSignal + 1 })),
+  triggerOnboardingTour: () => set((s) => ({ onboardingTourSignal: s.onboardingTourSignal + 1 })),
 
-  toggleLeftPanel: () => set((s) => ({ leftPanelOpen: !s.leftPanelOpen })),
+  toggleLeftPanel: () =>
+    set((s) => {
+      const nextSnapshot = createCurrentWorkspaceLayoutSnapshot({
+        leftPanelOpen: !s.leftPanelOpen,
+        rightPanelOpen: s.rightPanelOpen,
+        bottomPanelOpen: s.bottomPanelOpen,
+        sizes: s.workspaceLayoutPanelSizes
+      })
+      persistWorkspaceLayoutState('custom', nextSnapshot)
+      return { leftPanelOpen: nextSnapshot.leftPanelOpen, workspaceLayoutPresetId: 'custom' }
+    }),
   setLeftPanelWidth: (width) => {
     const viewportWidth = typeof window === 'undefined' ? 1440 : window.innerWidth
     const next = clampWorkspacePanelWidth('left', width, viewportWidth)
     persistWorkspacePanelWidth('left', next)
     set({ leftPanelWidth: next })
   },
-  toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
+  toggleRightPanel: () =>
+    set((s) => {
+      const nextSnapshot = createCurrentWorkspaceLayoutSnapshot({
+        leftPanelOpen: s.leftPanelOpen,
+        rightPanelOpen: !s.rightPanelOpen,
+        bottomPanelOpen: s.bottomPanelOpen,
+        sizes: s.workspaceLayoutPanelSizes
+      })
+      persistWorkspaceLayoutState('custom', nextSnapshot)
+      return { rightPanelOpen: nextSnapshot.rightPanelOpen, workspaceLayoutPresetId: 'custom' }
+    }),
   setRightPanelWidth: (width) => {
     const viewportWidth = typeof window === 'undefined' ? 1440 : window.innerWidth
     const next = clampWorkspacePanelWidth('right', width, viewportWidth)
@@ -413,14 +637,27 @@ export const useUIStore = create<UIStore>((set, get) => ({
     }))
   },
   setBottomPanelOpen: (open) => {
-    persistBottomPanelOpen(open)
-    set({ bottomPanelOpen: open })
+    set((s) => {
+      const nextSnapshot = createCurrentWorkspaceLayoutSnapshot({
+        leftPanelOpen: s.leftPanelOpen,
+        rightPanelOpen: s.rightPanelOpen,
+        bottomPanelOpen: open,
+        sizes: s.workspaceLayoutPanelSizes
+      })
+      persistWorkspaceLayoutState('custom', nextSnapshot)
+      return { bottomPanelOpen: nextSnapshot.bottomPanelOpen, workspaceLayoutPresetId: 'custom' }
+    })
   },
   toggleBottomPanel: () =>
     set((s) => {
-      const next = !s.bottomPanelOpen
-      persistBottomPanelOpen(next)
-      return { bottomPanelOpen: next }
+      const nextSnapshot = createCurrentWorkspaceLayoutSnapshot({
+        leftPanelOpen: s.leftPanelOpen,
+        rightPanelOpen: s.rightPanelOpen,
+        bottomPanelOpen: !s.bottomPanelOpen,
+        sizes: s.workspaceLayoutPanelSizes
+      })
+      persistWorkspaceLayoutState('custom', nextSnapshot)
+      return { bottomPanelOpen: nextSnapshot.bottomPanelOpen, workspaceLayoutPresetId: 'custom' }
     }),
   setBottomPanelHeight: (height) => {
     const next = clampBottomPanelHeight(height)
@@ -439,6 +676,93 @@ export const useUIStore = create<UIStore>((set, get) => ({
       void 0
     }
     set({ bottomPanelHeight: next })
+  },
+  setWorkspaceLayoutPanelSizes: (sizes) => {
+    set((s) => {
+      const nextSizes = clampWorkspaceLayoutPanelSizes({ ...s.workspaceLayoutPanelSizes, ...sizes })
+      const nextSnapshot = createCurrentWorkspaceLayoutSnapshot({
+        leftPanelOpen: s.leftPanelOpen,
+        rightPanelOpen: s.rightPanelOpen,
+        bottomPanelOpen: s.bottomPanelOpen,
+        sizes: nextSizes
+      })
+      persistWorkspaceLayoutState(s.workspaceLayoutPresetId, nextSnapshot)
+      return {
+        workspaceLayoutPanelSizes: nextSizes,
+        leftPanelWidth: workspacePanelPercentToWidth('left', nextSizes.left, getViewportWidth()),
+        rightPanelWidth: workspacePanelPercentToWidth('right', nextSizes.right, getViewportWidth()),
+        bottomPanelHeight: terminalPercentToHeight(nextSizes.terminal, getViewportHeight())
+      }
+    })
+  },
+  applyWorkspaceLayoutPreset: (presetId) => {
+    const customPresets = get().customWorkspaceLayoutPresets
+    const classicSnapshot =
+      readStoredClassicWorkspaceLayoutSnapshot() ??
+      createClassicWorkspaceLayoutSnapshot({
+        leftPanelWidth: readStoredWorkspacePanelWidth('left'),
+        rightPanelWidth: readStoredWorkspacePanelWidth('right'),
+        bottomPanelHeight: readStoredBottomPanelHeight(),
+        bottomPanelOpen: readStoredBottomPanelOpen(),
+        viewportWidth: getViewportWidth(),
+        viewportHeight: getViewportHeight()
+      })
+    const snapshot = resolveWorkspaceLayoutPresetSnapshot(presetId, customPresets, classicSnapshot)
+    persistWorkspaceLayoutState(presetId, snapshot)
+    set({
+      workspaceLayoutPresetId: presetId,
+      workspaceLayoutPanelSizes: snapshot.sizes,
+      leftPanelOpen: snapshot.leftPanelOpen,
+      rightPanelOpen: snapshot.rightPanelOpen,
+      bottomPanelOpen: snapshot.bottomPanelOpen,
+      leftPanelWidth: workspacePanelPercentToWidth('left', snapshot.sizes.left, getViewportWidth()),
+      rightPanelWidth: workspacePanelPercentToWidth('right', snapshot.sizes.right, getViewportWidth()),
+      bottomPanelHeight: terminalPercentToHeight(snapshot.sizes.terminal, getViewportHeight())
+    })
+  },
+  saveCurrentWorkspaceLayoutPreset: (name) => {
+    const trimmed = name.trim().slice(0, 24)
+    if (!trimmed) return null
+    const state = get()
+    const preset: WorkspaceLayoutPresetDefinition = {
+      id: `custom:${Date.now().toString(36)}`,
+      label: trimmed,
+      description: '自定义工作区布局',
+      builtin: false,
+      snapshot: createCurrentWorkspaceLayoutSnapshot({
+        leftPanelOpen: state.leftPanelOpen,
+        rightPanelOpen: state.rightPanelOpen,
+        bottomPanelOpen: state.bottomPanelOpen,
+        sizes: state.workspaceLayoutPanelSizes
+      })
+    }
+    const nextPresets = [
+      preset,
+      ...state.customWorkspaceLayoutPresets.filter((item) => item.label !== preset.label)
+    ].slice(0, 12)
+    persistCustomWorkspaceLayoutPresets(nextPresets)
+    persistWorkspaceLayoutState(preset.id, preset.snapshot)
+    set({
+      customWorkspaceLayoutPresets: nextPresets,
+      workspaceLayoutPresetId: preset.id
+    })
+    return preset
+  },
+  deleteCustomWorkspaceLayoutPreset: (presetId) => {
+    set((s) => {
+      const nextPresets = s.customWorkspaceLayoutPresets.filter((item) => item.id !== presetId)
+      persistCustomWorkspaceLayoutPresets(nextPresets)
+      const nextPresetId = s.workspaceLayoutPresetId === presetId ? 'custom' : s.workspaceLayoutPresetId
+      persistWorkspaceLayoutPresetId(nextPresetId)
+      return {
+        customWorkspaceLayoutPresets: nextPresets,
+        workspaceLayoutPresetId: nextPresetId
+      }
+    })
+  },
+  markWorkspaceLayoutMigrated: () => {
+    persistWorkspaceLayoutMigrated()
+    set({ workspaceLayoutMigrated: true })
   },
   setTopbarToolsCollapsed: (collapsed) => {
     persistTopbarToolsCollapsed(collapsed)
@@ -462,10 +786,20 @@ export const useUIStore = create<UIStore>((set, get) => ({
   setSplitChapterId: (id) => set({ splitChapterId: id }),
 
   openAiAssistant: (options = null) =>
-    set(() => {
+    set((s) => {
       const input = typeof options === 'object' && options ? options.input?.trim() || '' : ''
       persistRightPanelTab('ai')
+      persistWorkspaceLayoutState(
+        'custom',
+        createCurrentWorkspaceLayoutSnapshot({
+          leftPanelOpen: s.leftPanelOpen,
+          rightPanelOpen: true,
+          bottomPanelOpen: s.bottomPanelOpen,
+          sizes: s.workspaceLayoutPanelSizes
+        })
+      )
       return {
+        workspaceLayoutPresetId: 'custom',
         rightPanelOpen: true,
         rightPanelTab: 'ai',
         aiAssistantOpen: true,
@@ -486,16 +820,26 @@ export const useUIStore = create<UIStore>((set, get) => ({
             : null
       }
     }),
-  closeAiAssistant: () => set({ aiAssistantOpen: false, rightPanelOpen: false }),
+  closeAiAssistant: () =>
+    set((s) => {
+      persistWorkspaceLayoutState(
+        'custom',
+        createCurrentWorkspaceLayoutSnapshot({
+          leftPanelOpen: s.leftPanelOpen,
+          rightPanelOpen: false,
+          bottomPanelOpen: s.bottomPanelOpen,
+          sizes: s.workspaceLayoutPanelSizes
+        })
+      )
+      return { aiAssistantOpen: false, rightPanelOpen: false, workspaceLayoutPresetId: 'custom' }
+    }),
   consumeAiAssistantCommand: (id) =>
     set((s) => ({
       aiAssistantCommand: s.aiAssistantCommand?.id === id ? null : s.aiAssistantCommand
     })),
   setAiAssistantPanelRect: (rect) => {
     const next =
-      typeof window === 'undefined'
-        ? rect
-        : clampAiAssistantPanelRect(rect, window.innerWidth, window.innerHeight)
+      typeof window === 'undefined' ? rect : clampAiAssistantPanelRect(rect, window.innerWidth, window.innerHeight)
     persistAiAssistantPanelRect(next)
     set({ aiAssistantPanelRect: next })
   },

@@ -2,7 +2,11 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { ManualInstallerDownloadResult, UpdateSnapshot } from '../shared/update'
 import type { AiBridgeCompleteRequest, AiOfficialProfile, AiResponse, AiStreamCallbacks } from '../shared/ai'
 import type { AiBookCreationPackage, AssistantCreationBrief } from '../shared/ai-book-creation'
+import type { DirectorAcceptChapterInput, DirectorEvent, DirectorStepName, DirectorStartRunInput } from '../shared/director'
+import type { McpServerInput, McpWriteRejectionInput } from '../shared/mcp'
 import type { SkillFeedbackPayload, SkillFeedbackSubmitResult } from '../shared/skill-feedback'
+import type { TeamInvitationRole } from '../shared/team-collaboration'
+import type { VisualGenerateInput } from '../shared/visual'
 
 let aiStreamRequestSeq = 0
 
@@ -158,12 +162,33 @@ const api = {
   teamListInvitations: (teamId: string) => ipcRenderer.invoke('team:listInvitations', teamId),
   teamCreateInvitation: (
     teamId: string,
-    body: { email: string; role?: 'admin' | 'member'; expiresInHours?: number }
+    body: { email: string; role?: TeamInvitationRole; expiresInHours?: number }
   ) => ipcRenderer.invoke('team:createInvitation', teamId, body),
   teamRevokeInvitation: (teamId: string, invitationId: string) =>
     ipcRenderer.invoke('team:revokeInvitation', teamId, invitationId),
   teamAcceptInvitation: (invitationToken: string) =>
     ipcRenderer.invoke('team:acceptInvitation', invitationToken),
+  teamListProjects: (teamId: string) => ipcRenderer.invoke('team:listProjects', teamId),
+  teamLinkProject: (teamId: string, projectId: string) =>
+    ipcRenderer.invoke('team:linkProject', teamId, projectId),
+  teamGetChapterLock: (params: { teamId: string; projectId: string; chapterId: string }) =>
+    ipcRenderer.invoke('team:getChapterLock', params),
+  teamAcquireChapterLock: (params: { teamId: string; projectId: string; chapterId: string }) =>
+    ipcRenderer.invoke('team:acquireChapterLock', params),
+  teamReleaseChapterLock: (params: { teamId: string; projectId: string; chapterId: string }) =>
+    ipcRenderer.invoke('team:releaseChapterLock', params),
+  teamGetChapterReview: (params: { teamId: string; projectId: string; chapterId: string }) =>
+    ipcRenderer.invoke('team:getChapterReview', params),
+  teamSubmitChapterForReview: (params: { teamId: string; projectId: string; chapterId: string }) =>
+    ipcRenderer.invoke('team:submitChapterForReview', params),
+  teamDecideChapterReview: (params: {
+    teamId: string
+    projectId: string
+    chapterId: string
+    reviewId: string
+    decision: 'approved' | 'rejected'
+    reviewComments?: string
+  }) => ipcRenderer.invoke('team:decideChapterReview', params),
 
   // DI-02 v1 — 学术引文 (academic 题材专用)
   listCitations: (bookId: number) => ipcRenderer.invoke('db:listCitations', bookId),
@@ -332,6 +357,70 @@ const api = {
   aiGetResolvedGlobalConfig: () => ipcRenderer.invoke('ai:getResolvedGlobalConfig'),
   aiGetResolvedConfigForBook: (bookId: number) => ipcRenderer.invoke('ai:getResolvedConfigForBook', bookId),
   aiGetResolvedWorkspaceConfig: () => ipcRenderer.invoke('ai:getResolvedWorkspaceConfig'),
+
+  director: {
+    startRun: (input: DirectorStartRunInput) => ipcRenderer.invoke('director:startRun', input),
+    getRun: (runId: string) => ipcRenderer.invoke('director:getRun', runId),
+    listRuns: (bookId: number) => ipcRenderer.invoke('director:listRuns', bookId),
+    pauseRun: (runId: string) => ipcRenderer.invoke('director:pauseRun', runId),
+    resumeRun: (runId: string) => ipcRenderer.invoke('director:resumeRun', runId),
+    cancelRun: (runId: string) => ipcRenderer.invoke('director:cancelRun', runId),
+    regenerateStep: (runId: string, stepName: DirectorStepName) =>
+      ipcRenderer.invoke('director:regenerateStep', runId, stepName),
+    listChapters: (runId: string) => ipcRenderer.invoke('director:listChapters', runId),
+    acceptChapter: (input: DirectorAcceptChapterInput) => ipcRenderer.invoke('director:acceptChapter', input),
+    rejectChapter: (runId: string, chapterId: string) =>
+      ipcRenderer.invoke('director:rejectChapter', runId, chapterId),
+    subscribeProgress: async (
+      runId: string,
+      handlers: {
+        onEvent: (event: DirectorEvent) => void
+        onError?: (message: string) => void
+        onDone?: () => void
+      }
+    ) => {
+      const { subscriptionId } = await ipcRenderer.invoke('director:subscribeProgress', runId) as {
+        subscriptionId: string
+      }
+      const handleEvent = (_event: unknown, incomingId: string, payload: DirectorEvent) => {
+        if (incomingId === subscriptionId) handlers.onEvent(payload)
+      }
+      const handleError = (_event: unknown, incomingId: string, message: string) => {
+        if (incomingId === subscriptionId) handlers.onError?.(message)
+      }
+      const handleDone = (_event: unknown, incomingId: string) => {
+        if (incomingId === subscriptionId) handlers.onDone?.()
+      }
+      ipcRenderer.on('director:progressEvent', handleEvent)
+      ipcRenderer.on('director:progressError', handleError)
+      ipcRenderer.on('director:progressDone', handleDone)
+      return async () => {
+        ipcRenderer.removeListener('director:progressEvent', handleEvent)
+        ipcRenderer.removeListener('director:progressError', handleError)
+        ipcRenderer.removeListener('director:progressDone', handleDone)
+        await ipcRenderer.invoke('director:unsubscribeProgress', subscriptionId)
+      }
+    }
+  },
+
+  visual: {
+    generate: (input: VisualGenerateInput) => ipcRenderer.invoke('visual:generate', input),
+    listAssets: (bookId: number) => ipcRenderer.invoke('visual:listAssets', bookId)
+  },
+
+  mcp: {
+    listServers: () => ipcRenderer.invoke('mcp:listServers'),
+    saveServer: (input: McpServerInput) => ipcRenderer.invoke('mcp:saveServer', input),
+    deleteServer: (id: number) => ipcRenderer.invoke('mcp:deleteServer', id),
+    listLinks: (bookId?: number) => ipcRenderer.invoke('mcp:listLinks', bookId),
+    linkCanon: (serverId: number, bookId: number, scope?: string) =>
+      ipcRenderer.invoke('mcp:linkCanon', serverId, bookId, scope),
+    unlinkCanon: (linkId: number) => ipcRenderer.invoke('mcp:unlinkCanon', linkId),
+    listAudit: (bookId?: number, limit?: number) => ipcRenderer.invoke('mcp:listAudit', bookId, limit),
+    buildCanonContext: (bookId: number) => ipcRenderer.invoke('mcp:buildCanonContext', bookId),
+    rejectWriteRequest: (input: McpWriteRejectionInput) =>
+      ipcRenderer.invoke('mcp:rejectWriteRequest', input)
+  },
 
   syncUploadBook: (bookId: number) => ipcRenderer.invoke('sync:uploadBook', bookId),
   syncListCloudBooks: () => ipcRenderer.invoke('sync:listCloudBooks'),

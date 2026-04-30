@@ -225,8 +225,6 @@ export default function EditorArea() {
   const acceptInlineDraftRef = useRef<(draft: InlineAiDraft) => void>(() => {})
   const dismissInlineDraftRef = useRef<(draft: InlineAiDraft) => void>(() => {})
   const retryInlineDraftRef = useRef<(draft: InlineAiDraft) => void>(() => {})
-  currentChapterIdRef.current = currentChapter?.id ?? null
-  inlineAiDraftRef.current = inlineAiDraft
   // DI-03: 当前作品题材包. 仅 'script' 时挂 ScriptToolbar。
   const [aiWorkGenre, setAiWorkGenre] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState('')
@@ -248,6 +246,14 @@ export default function EditorArea() {
     textAnchor: string
   } | null>(null)
   const [annotationBody, setAnnotationBody] = useState('')
+
+  useEffect(() => {
+    currentChapterIdRef.current = currentChapter?.id ?? null
+  }, [currentChapter?.id])
+
+  useEffect(() => {
+    inlineAiDraftRef.current = inlineAiDraft
+  }, [inlineAiDraft])
 
   const persistChapter = useCallback(
     async (
@@ -393,6 +399,7 @@ export default function EditorArea() {
       createAnnotationExtension(() => getEditorAnnotations()),
       TextReplaceExtension,
       ScriptKindAttr,
+      // eslint-disable-next-line react-hooks/refs
       createAiInlineDraftExtension({
         getDraft: () => inlineAiDraftRef.current,
         getPosition: (draft, state) => {
@@ -604,15 +611,17 @@ export default function EditorArea() {
     }
   }, [])
 
-  acceptInlineDraftRef.current = (draft) => {
-    void acceptInlineDraft(draft)
-  }
-  dismissInlineDraftRef.current = (draft) => {
-    void dismissInlineDraft(draft)
-  }
-  retryInlineDraftRef.current = (draft) => {
-    void retryInlineDraft(draft)
-  }
+  useEffect(() => {
+    acceptInlineDraftRef.current = (draft) => {
+      void acceptInlineDraft(draft)
+    }
+    dismissInlineDraftRef.current = (draft) => {
+      void dismissInlineDraft(draft)
+    }
+    retryInlineDraftRef.current = (draft) => {
+      void retryInlineDraft(draft)
+    }
+  }, [acceptInlineDraft, dismissInlineDraft, retryInlineDraft])
 
   useEffect(() => {
     if (!editor) return
@@ -866,7 +875,7 @@ export default function EditorArea() {
       openAiAssistant({ input: AI_CONTINUE_PROMPT, autoSend })
       setContextMenu(null)
     },
-    [currentChapter, openAiAssistant, syncAiAssistantSelection]
+    [currentChapter, openAiAssistant, setContextMenu, syncAiAssistantSelection]
   )
 
   const handleGenerateSummary = useCallback(async () => {

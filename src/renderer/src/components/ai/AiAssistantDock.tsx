@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useBookStore } from '@/stores/book-store'
 import { useChapterStore } from '@/stores/chapter-store'
 import { useCharacterStore } from '@/stores/character-store'
 import { useForeshadowStore } from '@/stores/foreshadow-store'
 import { usePlotStore } from '@/stores/plot-store'
-import { useToastStore } from '@/stores/toast-store'
-import { useUIStore, type AiChapterDraft, type InlineAiDraft } from '@/stores/ui-store'
+import { useUIStore } from '@/stores/ui-store'
 import { useWikiStore } from '@/stores/wiki-store'
-import { aiPromptStream, getResolvedGlobalAiConfig, isAiConfigReady, type AiCallerConfig } from '@/utils/ai'
+import { getResolvedGlobalAiConfig } from '@/utils/ai'
 import {
   type AiSkillOverride,
   type AiSkillTemplate,
@@ -15,24 +14,9 @@ import {
 } from '@/utils/ai/assistant-workflow'
 import { pickConversationAfterDelete } from './conversation-list'
 import { buildChapterEditorQuickActions } from './chapter-quick-actions'
-import { buildDraftPreviewModel } from './draft-preview'
-import { DEFAULT_CONTINUE_INPUT, toAiChapterDraft, toInlineAiDraft } from './inline-draft'
-import {
-  appendAssistantStreamToken,
-  completeAssistantStreamMessage,
-  createAssistantStreamChunkQueue,
-  createPendingAssistantStreamMessage,
-  getAssistantStreamEmptyError,
-  replaceAssistantStreamContent
-} from './streaming-message'
+import { DEFAULT_CONTINUE_INPUT } from './inline-draft'
 import { BookshelfCreationAssistantPanel } from './book-creation/BookshelfCreationAssistantPanel'
-import {
-  draftTitle,
-  ensureHtmlContent,
-  formatProviderLabel,
-  normalizeAssistantDrafts,
-  withLocalRagChip
-} from './ai-assistant-helpers'
+import { formatProviderLabel } from './ai-assistant-helpers'
 import { applyAiDraft } from './assistant-draft-application'
 import { useAiAssistantContext } from './useAiAssistantContext'
 import { useAiAssistantData } from './useAiAssistantData'
@@ -120,7 +104,6 @@ export function AiAssistantPanel() {
 
   const {
     assistantIntent,
-    contextPolicy,
     baseContext,
     contextDefaultsKey,
     context,
@@ -196,6 +179,8 @@ export function AiAssistantPanel() {
 
   useEffect(() => {
     return () => {
+      // We intentionally abort the latest in-flight request on unmount.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       activeRequestAbortRef.current?.abort()
     }
   }, [])
@@ -343,6 +328,10 @@ export function AiAssistantPanel() {
             onOpenWorldConsistency={() => openModal('worldConsistency')}
             onOpenCitationsManager={() => openModal('citationsManager')}
             onOpenTeamManagement={() => openModal('teamManagement')}
+            onOpenDirectorPanel={() => openModal('directorPanel')}
+            onOpenVisualStudio={() => openModal('visualStudio')}
+            onOpenMcpSettings={() => openModal('mcpSettings')}
+            onOpenMarketScanDeconstruct={() => openModal('marketScanDeconstruct')}
             onOpenAiSettings={() => openModal('aiSettings')}
             onOpenCanonPack={() => openModal('canonPack')}
             onClose={closeAiAssistant}

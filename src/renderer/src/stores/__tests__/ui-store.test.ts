@@ -85,6 +85,58 @@ describe('ui store bottom panel state', () => {
     expect(localStorage.getItem('write-bottom-panel-open')).toBe('true')
   })
 
+  it('captures the old pixel layout for the classic IDE preset before v2 persistence updates it', async () => {
+    vi.resetModules()
+    installLocalStorage({
+      'write-left-panel-width': '300',
+      'write-right-panel-width': '420',
+      'write-bottom-panel-height': '240',
+      'write-bottom-panel-open': 'false'
+    })
+
+    const { useUIStore } = await import('../ui-store')
+
+    expect(JSON.parse(localStorage.getItem('write-workspace-layout-classic-snapshot')!)).toMatchObject({
+      leftPanelOpen: true,
+      rightPanelOpen: true,
+      bottomPanelOpen: false,
+      sizes: {
+        left: 21,
+        right: 29,
+        terminal: 27
+      }
+    })
+
+    useUIStore.getState().setWorkspaceLayoutPanelSizes({ left: 12, right: 36, terminal: 44 })
+    useUIStore.getState().applyWorkspaceLayoutPreset('classic')
+
+    expect(useUIStore.getState().workspaceLayoutPanelSizes).toEqual({
+      left: 21,
+      right: 29,
+      terminal: 27
+    })
+    expect(useUIStore.getState().bottomPanelOpen).toBe(false)
+  })
+
+  it('saves the current IDE layout as a custom preset', async () => {
+    const { useUIStore } = await import('../ui-store')
+
+    useUIStore.getState().setWorkspaceLayoutPanelSizes({ left: 24, right: 30, terminal: 28 })
+    const preset = useUIStore.getState().saveCurrentWorkspaceLayoutPreset('审稿布局')
+
+    expect(preset?.id).toMatch(/^custom:/)
+    expect(useUIStore.getState().workspaceLayoutPresetId).toBe(preset?.id)
+    expect(useUIStore.getState().customWorkspaceLayoutPresets[0]).toMatchObject({
+      label: '审稿布局',
+      snapshot: {
+        sizes: { left: 24, right: 30, terminal: 28 }
+      }
+    })
+    expect(JSON.parse(localStorage.getItem('write-workspace-layout-custom-presets')!)[0]).toMatchObject({
+      label: '审稿布局'
+    })
+  })
+
   it('opens the right sidebar AI tab without forcing an assistant type', async () => {
     const { useUIStore } = await import('../ui-store')
 

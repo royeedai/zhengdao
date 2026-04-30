@@ -3,6 +3,8 @@ import { registerAiIpc } from './ipc/register-ai-ipc'
 import { handleZhengdaoAuthCallbackUrl, registerAuthIpc } from './ipc/register-auth-ipc'
 import { registerDatabaseIpc } from './ipc/register-database-ipc'
 import { registerFsIpc } from './ipc/register-fs-ipc'
+import { registerMcpIpc } from './ipc/register-mcp-ipc'
+import { registerProFeatureIpc } from './ipc/register-pro-feature-ipc'
 import { registerSyncIpc } from './ipc/register-sync-ipc'
 import { registerTeamIpc } from './ipc/register-team-ipc'
 import { registerUpdateIpc } from './ipc/register-update-ipc'
@@ -23,6 +25,8 @@ import { registerUpdateIpc } from './ipc/register-update-ipc'
 export function registerIpcHandlers(): void {
   registerDatabaseIpc()
   registerAiIpc()
+  registerProFeatureIpc()
+  registerMcpIpc()
   registerAuthIpc()
   registerTeamIpc()
   registerUpdateIpc()

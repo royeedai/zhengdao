@@ -36,6 +36,10 @@ import TeamManagementModal from './TeamManagementModal'
 import ForeshadowBoardModal from './ForeshadowBoardModal'
 import QuickNotesModal from './QuickNotesModal'
 import CanonPackModal from './CanonPackModal'
+import DirectorPanelModal from './DirectorPanelModal'
+import McpSettingsModal from './McpSettingsModal'
+import VisualStudioModal from './VisualStudioModal'
+import MarketScanDeconstructModal from './MarketScanDeconstructModal'
 
 function renderModal(type: ModalType) {
   switch (type) {
@@ -75,6 +79,10 @@ function renderModal(type: ModalType) {
     case 'referencesBuild': return <ReferencesBuildModal />
     case 'teamManagement': return <TeamManagementModal />
     case 'canonPack': return <CanonPackModal />
+    case 'directorPanel': return <DirectorPanelModal />
+    case 'visualStudio': return <VisualStudioModal />
+    case 'mcpSettings': return <McpSettingsModal />
+    case 'marketScanDeconstruct': return <MarketScanDeconstructModal />
     default: return null
   }
 }

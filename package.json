@@ -65,6 +65,7 @@
     "react": "^18.3.0",
     "react-d3-tree": "^3.6.6",
     "react-dom": "^18.3.0",
+    "react-resizable-panels": "^4.10.0",
     "reactflow": "^11.11.4",
     "tippy.js": "^6.3.7",
     "vis-data": "^7.1.10",
