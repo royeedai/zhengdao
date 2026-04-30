@@ -772,6 +772,90 @@ const migrations: Migration[] = [
         CREATE INDEX IF NOT EXISTS idx_ai_drafts_book_status ON ai_drafts(book_id, status, created_at);
       `)
     }
+  },
+  {
+    version: 24,
+    description:
+      'DI-07 v3: extend character_relations + add canon_events / canon_organizations / canon_character_organizations',
+    up: (db) => {
+      // Extend character_relations with chapter range + dynamic flag so the
+      // CG-A3 relation graph can filter by chapter window and the world-
+      // consistency Skill can detect "evolving" relations.
+      const relCols = db
+        .prepare('PRAGMA table_info(character_relations)')
+        .all() as { name: string }[]
+      const has = (n: string) => relCols.some((c) => c.name === n)
+      if (!has('chapter_range_start')) {
+        db.exec(`ALTER TABLE character_relations ADD COLUMN chapter_range_start INTEGER`)
+      }
+      if (!has('chapter_range_end')) {
+        db.exec(`ALTER TABLE character_relations ADD COLUMN chapter_range_end INTEGER`)
+      }
+      if (!has('dynamic')) {
+        db.exec(`ALTER TABLE character_relations ADD COLUMN dynamic INTEGER NOT NULL DEFAULT 0`)
+      }
+
+      // Events: finer-grained timeline nodes than plot_nodes (plot is 卷-级
+      // 大节点；events 是章节级时间轴 / 伏笔触发点 / 角色关键节点)。
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS canon_events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          book_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL DEFAULT '',
+          chapter_id INTEGER,
+          chapter_number INTEGER,
+          event_type TEXT NOT NULL DEFAULT 'plot' CHECK(event_type IN ('plot','character','world','foreshadow')),
+          importance TEXT NOT NULL DEFAULT 'normal' CHECK(importance IN ('low','normal','high')),
+          related_character_ids TEXT NOT NULL DEFAULT '[]',
+          metadata TEXT NOT NULL DEFAULT '{}',
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_canon_events_book ON canon_events(book_id);
+        CREATE INDEX IF NOT EXISTS idx_canon_events_chapter ON canon_events(chapter_number);
+      `)
+
+      // Organizations: 角色所属 / 政策机构 / 派系。parent_id 自引用支持层级。
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS canon_organizations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          book_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT NOT NULL DEFAULT '',
+          parent_id INTEGER,
+          org_type TEXT NOT NULL DEFAULT 'group' CHECK(org_type IN ('group','faction','company','department')),
+          metadata TEXT NOT NULL DEFAULT '{}',
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+          FOREIGN KEY (parent_id) REFERENCES canon_organizations(id) ON DELETE SET NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_canon_organizations_book ON canon_organizations(book_id);
+        CREATE INDEX IF NOT EXISTS idx_canon_organizations_parent ON canon_organizations(parent_id);
+      `)
+
+      // Character ↔ organization 关联表 (多对多)。
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS canon_character_organizations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          character_id INTEGER NOT NULL,
+          organization_id INTEGER NOT NULL,
+          role TEXT NOT NULL DEFAULT '',
+          joined_chapter INTEGER,
+          left_chapter INTEGER,
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          UNIQUE(character_id, organization_id),
+          FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+          FOREIGN KEY (organization_id) REFERENCES canon_organizations(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_canon_char_orgs_character ON canon_character_organizations(character_id);
+        CREATE INDEX IF NOT EXISTS idx_canon_char_orgs_organization ON canon_character_organizations(organization_id);
+      `)
+    }
   }
 ]
 

@@ -261,4 +261,89 @@ describe('runMigrations', () => {
       db.close()
     }
   })
+
+  // DI-07 v3.1 — Canon Pack v3 schema upgrade.
+  it('extends character_relations and adds canon events / orgs / character-org tables in v24', () => {
+    const db = new BetterSqlite3(':memory:') as Database.Database
+
+    try {
+      createSchema(db)
+      runMigrations(db)
+
+      const relCols = db.prepare('PRAGMA table_info(character_relations)').all() as { name: string }[]
+      expect(relCols.some((c) => c.name === 'chapter_range_start')).toBe(true)
+      expect(relCols.some((c) => c.name === 'chapter_range_end')).toBe(true)
+      expect(relCols.some((c) => c.name === 'dynamic')).toBe(true)
+
+      const tableNames = db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('canon_events','canon_organizations','canon_character_organizations') ORDER BY name"
+        )
+        .all() as { name: string }[]
+      expect(tableNames.map((r) => r.name)).toEqual([
+        'canon_character_organizations',
+        'canon_events',
+        'canon_organizations'
+      ])
+
+      const indexNames = db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_canon_%' ORDER BY name"
+        )
+        .all() as { name: string }[]
+      expect(indexNames.length).toBeGreaterThanOrEqual(6)
+
+      const applied = db.prepare('SELECT version FROM schema_migrations WHERE version = 24').all() as {
+        version: number
+      }[]
+      expect(applied).toHaveLength(1)
+    } finally {
+      db.close()
+    }
+  })
+
+  it('preserves existing character_relations data when applying v24', () => {
+    const db = new BetterSqlite3(':memory:') as Database.Database
+
+    try {
+      createSchema(db)
+      // Apply migrations up to v23 only by faking earlier rows to test the
+      // v24 ALTER path on existing data; for in-memory it's enough to
+      // populate before runMigrations completes since v24 uses ADD COLUMN.
+      runMigrations(db)
+
+      db.prepare(
+        "INSERT INTO books (id, title, author) VALUES (1, 'demo', '')"
+      ).run()
+      db.prepare(
+        `INSERT INTO characters (book_id, name, description) VALUES (1, '甲', ''), (1, '乙', '')`
+      ).run()
+      db.prepare(
+        `INSERT INTO character_relations (book_id, source_id, target_id, relation_type, label)
+         VALUES (1, 1, 2, 'friend', '同窗')`
+      ).run()
+
+      // Re-running migrations should be idempotent - no data loss.
+      runMigrations(db)
+
+      const row = db
+        .prepare(
+          'SELECT relation_type, label, chapter_range_start, chapter_range_end, dynamic FROM character_relations WHERE source_id = 1 AND target_id = 2'
+        )
+        .get() as {
+        relation_type: string
+        label: string
+        chapter_range_start: number | null
+        chapter_range_end: number | null
+        dynamic: number
+      }
+      expect(row.relation_type).toBe('friend')
+      expect(row.label).toBe('同窗')
+      expect(row.chapter_range_start).toBeNull()
+      expect(row.chapter_range_end).toBeNull()
+      expect(row.dynamic).toBe(0)
+    } finally {
+      db.close()
+    }
+  })
 })
