@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The project follows Semantic Versioning for release numbers. Release entries use a simple `Added / Changed / Fixed / Docs / Release` structure so the app package, Git tag, GitHub Release and changelog can stay aligned.
 
+## v1.8.0 - 2026-05-01
+
+### Release
+
+- 发布客户端创作工作流、性能优化和专业写作体验
+
+### Added
+
+- 新增书架页 AI 起书筹备包状态流，支持更稳定地生成作品、卷章、人物、设定和初始正文草稿。
+- 新增本地书籍封面协议、封面服务和书架封面组件，避免书架列表把封面图片编码进大 payload。
+- 新增桌面端 UX surface ledger 与性能治理工件，记录书架、工作区、AI Dock、弹窗和关键写作路径的验收面。
+
+### Changed
+
+- 书架和工作区加载改为章节元数据优先，完整章节正文按需读取，降低进书、切章和大作品列表的同步阻塞。
+- AI 起书、章节草稿、底部沙盘、关系图谱、顶部栏和多处弹窗做了交互与布局收敛，提升专业写作工作台的一致性。
+- 发布前检查、参考文献生成、风格分析和世界观一致性检查改为打开功能时按需读取全本正文，保持性能优化后的正文可用性。
+
+### Fixed
+
+- 修复章节元数据轻载改造后，正文型弹窗仍从 `volumes` 元数据读取 `content` 导致的 typecheck 和运行时风险。
+- 修复新增数据库 IPC 通道后契约测试的 `db:*` 计数未同步问题。
+
+### Docs
+
+- 补齐桌面 UX 重构、客户端性能重构和 AI 操作体验文档，为后续批量验收保留追踪入口。
+
 ## v1.7.2 - 2026-04-29
 
 ### Release
