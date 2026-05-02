@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import {
   BookOpen,
   Bot,
@@ -6,6 +7,7 @@ import {
   MessageSquare,
   MessageSquarePlus,
   MessagesSquare,
+  MoreHorizontal,
   Network,
   Search,
   ServerCog,
@@ -15,6 +17,11 @@ import {
   Users,
   X
 } from 'lucide-react'
+import {
+  getAssistantToolActionGroups,
+  type AssistantToolAction,
+  type AssistantToolActionId
+} from '../assistant-toolbar-actions'
 
 /**
  * SPLIT-006 phase 2 — AiAssistantPanel header toolbar.
@@ -51,19 +58,96 @@ export interface AssistantPanelHeaderProps {
   onClose: () => void
 }
 
+function AssistantToolIcon({ id }: { id: AssistantToolActionId }) {
+  switch (id) {
+    case 'dialogueRewrite':
+      return <MessagesSquare size={15} />
+    case 'worldConsistency':
+      return <ShieldCheck size={15} />
+    case 'directorPanel':
+      return <Clapperboard size={15} />
+    case 'canonPack':
+      return <Network size={15} />
+    case 'visualStudio':
+      return <Image size={15} />
+    case 'marketScanDeconstruct':
+      return <Search size={15} />
+    case 'mcpSettings':
+      return <ServerCog size={15} />
+    case 'citationsManager':
+      return <BookOpen size={15} />
+    case 'teamManagement':
+      return <Users size={15} />
+    case 'aiSettings':
+      return <Settings2 size={15} />
+  }
+}
+
 export function AssistantPanelHeader(props: AssistantPanelHeaderProps): JSX.Element {
   const dialogueSelection = props.hasSelectedTextForCurrentChapter ? props.selectedText : ''
+  const [toolMenuOpen, setToolMenuOpen] = useState(false)
+  const toolMenuRef = useRef<HTMLDivElement>(null)
+  const toolGroups = getAssistantToolActionGroups(props.profileGenre)
+
+  useEffect(() => {
+    if (!toolMenuOpen) return
+    const close = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (!toolMenuRef.current?.contains(target)) setToolMenuOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [toolMenuOpen])
+
+  const runToolAction = (action: AssistantToolAction) => {
+    setToolMenuOpen(false)
+    switch (action.id) {
+      case 'dialogueRewrite':
+        props.onOpenDialogueRewrite(dialogueSelection)
+        break
+      case 'worldConsistency':
+        props.onOpenWorldConsistency()
+        break
+      case 'directorPanel':
+        props.onOpenDirectorPanel()
+        break
+      case 'canonPack':
+        props.onOpenCanonPack()
+        break
+      case 'visualStudio':
+        props.onOpenVisualStudio()
+        break
+      case 'marketScanDeconstruct':
+        props.onOpenMarketScanDeconstruct()
+        break
+      case 'mcpSettings':
+        props.onOpenMcpSettings()
+        break
+      case 'citationsManager':
+        props.onOpenCitationsManager()
+        break
+      case 'teamManagement':
+        props.onOpenTeamManagement()
+        break
+      case 'aiSettings':
+        props.onOpenAiSettings()
+        break
+    }
+  }
 
   return (
-    <div className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-3">
+    <div className="relative flex h-12 shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-3">
       <div className="flex min-w-0 items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
         <Bot size={17} className="text-[var(--accent-primary)]" />
         <span className="min-w-0 truncate">{props.title}</span>
-        <span className="min-w-0 truncate rounded border border-[var(--accent-border)] bg-[var(--accent-surface)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--accent-secondary)]">
+        <span
+          className="max-w-[132px] shrink-0 truncate rounded border border-[var(--accent-border)] bg-[var(--accent-surface)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--accent-secondary)]"
+          title={`当前 AI 账号：${props.providerLabel}`}
+        >
           {props.providerLabel}
         </span>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1">
         <button
           type="button"
           onClick={() => props.onToggleConversationList()}
@@ -92,90 +176,51 @@ export function AssistantPanelHeader(props: AssistantPanelHeaderProps): JSX.Elem
         >
           <Trash2 size={16} />
         </button>
-        {props.profileGenre === 'script' && (
+        <div className="relative" ref={toolMenuRef}>
           <button
             type="button"
-            onClick={() => props.onOpenDialogueRewrite(dialogueSelection)}
-            title="对白块改写 (剧本)"
-            className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
+            onClick={() => setToolMenuOpen((open) => !open)}
+            title="AI 工具与设置"
+            aria-label="AI 工具与设置"
+            aria-haspopup="menu"
+            aria-expanded={toolMenuOpen}
+            className={`rounded p-1.5 ${
+              toolMenuOpen
+                ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]'
+                : 'text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]'
+            }`}
           >
-            <MessagesSquare size={16} />
+            <MoreHorizontal size={16} />
           </button>
-        )}
-        <button
-          type="button"
-          onClick={() => props.onOpenWorldConsistency()}
-          title="世界观一致性检查 (Canon Pack)"
-          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
-        >
-          <ShieldCheck size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={() => props.onOpenDirectorPanel()}
-          title="Pro 自动导演"
-          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
-        >
-          <Clapperboard size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={() => props.onOpenVisualStudio()}
-          title="视觉资产"
-          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
-        >
-          <Image size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={() => props.onOpenMarketScanDeconstruct()}
-          title="拆书工作台（网文拆文）"
-          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
-        >
-          <Search size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={() => props.onOpenCanonPack()}
-          title="Canon Pack 视图 (关系图谱 / 时间线 / 组织架构)"
-          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
-        >
-          <Network size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={() => props.onOpenMcpSettings()}
-          title="MCP 只读桥接"
-          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
-        >
-          <ServerCog size={16} />
-        </button>
-        {props.profileGenre === 'academic' && (
-          <button
-            type="button"
-            onClick={() => props.onOpenCitationsManager()}
-            title="学术引文管理 (academic)"
-            className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
-          >
-            <BookOpen size={16} />
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => props.onOpenTeamManagement()}
-          title="团队空间 (DI-06)"
-          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
-        >
-          <Users size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={() => props.onOpenAiSettings()}
-          title="AI 能力与上下文"
-          className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
-        >
-          <Settings2 size={16} />
-        </button>
+          {toolMenuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-full z-50 mt-1 w-[260px] rounded-lg border border-[var(--border-primary)] bg-[var(--surface-elevated)] py-1 shadow-xl"
+            >
+              {toolGroups.map((group, index) => (
+                <div key={group.id}>
+                  {index > 0 && <div className="my-1 border-t border-[var(--border-primary)]" />}
+                  <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    {group.label}
+                  </div>
+                  {group.actions.map((action) => (
+                    <button
+                      key={action.id}
+                      role="menuitem"
+                      type="button"
+                      onClick={() => runToolAction(action)}
+                      title={action.title}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                    >
+                      <AssistantToolIcon id={action.id} />
+                      <span className="min-w-0 truncate">{action.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => props.onClose()}

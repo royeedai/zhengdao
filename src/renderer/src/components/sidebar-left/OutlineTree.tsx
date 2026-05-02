@@ -20,6 +20,7 @@ import { useCharacterStore } from '@/stores/character-store'
 import { useConfigStore } from '@/stores/config-store'
 import { useWikiStore } from '@/stores/wiki-store'
 import { useUIStore } from '@/stores/ui-store'
+import { clampOutlineMenuPosition, getVolumeDeleteMessage, normalizeOutlineTitle } from './outline-menu'
 
 type LeftTab = 'outline' | 'characters' | 'wiki'
 
@@ -275,7 +276,7 @@ export default function OutlineTree() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const [activeTab, setActiveTab] = useState<LeftTab>('outline')
   const [collapsedVols, setCollapsedVols] = useState<Set<number>>(new Set())
-  const [editingId, setEditingId] = useState<{ type: 'vol' | 'ch'; id: number } | null>(null)
+  const [editingId, setEditingId] = useState<{ type: 'vol' | 'ch'; id: number; originalTitle: string } | null>(null)
   const [editText, setEditText] = useState('')
   const [contextMenu, setContextMenu] = useState<{
     x: number
@@ -298,32 +299,38 @@ export default function OutlineTree() {
   }
 
   const startRename = (type: 'vol' | 'ch', id: number, currentTitle: string) => {
-    setEditingId({ type, id })
+    setEditingId({ type, id, originalTitle: currentTitle.trim() })
     setEditText(currentTitle)
     setContextMenu(null)
   }
 
   const finishRename = async () => {
-    if (!editingId || !editText.trim()) {
+    const nextTitle = normalizeOutlineTitle(editText)
+    if (!editingId || !nextTitle || nextTitle === editingId.originalTitle) {
       setEditingId(null)
       return
     }
-    if (editingId.type === 'vol') await updateVolumeTitle(editingId.id, editText.trim())
-    else await updateChapterTitle(editingId.id, editText.trim())
+    if (editingId.type === 'vol') await updateVolumeTitle(editingId.id, nextTitle)
+    else await updateChapterTitle(editingId.id, nextTitle)
     setEditingId(null)
   }
 
   const handleContextMenu = (e: React.MouseEvent, type: 'vol' | 'ch' | 'bg', id?: number) => {
     e.preventDefault()
     e.stopPropagation()
-    setContextMenu({ x: e.clientX, y: e.clientY, type, id })
+    const point = clampOutlineMenuPosition(
+      { x: e.clientX, y: e.clientY },
+      { width: window.innerWidth, height: window.innerHeight }
+    )
+    setContextMenu({ ...point, type, id })
   }
 
   const handleDeleteVol = (id: number) => {
+    const volume = volumes.find((item) => item.id === id)
     setContextMenu(null)
     openModal('confirm', {
       title: '删除卷',
-      message: '将同时删除该卷下所有章节及关联数据，确定删除？',
+      message: getVolumeDeleteMessage(volume?.chapters?.length ?? 0),
       onConfirm: () => deleteVolume(id)
     })
   }
@@ -352,6 +359,15 @@ export default function OutlineTree() {
     const chapterIds = arrayMove(vol.chapters, oldIndex, newIndex).map((c) => c.id)
     void reorderChapters(vol.id, chapterIds)
   }
+
+  useEffect(() => {
+    if (!contextMenu) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setContextMenu(null)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [contextMenu])
 
   if (activeTab === 'characters') {
     return (
@@ -467,7 +483,8 @@ export default function OutlineTree() {
       </div>
       {contextMenu && (
         <div
-          className="fixed bg-[var(--surface-elevated)] border border-[var(--border-primary)] rounded-lg shadow-xl py-1 z-50 min-w-[140px] text-xs"
+          role="menu"
+          className="fixed z-50 w-44 rounded-lg border border-[var(--border-primary)] bg-[var(--surface-elevated)] py-1 text-xs shadow-xl"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
           {contextMenu.type === 'bg' && (
@@ -476,18 +493,20 @@ export default function OutlineTree() {
                 setContextMenu(null)
                 openModal('newVolume', { book_id: bookId })
               }}
+              role="menuitem"
               className="w-full px-3 py-1.5 text-left text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition"
             >
               新建卷
             </button>
           )}
-          {contextMenu.type === 'vol' && contextMenu.id && (
+          {contextMenu.type === 'vol' && contextMenu.id != null && (
             <>
               <button
                 onClick={() => {
                   setContextMenu(null)
                   openModal('newChapter', { volume_id: contextMenu.id })
                 }}
+                role="menuitem"
                 className="w-full px-3 py-1.5 text-left text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition"
               >
                 新建章节
@@ -497,6 +516,7 @@ export default function OutlineTree() {
                   const v = volumes.find((x) => x.id === contextMenu.id)
                   if (v) startRename('vol', v.id, v.title)
                 }}
+                role="menuitem"
                 className="w-full px-3 py-1.5 text-left text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition"
               >
                 重命名
@@ -504,13 +524,14 @@ export default function OutlineTree() {
               <div className="border-t border-[var(--border-primary)] my-1" />
               <button
                 onClick={() => handleDeleteVol(contextMenu.id!)}
+                role="menuitem"
                 className="w-full px-3 py-1.5 text-left text-[var(--danger-primary)] hover:bg-[var(--danger-surface)] transition"
               >
                 删除卷
               </button>
             </>
           )}
-          {contextMenu.type === 'ch' && contextMenu.id && (
+          {contextMenu.type === 'ch' && contextMenu.id != null && (
             <>
               <button
                 onClick={() => {
@@ -518,6 +539,7 @@ export default function OutlineTree() {
                   const ch = allChs.find((c) => c.id === contextMenu.id)
                   if (ch) startRename('ch', ch.id, ch.title)
                 }}
+                role="menuitem"
                 className="w-full px-3 py-1.5 text-left text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition"
               >
                 重命名
@@ -525,6 +547,7 @@ export default function OutlineTree() {
               <div className="border-t border-[var(--border-primary)] my-1" />
               <button
                 onClick={() => handleDeleteCh(contextMenu.id!)}
+                role="menuitem"
                 className="w-full px-3 py-1.5 text-left text-[var(--danger-primary)] hover:bg-[var(--danger-surface)] transition"
               >
                 删除章节

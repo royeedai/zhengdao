@@ -8,10 +8,10 @@
     "src/renderer/src/components/shared/CommandPalette.tsx"
   ],
   "counts": {
-    "surfaces": 55,
+    "surfaces": 56,
     "fixedSurfaces": 15,
-    "modalTypes": 40,
-    "modalCases": 40,
+    "modalTypes": 41,
+    "modalCases": 41,
     "commands": 23
   },
   "surfaces": [
@@ -605,6 +605,20 @@
     {
       "id": "SURF-MODAL-029",
       "kind": "modal",
+      "title": "authorGrowth",
+      "modal": "authorGrowth",
+      "component": "AuthorGrowthModal",
+      "source": "src/renderer/src/components/modals/AuthorGrowthModal.tsx",
+      "entry": "openModal('authorGrowth') / pushModal('authorGrowth')",
+      "userTask": "完成该弹窗承载的作品管理、分析或设置任务",
+      "states": "入口、空数据、有数据、编辑、保存、错误、关闭",
+      "issue": "需要按统一 Dialog shell、主次操作和状态反馈重新审计",
+      "pattern": "Unified Dialog shell + Raycast Action Panel + Linear contextual actions",
+      "priority": "P2"
+    },
+    {
+      "id": "SURF-MODAL-030",
+      "kind": "modal",
       "title": "formatTemplate",
       "modal": "formatTemplate",
       "component": "FormatTemplateModal",
@@ -617,7 +631,7 @@
       "priority": "P2"
     },
     {
-      "id": "SURF-MODAL-030",
+      "id": "SURF-MODAL-031",
       "kind": "modal",
       "title": "dialogueRewrite",
       "modal": "dialogueRewrite",
@@ -631,7 +645,7 @@
       "priority": "P2"
     },
     {
-      "id": "SURF-MODAL-031",
+      "id": "SURF-MODAL-032",
       "kind": "modal",
       "title": "世界一致性检查",
       "modal": "worldConsistency",
@@ -645,7 +659,7 @@
       "priority": "P1"
     },
     {
-      "id": "SURF-MODAL-032",
+      "id": "SURF-MODAL-033",
       "kind": "modal",
       "title": "citationsManager",
       "modal": "citationsManager",
@@ -659,7 +673,7 @@
       "priority": "P2"
     },
     {
-      "id": "SURF-MODAL-033",
+      "id": "SURF-MODAL-034",
       "kind": "modal",
       "title": "citationPicker",
       "modal": "citationPicker",
@@ -673,7 +687,7 @@
       "priority": "P2"
     },
     {
-      "id": "SURF-MODAL-034",
+      "id": "SURF-MODAL-035",
       "kind": "modal",
       "title": "referencesBuild",
       "modal": "referencesBuild",
@@ -687,7 +701,7 @@
       "priority": "P2"
     },
     {
-      "id": "SURF-MODAL-035",
+      "id": "SURF-MODAL-036",
       "kind": "modal",
       "title": "teamManagement",
       "modal": "teamManagement",
@@ -701,7 +715,7 @@
       "priority": "P2"
     },
     {
-      "id": "SURF-MODAL-036",
+      "id": "SURF-MODAL-037",
       "kind": "modal",
       "title": "可视化 Canon Pack",
       "modal": "canonPack",
@@ -715,7 +729,7 @@
       "priority": "P1"
     },
     {
-      "id": "SURF-MODAL-037",
+      "id": "SURF-MODAL-038",
       "kind": "modal",
       "title": "自动导演主链",
       "modal": "directorPanel",
@@ -729,7 +743,7 @@
       "priority": "P1"
     },
     {
-      "id": "SURF-MODAL-038",
+      "id": "SURF-MODAL-039",
       "kind": "modal",
       "title": "视觉资产工作室",
       "modal": "visualStudio",
@@ -743,7 +757,7 @@
       "priority": "P2"
     },
     {
-      "id": "SURF-MODAL-039",
+      "id": "SURF-MODAL-040",
       "kind": "modal",
       "title": "MCP 设置",
       "modal": "mcpSettings",
@@ -757,7 +771,7 @@
       "priority": "P2"
     },
     {
-      "id": "SURF-MODAL-040",
+      "id": "SURF-MODAL-041",
       "kind": "modal",
       "title": "marketScanDeconstruct",
       "modal": "marketScanDeconstruct",

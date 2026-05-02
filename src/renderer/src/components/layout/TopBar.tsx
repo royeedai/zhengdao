@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import {
   PanelBottomClose,
   PanelBottomOpen,
@@ -25,6 +25,58 @@ import AppBrand from '@/components/shared/AppBrand'
 import AccountSettingsMenu from '@/components/shared/AccountSettingsMenu'
 import { getCurrentTitlebarSafeArea } from '@/utils/window-shell'
 import { BUILTIN_WORKSPACE_LAYOUT_PRESETS, type WorkspaceLayoutPresetId } from '@/utils/workspace-layout'
+import {
+  WORKSPACE_TOOL_ACTIONS,
+  getPrimaryWorkspaceToolActions,
+  getWorkspaceToolActionGroups,
+  type WorkspaceToolAction,
+  type WorkspaceToolActionId
+} from './workspace-actions'
+
+function WorkspaceActionIcon({ id, size = 14 }: { id: WorkspaceToolActionId; size?: number }) {
+  switch (id) {
+    case 'bookOverview':
+      return <LayoutDashboard size={size} />
+    case 'fullCharacters':
+      return <Users size={size} />
+    case 'settings':
+      return <BookOpen size={size} />
+    case 'stats':
+      return <BarChart3 size={size} />
+    case 'foreshadowBoard':
+      return <AlertCircle size={size} />
+    case 'quickNotes':
+      return <Lightbulb size={size} />
+    case 'projectSettings':
+      return <Settings size={size} />
+  }
+}
+
+function TopbarToolButton({
+  action,
+  children,
+  onClick
+}: {
+  action: WorkspaceToolAction
+  children: ReactNode
+  onClick: () => void
+}) {
+  const toneClass =
+    action.primaryTone === 'accent'
+      ? 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)] hover:border-[var(--accent-primary)] hover:bg-[var(--bg-tertiary)]'
+      : 'border-[var(--border-secondary)] bg-[var(--surface-secondary)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] hover:bg-[var(--accent-surface)] hover:text-[var(--accent-secondary)]'
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={action.title}
+      title={action.title}
+      className={`flex min-h-8 shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-[11px] font-semibold transition ${toneClass}`}
+    >
+      {children}
+    </button>
+  )
+}
 
 export default function TopBar() {
   const leftPanelOpen = useUIStore((s) => s.leftPanelOpen)
@@ -74,10 +126,17 @@ export default function TopBar() {
   }, [layoutMenuOpen])
   const currentBook = books.find((b) => b.id === currentBookId)
   const titlebarSafeArea = getCurrentTitlebarSafeArea()
+  const overviewAction = WORKSPACE_TOOL_ACTIONS.find((action) => action.id === 'bookOverview')!
+  const primaryToolActions = getPrimaryWorkspaceToolActions()
+  const toolActionGroups = getWorkspaceToolActionGroups()
 
   const closeToolsAndOpenModal = (modal: Parameters<typeof openModal>[0]) => {
     setToolMenuOpen(false)
     openModal(modal)
+  }
+
+  const openWorkspaceAction = (action: WorkspaceToolAction) => {
+    closeToolsAndOpenModal(action.modal)
   }
 
   const handleApplyLayoutPreset = (presetId: WorkspaceLayoutPresetId) => {
@@ -106,9 +165,6 @@ export default function TopBar() {
     void window.api.toggleMaximize()
   }
 
-  const toolButtonClass =
-    'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold border border-[var(--border-secondary)] bg-[var(--surface-secondary)] text-[var(--text-secondary)] hover:border-[var(--accent-border)] hover:bg-[var(--accent-surface)] hover:text-[var(--accent-secondary)] transition shrink-0 min-h-8'
-
   return (
     <div
       className="h-12 border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] flex items-center justify-between shrink-0 shadow-sm z-30 drag-region gap-3"
@@ -131,12 +187,12 @@ export default function TopBar() {
         </button>
         <button
           type="button"
-          onClick={() => openModal('bookOverview')}
-          title="书籍总览"
+          onClick={() => openWorkspaceAction(overviewAction)}
+          title={overviewAction.title}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)] hover:border-[var(--accent-primary)] hover:bg-[var(--bg-tertiary)] transition no-drag"
         >
-          <LayoutDashboard size={14} />
-          总览
+          <WorkspaceActionIcon id={overviewAction.id} size={14} />
+          {overviewAction.label}
         </button>
         <div className="flex items-center space-x-1 ml-2 text-[var(--text-muted)]">
           <button
@@ -252,26 +308,16 @@ export default function TopBar() {
         }`}
       >
         <div className="flex min-w-max items-center gap-2 whitespace-nowrap py-1">
-          <button onClick={() => openModal('fullCharacters')} title="角色总库" className={toolButtonClass}>
-            <Users size={14} /> 角色总库
-          </button>
-          <button onClick={() => openModal('settings')} title="设定维基" className={toolButtonClass}>
-            <BookOpen size={14} /> 设定维基
-          </button>
-          <button type="button" onClick={() => openModal('stats')} title="写作数据中心" className={toolButtonClass}>
-            <BarChart3 size={14} />
-            数据
-          </button>
-          <button
-            type="button"
-            onClick={() => openModal('projectSettings')}
-            aria-label="作品设置"
-            title="作品设置"
-            className="hidden xl:inline-flex items-center gap-1.5 rounded-md border border-[var(--accent-border)] bg-[var(--accent-surface)] px-3 py-1.5 text-[11px] font-semibold text-[var(--accent-secondary)] transition hover:border-[var(--accent-primary)] hover:bg-[var(--bg-tertiary)]"
-          >
-            <Settings size={14} />
-            作品设置
-          </button>
+          {primaryToolActions.map((action) => (
+            <TopbarToolButton
+              key={action.id}
+              action={action}
+              onClick={() => openWorkspaceAction(action)}
+            >
+              <WorkspaceActionIcon id={action.id} />
+              {action.label}
+            </TopbarToolButton>
+          ))}
         </div>
       </div>
 
@@ -295,65 +341,25 @@ export default function TopBar() {
             role="menu"
             className="absolute right-0 top-full z-50 mt-1 min-w-[196px] rounded-lg border border-[var(--border-primary)] bg-[var(--surface-elevated)] py-1 shadow-xl"
           >
-            <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-              当前作品
-            </div>
-            <button
-              role="menuitem"
-              type="button"
-              onClick={() => closeToolsAndOpenModal('bookOverview')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
-            >
-              <LayoutDashboard size={14} /> 总览
-            </button>
-            <button
-              role="menuitem"
-              type="button"
-              onClick={() => closeToolsAndOpenModal('fullCharacters')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
-            >
-              <Users size={14} /> 角色总库
-            </button>
-            <button
-              role="menuitem"
-              type="button"
-              onClick={() => closeToolsAndOpenModal('settings')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
-            >
-              <BookOpen size={14} /> 设定维基
-            </button>
-            <button
-              role="menuitem"
-              type="button"
-              onClick={() => closeToolsAndOpenModal('stats')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
-            >
-              <BarChart3 size={14} /> 数据中心
-            </button>
-            <button
-              role="menuitem"
-              type="button"
-              onClick={() => closeToolsAndOpenModal('foreshadowBoard')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
-            >
-              <AlertCircle size={14} /> 伏笔看板
-            </button>
-            <button
-              role="menuitem"
-              type="button"
-              onClick={() => closeToolsAndOpenModal('quickNotes')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
-            >
-              <Lightbulb size={14} /> 灵感速记
-            </button>
-            <button
-              role="menuitem"
-              type="button"
-              onClick={() => closeToolsAndOpenModal('projectSettings')}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
-            >
-              <Settings size={14} /> 作品设置
-            </button>
+            {toolActionGroups.map((group, index) => (
+              <div key={group.id}>
+                {index > 0 && <div className="my-1 border-t border-[var(--border-primary)]" />}
+                <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  {group.label}
+                </div>
+                {group.actions.map((action) => (
+                  <button
+                    key={action.id}
+                    role="menuitem"
+                    type="button"
+                    onClick={() => openWorkspaceAction(action)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                  >
+                    <WorkspaceActionIcon id={action.id} /> {action.menuLabel}
+                  </button>
+                ))}
+              </div>
+            ))}
             <div className="my-1 border-t border-[var(--border-primary)]" />
             <button
               role="menuitem"

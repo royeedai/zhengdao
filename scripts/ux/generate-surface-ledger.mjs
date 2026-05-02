@@ -359,6 +359,9 @@ function extractModalCases(modalManagerSource) {
   for (const item of modalManagerSource.matchAll(/import\s+(\w+)\s+from\s+['"]([^'"]+)['"]/g)) {
     imports.set(item[1], item[2])
   }
+  for (const item of modalManagerSource.matchAll(/const\s+(\w+)\s*=\s*lazy\(\(\)\s*=>\s*import\(['"]([^'"]+)['"]\)\)/g)) {
+    imports.set(item[1], item[2])
+  }
 
   const cases = new Map()
   for (const item of modalManagerSource.matchAll(/case\s+'([^']+)':\s+return\s+<(\w+)/g)) {

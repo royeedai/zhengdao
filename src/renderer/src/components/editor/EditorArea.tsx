@@ -38,6 +38,7 @@ import { createSensitiveHighlightExtension } from '@/components/editor/sensitive
 import { getLocalDateKey } from '@/utils/daily-workbench'
 import { planTextDraftApplication, type AiDraftPayload } from '@/utils/ai/assistant-workflow'
 import type { AiChapterDraft, InlineAiDraft } from '@/stores/ui-store'
+import { buildChapterSaveStatusDisplay, getAiChapterDraftWordLabel, getWordCountLabel } from './editor-status'
 import MentionList from './MentionList'
 import type { MentionListRef } from './MentionList'
 
@@ -952,25 +953,11 @@ export default function EditorArea() {
 
   const totalWords = getTotalWords()
   const currentSummary = currentChapter?.summary?.trim() ?? ''
-  const saveStatusLabel =
-    chapterSaveStatus.kind === 'saving'
-      ? '正文保存中'
-      : chapterSaveStatus.kind === 'dirty'
-        ? '正文未保存'
-        : chapterSaveStatus.kind === 'error'
-          ? '正文保存失败'
-          : savedAt
-            ? `正文已保存 ${savedAt}`
-            : '正文已保存'
-  const saveStatusClass =
-    chapterSaveStatus.kind === 'error'
-      ? 'text-[var(--danger-primary)]'
-      : chapterSaveStatus.kind === 'dirty' || chapterSaveStatus.kind === 'saving'
-        ? 'text-[var(--warning-primary)]'
-        : 'text-[var(--text-muted)]'
+  const saveStatus = buildChapterSaveStatusDisplay(chapterSaveStatus, savedAt)
 
   if (aiChapterDraft) {
     const draftWordCount = countPlainWords(aiChapterDraft.content)
+    const draftWordLabel = getAiChapterDraftWordLabel(draftWordCount)
     return (
       <div className="flex-1 flex flex-col bg-[var(--bg-editor)] relative min-h-0 min-w-0 select-text">
         <div className="shrink-0 border-b border-[var(--warning-border)] bg-[var(--warning-surface)] px-4 py-2">
@@ -983,7 +970,7 @@ export default function EditorArea() {
                 </span>
               </div>
               <div className="mt-0.5 truncate text-[11px] text-[var(--text-muted)]">
-                {draftWordCount.toLocaleString()} 字
+                {getWordCountLabel(draftWordCount)}
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
@@ -1090,7 +1077,7 @@ export default function EditorArea() {
         </div>
 
         <div className="absolute bottom-0 left-0 z-10 flex h-7 w-full items-center justify-between border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 text-[10px] text-[var(--text-muted)]">
-          <span>AI 草稿 {draftWordCount.toLocaleString()} 字</span>
+          <span>{draftWordLabel}</span>
           <span>确认创建后进入正式目录</span>
         </div>
       </div>
@@ -1187,7 +1174,9 @@ export default function EditorArea() {
           >
             <History size={11} /> 快照
           </button>
-          <span className={`px-1.5 py-1 ${saveStatusClass}`}>{saveStatusLabel}</span>
+          <span className={`px-1.5 py-1 ${saveStatus.className}`} title={saveStatus.title}>
+            {saveStatus.label}
+          </span>
         </div>
       )}
 
