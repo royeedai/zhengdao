@@ -1,8 +1,65 @@
+import { execFile } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { shell } from 'electron'
 import * as appStateRepo from '../database/app-state-repo'
 
 const WEBSITE_URL = (process.env.ZHENGDAO_WEBSITE_URL || 'https://agent.xiangweihu.com').replace(/\/$/, '')
 const API_BASE = (process.env.ZHENGDAO_API_URL || `${WEBSITE_URL}/api/v1`).replace(/\/$/, '')
+
+function execFileAsync(file: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    execFile(file, args, (error, stdout, stderr) => {
+      if (error) reject(error)
+      else resolve({ stdout: String(stdout ?? ''), stderr: String(stderr ?? '') })
+    })
+  })
+}
+
+function getBrowserOpenCommand(url: string): { file: string; args: string[] } {
+  if (process.platform === 'win32') return { file: 'rundll32.exe', args: ['url.dll,FileProtocolHandler', url] }
+  return { file: 'xdg-open', args: [url] }
+}
+
+function escapeAppleScriptString(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
+async function getDefaultMacBrowserBundleId(): Promise<string | null> {
+  const plistPath = join(homedir(), 'Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure.plist')
+  if (!existsSync(plistPath)) return null
+
+  const { stdout } = await execFileAsync('/usr/bin/plutil', ['-convert', 'json', '-o', '-', plistPath])
+  const parsed = JSON.parse(stdout) as {
+    LSHandlers?: Array<{
+      LSHandlerURLScheme?: string
+      LSHandlerRoleAll?: string
+    }>
+  }
+  const handlers = parsed.LSHandlers ?? []
+  const handler =
+    handlers.find((item) => item.LSHandlerURLScheme === 'https' && item.LSHandlerRoleAll) ??
+    handlers.find((item) => item.LSHandlerURLScheme === 'http' && item.LSHandlerRoleAll)
+  return handler?.LSHandlerRoleAll ?? null
+}
+
+async function openMacUrlInDefaultBrowser(url: string): Promise<void> {
+  const bundleId = await getDefaultMacBrowserBundleId()
+  if (!bundleId) {
+    await execFileAsync('/usr/bin/open', [url])
+    return
+  }
+
+  const escapedBundleId = escapeAppleScriptString(bundleId)
+  const escapedUrl = escapeAppleScriptString(url)
+  await execFileAsync('/usr/bin/osascript', [
+    '-e',
+    `tell application id "${escapedBundleId}" to open location "${escapedUrl}"`,
+    '-e',
+    `tell application id "${escapedBundleId}" to activate`
+  ])
+}
 
 function isLoopbackUrl(rawUrl: string): boolean {
   try {
@@ -31,6 +88,20 @@ function resolveDesktopLoginUrl(session: { state: string; loginUrl?: string }): 
     return url.toString()
   } catch {
     return buildDesktopLoginUrl(session.state)
+  }
+}
+
+async function openDesktopLoginInBrowser(loginUrl: string): Promise<void> {
+  try {
+    if (process.platform === 'darwin') {
+      await openMacUrlInDefaultBrowser(loginUrl)
+      return
+    }
+    const command = getBrowserOpenCommand(loginUrl)
+    await execFileAsync(command.file, command.args)
+  } catch (error) {
+    console.warn('[Auth] System browser opener failed, falling back to Electron shell:', error)
+    await shell.openExternal(loginUrl, { activate: true, logUsage: true })
   }
 }
 
@@ -88,7 +159,7 @@ export class ZhengdaoAuth {
       })
       appStateRepo.setAppState(KEYS.pendingState, session.state)
       const loginUrl = resolveDesktopLoginUrl(session)
-      await shell.openExternal(loginUrl)
+      await openDesktopLoginInBrowser(loginUrl)
       return { ok: true, loginUrl }
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) }
