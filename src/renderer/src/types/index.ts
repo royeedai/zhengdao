@@ -220,6 +220,7 @@ export type ModalType =
   | 'appSettings'
   | 'chapterReview'
   | 'publishCheck'
+  | 'authorGrowth'
   | 'formatTemplate'
   | 'dialogueRewrite'
   | 'worldConsistency'

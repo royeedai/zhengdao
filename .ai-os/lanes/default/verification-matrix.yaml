@@ -57,6 +57,12 @@ impact_rules:
       - "npm run typecheck"
       - "npm run lint"
       - "git diff --check"
+  - when: "legacy-database-cloud-sync-migration-fix"
+    run:
+      - "npm test -- src/main/database/__tests__/migrations.test.ts"
+      - "npm run typecheck"
+      - "npm run build"
+      - "git diff --check"
 
 failure_modes:
   - id: FM-DEF-001
@@ -139,6 +145,10 @@ failure_modes:
     scenario: "Story generation ignores compact canon and repeats brittle AI-style reveals or paragraph openings"
     expected: "Prompts mount the compact Story Bible, quality rules flag generic actions/repeated openings, and Director planning blocks missing obstacle/cost or incomplete clue tri-split"
     guard: "src/renderer/src/utils/ai/__tests__/assistant-workflow.test.ts plus agentx-backend/src/director/planning.test.ts"
+  - id: FM-DEF-021
+    scenario: "Old local databases reach createSchema before v29 has added books.cloud_book_id"
+    expected: "App startup can run createSchema and then migrations on legacy books tables without indexing missing cloud sync columns"
+    guard: "src/main/database/__tests__/migrations.test.ts"
 
 guards:
   - ".ai-os/lanes/default/evals/ai-os-v9-lane-normalization.md"

@@ -41,13 +41,14 @@ describe('runMigrations', () => {
 
       const tableRows = db
         .prepare(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('ai_accounts', 'ai_skill_templates', 'ai_work_profiles', 'ai_skill_overrides', 'ai_conversations', 'ai_messages', 'ai_drafts') ORDER BY name"
+          "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('ai_accounts', 'ai_skill_templates', 'ai_work_profiles', 'ai_skill_overrides', 'ai_conversations', 'ai_messages', 'ai_drafts', 'ai_deconstruction_reports') ORDER BY name"
         )
         .all() as { name: string }[]
 
       expect(tableRows.map((row) => row.name)).toEqual([
         'ai_accounts',
         'ai_conversations',
+        'ai_deconstruction_reports',
         'ai_drafts',
         'ai_messages',
         'ai_skill_overrides',
@@ -70,6 +71,35 @@ describe('runMigrations', () => {
         'create_plot_node'
       ])
       expect(skillRows[0].name).toBe('续写正文')
+    } finally {
+      db.close()
+    }
+  })
+
+  it('creates local AI deconstruction report table from migration v30', () => {
+    const db = new BetterSqlite3(':memory:') as Database.Database
+
+    try {
+      createSchema(db)
+      db.exec(`
+        DROP TABLE ai_deconstruction_reports;
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+          version INTEGER PRIMARY KEY,
+          description TEXT NOT NULL,
+          applied_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        );
+      `)
+      const insertMigration = db.prepare('INSERT INTO schema_migrations (version, description) VALUES (?, ?)')
+      for (let version = 1; version <= 29; version += 1) {
+        insertMigration.run(version, `migration ${version}`)
+      }
+
+      runMigrations(db)
+
+      const columns = db.prepare('PRAGMA table_info(ai_deconstruction_reports)').all() as { name: string }[]
+      expect(columns.map((column) => column.name)).toEqual(
+        expect.arrayContaining(['book_id', 'source_note', 'input_hash', 'focus', 'run_id', 'output_json'])
+      )
     } finally {
       db.close()
     }
@@ -180,6 +210,58 @@ describe('runMigrations', () => {
 
       const bookColumns = db.prepare('PRAGMA table_info(books)').all() as { name: string }[]
       expect(bookColumns.map((column) => column.name)).toContain('cover_path')
+    } finally {
+      db.close()
+    }
+  })
+
+  it('migrates legacy books tables during app startup before creating cloud sync indexes', () => {
+    const db = new BetterSqlite3(':memory:') as Database.Database
+
+    try {
+      db.exec(`
+        CREATE TABLE books (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          author TEXT NOT NULL DEFAULT '',
+          cover_path TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        );
+        CREATE TABLE schema_migrations (
+          version INTEGER PRIMARY KEY,
+          description TEXT NOT NULL,
+          applied_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        );
+      `)
+      const insertMigration = db.prepare('INSERT INTO schema_migrations (version, description) VALUES (?, ?)')
+      for (let version = 1; version <= 28; version += 1) {
+        insertMigration.run(version, `migration ${version}`)
+      }
+
+      expect(() => {
+        createSchema(db)
+        runMigrations(db)
+      }).not.toThrow()
+
+      const bookColumns = db.prepare('PRAGMA table_info(books)').all() as { name: string }[]
+      expect(bookColumns.map((column) => column.name)).toEqual(
+        expect.arrayContaining([
+          'cloud_book_id',
+          'cloud_sync_version',
+          'cloud_payload_hash',
+          'cloud_updated_at',
+          'cloud_sync_status',
+          'archived_at'
+        ])
+      )
+
+      const indexRows = db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'index' AND name IN ('idx_books_cloud_book_id', 'idx_books_archived_at') ORDER BY name"
+        )
+        .all() as { name: string }[]
+      expect(indexRows.map((row) => row.name)).toEqual(['idx_books_archived_at', 'idx_books_cloud_book_id'])
     } finally {
       db.close()
     }

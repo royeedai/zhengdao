@@ -17,8 +17,6 @@ export function createSchema(db: Database.Database): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
     );
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_books_cloud_book_id ON books(cloud_book_id);
-    CREATE INDEX IF NOT EXISTS idx_books_archived_at ON books(archived_at);
 
     CREATE TABLE IF NOT EXISTS project_config (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -140,12 +138,29 @@ export function createSchema(db: Database.Database): void {
       FOREIGN KEY (message_id) REFERENCES ai_messages(id) ON DELETE SET NULL
     );
 
+    CREATE TABLE IF NOT EXISTS ai_deconstruction_reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      book_id INTEGER NOT NULL,
+      work_title TEXT NOT NULL DEFAULT '',
+      source_type TEXT NOT NULL DEFAULT 'manual' CHECK(source_type IN ('manual','authorized_export')),
+      source_note TEXT NOT NULL DEFAULT '',
+      input_hash TEXT NOT NULL DEFAULT '',
+      focus TEXT NOT NULL DEFAULT '[]',
+      run_id TEXT NOT NULL DEFAULT '',
+      output_json TEXT NOT NULL DEFAULT '{}',
+      evidence_json TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_ai_accounts_default ON ai_accounts(is_default);
     CREATE INDEX IF NOT EXISTS idx_ai_work_profiles_book ON ai_work_profiles(book_id);
     CREATE INDEX IF NOT EXISTS idx_ai_skill_overrides_book ON ai_skill_overrides(book_id);
     CREATE INDEX IF NOT EXISTS idx_ai_conversations_book ON ai_conversations(book_id, updated_at);
     CREATE INDEX IF NOT EXISTS idx_ai_messages_conversation ON ai_messages(conversation_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_ai_drafts_book_status ON ai_drafts(book_id, status, created_at);
+    CREATE INDEX IF NOT EXISTS idx_ai_deconstruction_reports_book ON ai_deconstruction_reports(book_id, created_at);
 
     -- DI-02 v1: 学术引文管理 (与 migration v22 等价的全量 schema)
     CREATE TABLE IF NOT EXISTS citations (

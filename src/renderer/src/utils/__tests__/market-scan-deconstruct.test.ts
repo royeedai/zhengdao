@@ -4,6 +4,9 @@ import {
   MARKET_SCAN_SKILL_ID,
   buildDeconstructInput,
   buildMarketScanInput,
+  buildReferenceApplicationPatch,
+  collectDeconstructEvidence,
+  hashDeconstructSource,
   parseDeconstructChapters,
   parseMarketEntries,
   validateSourceNote
@@ -86,9 +89,21 @@ describe('market scan and deconstruct helpers', () => {
       sourceNote: '作者授权导出的样章，仅用于本地拆文学习。',
       workTitle: '退婚样本',
       raw: ['### 第一章', '她被退婚后当众反击，系统提示音忽然响起。'.repeat(8)].join('\n'),
-      focus: ['hook', 'retention']
+      focus: ['hook', 'retention'],
+      analysisDepth: 'deep',
+      platform: '番茄',
+      genreTemplate: 'urban',
+      learningGoal: '学习三章内钩子兑现',
+      targetProject: {
+        premise: '退婚后事业线反击',
+        audience: '都市女强读者',
+        currentProblem: '开篇留存偏弱'
+      }
     })
     expect(ok.input?.focus).toEqual(['hook', 'retention'])
+    expect(ok.input?.analysisDepth).toBe('deep')
+    expect(ok.input?.platform).toBe('番茄')
+    expect(ok.input?.targetProject).toMatchObject({ currentProblem: '开篇留存偏弱' })
     expect(ok.input?.chapters[0]?.id).toBe('sample-1')
 
     const bad = buildDeconstructInput({
@@ -101,5 +116,57 @@ describe('market scan and deconstruct helpers', () => {
     expect(bad.input).toBeNull()
     expect(bad.errors.join('\n')).toContain('至少需要 80 字符')
   })
-})
 
+  it('creates a stable source hash without adding raw text to report fields', () => {
+    const built = buildDeconstructInput({
+      projectId: 'book-9',
+      sourceType: 'authorized_export',
+      sourceNote: '作者授权导出的样章，仅用于本地拆文学习。',
+      workTitle: '退婚样本',
+      raw: ['### 第一章', '她被退婚后当众反击，系统提示音忽然响起。'.repeat(8)].join('\n'),
+      focus: ['hook', 'craft']
+    })
+
+    expect(built.input).not.toBeNull()
+    const first = hashDeconstructSource(built.input!)
+    const second = hashDeconstructSource(built.input!)
+    expect(first).toBe(second)
+    expect(first).toMatch(/^local-[0-9a-f]{8}$/)
+  })
+
+  it('collects short evidence and builds a confirmed reference profile patch from selected craft cards', () => {
+    const output = {
+      craftCards: [
+        {
+          dimension: 'hook',
+          observation: '开篇用公开羞辱制造压力。',
+          whyItWorks: '即时冲突让读者知道主角必须反击。',
+          adaptForOwnWork: '把主角的核心困境前置，并在同章给出可行动选择。',
+          doNotCopy: '不要照搬退婚场景、台词或具体设定。',
+          confidence: 0.82,
+          evidence: [{ chapterId: 'c1', quote: '她被退婚后当众反击', reason: '开篇钩子' }]
+        },
+        {
+          dimension: 'character',
+          observation: '主角主动选择风险。',
+          whyItWorks: '能动性降低被动等待感。',
+          adaptForOwnWork: '让主角在压力下做出不可逆选择。',
+          doNotCopy: '不要复制角色身份和关系。',
+          confidence: 0.78,
+          evidence: [{ chapterId: 'c2', quote: '她选择最危险的一条路', reason: '人物能动性' }]
+        }
+      ]
+    }
+
+    expect(collectDeconstructEvidence(output)).toHaveLength(2)
+    const patch = buildReferenceApplicationPatch(output, [0], {
+      genre_rules: '原有题材规则',
+      rhythm_rules: '原有节奏规则'
+    })
+    expect(patch.genre_rules).toContain('原有题材规则')
+    expect(patch.genre_rules).toContain('把主角的核心困境前置')
+    expect(patch.genre_rules).toContain('不要照搬')
+    expect(patch.rhythm_rules).toContain('开篇钩子')
+    expect(patch.rhythm_rules).not.toContain('让主角在压力下做出不可逆选择')
+  })
+})

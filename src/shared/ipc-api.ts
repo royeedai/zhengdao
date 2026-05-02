@@ -159,6 +159,10 @@ export type IpcInvokeChannel =
   | 'ai:getDrafts'
   | 'ai:createDraft'
   | 'ai:setDraftStatus'
+  | 'ai:createDeconstructionReport'
+  | 'ai:listDeconstructionReports'
+  | 'ai:getDeconstructionReport'
+  | 'ai:deleteDeconstructionReport'
   | 'ai:getStoryBible'
   | 'ai:listStoryFactProposals'
   | 'ai:captureStoryFacts'
@@ -332,6 +336,8 @@ export const IPC_INVOKE_CHANNELS: readonly IpcInvokeChannel[] = [
   'ai:getOrCreateConversation', 'ai:createConversation', 'ai:getConversations',
   'ai:updateConversationTitle', 'ai:clearConversation', 'ai:deleteConversation',
   'ai:getMessages', 'ai:addMessage', 'ai:getDrafts', 'ai:createDraft', 'ai:setDraftStatus',
+  'ai:createDeconstructionReport', 'ai:listDeconstructionReports', 'ai:getDeconstructionReport',
+  'ai:deleteDeconstructionReport',
   'ai:getStoryBible', 'ai:listStoryFactProposals', 'ai:captureStoryFacts',
   'ai:acceptStoryFactProposals', 'ai:rejectStoryFactProposals',
   'ai:getResolvedGlobalConfig', 'ai:getResolvedConfigForBook', 'ai:getResolvedWorkspaceConfig',

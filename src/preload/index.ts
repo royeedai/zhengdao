@@ -2,6 +2,11 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { ManualInstallerDownloadResult, UpdateSnapshot } from '../shared/update'
 import type { AiBridgeCompleteRequest, AiOfficialProfile, AiResponse, AiStreamCallbacks } from '../shared/ai'
 import type { AiBookCreationPackage, AssistantCreationBrief } from '../shared/ai-book-creation'
+import type {
+  AiDeconstructionReport,
+  AiDeconstructionReportSummary,
+  CreateAiDeconstructionReportInput
+} from '../shared/deconstruction-report'
 import type { DirectorAcceptChapterInput, DirectorEvent, DirectorStepName, DirectorStartRunInput } from '../shared/director'
 import type { McpServerInput, McpWriteRejectionInput } from '../shared/mcp'
 import type { SkillFeedbackPayload, SkillFeedbackSubmitResult } from '../shared/skill-feedback'
@@ -366,6 +371,14 @@ const api = {
   aiCreateDraft: (data: Record<string, unknown>) => ipcRenderer.invoke('ai:createDraft', data),
   aiSetDraftStatus: (id: number, status: 'pending' | 'applied' | 'dismissed') =>
     ipcRenderer.invoke('ai:setDraftStatus', id, status),
+  aiCreateDeconstructionReport: (input: CreateAiDeconstructionReportInput) =>
+    ipcRenderer.invoke('ai:createDeconstructionReport', input) as Promise<AiDeconstructionReport>,
+  aiListDeconstructionReports: (bookId: number) =>
+    ipcRenderer.invoke('ai:listDeconstructionReports', bookId) as Promise<AiDeconstructionReportSummary[]>,
+  aiGetDeconstructionReport: (id: number) =>
+    ipcRenderer.invoke('ai:getDeconstructionReport', id) as Promise<AiDeconstructionReport | null>,
+  aiDeleteDeconstructionReport: (id: number) =>
+    ipcRenderer.invoke('ai:deleteDeconstructionReport', id) as Promise<boolean>,
   aiGetStoryBible: (bookId: number) => ipcRenderer.invoke('ai:getStoryBible', bookId),
   aiListStoryFactProposals: (bookId: number, status?: StoryFactProposalStatus | 'all') =>
     ipcRenderer.invoke('ai:listStoryFactProposals', bookId, status),

@@ -129,7 +129,7 @@ export function AssistantPanelHeader(props: AssistantPanelHeaderProps): JSX.Elem
         <button
           type="button"
           onClick={() => props.onOpenMarketScanDeconstruct()}
-          title="网文扫榜 / 授权拆文"
+          title="拆书工作台（网文拆文）"
           className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-secondary)]"
         >
           <Search size={16} />

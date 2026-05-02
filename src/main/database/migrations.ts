@@ -1082,6 +1082,30 @@ const migrations: Migration[] = [
         CREATE INDEX IF NOT EXISTS idx_books_archived_at ON books(archived_at);
       `)
     }
+  },
+  {
+    version: 30,
+    description: 'Add local AI deconstruction reports',
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS ai_deconstruction_reports (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          book_id INTEGER NOT NULL,
+          work_title TEXT NOT NULL DEFAULT '',
+          source_type TEXT NOT NULL DEFAULT 'manual' CHECK(source_type IN ('manual','authorized_export')),
+          source_note TEXT NOT NULL DEFAULT '',
+          input_hash TEXT NOT NULL DEFAULT '',
+          focus TEXT NOT NULL DEFAULT '[]',
+          run_id TEXT NOT NULL DEFAULT '',
+          output_json TEXT NOT NULL DEFAULT '{}',
+          evidence_json TEXT NOT NULL DEFAULT '[]',
+          created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+          FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_ai_deconstruction_reports_book ON ai_deconstruction_reports(book_id, created_at);
+      `)
+    }
   }
 ]
 

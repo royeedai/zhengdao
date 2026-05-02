@@ -1,5 +1,17 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { AlertTriangle, Bot, FileCheck2, HardDrive, Loader2, RefreshCw, ShieldCheck, Target } from 'lucide-react'
+import {
+  AlertTriangle,
+  Bot,
+  CalendarDays,
+  FileCheck2,
+  HardDrive,
+  Loader2,
+  RefreshCw,
+  Rocket,
+  Send,
+  ShieldCheck,
+  Target
+} from 'lucide-react'
 import { useBookStore } from '@/stores/book-store'
 import { useChapterStore } from '@/stores/chapter-store'
 import { useConfigStore } from '@/stores/config-store'
@@ -187,6 +199,33 @@ export default function DailyWorkbench() {
         onClick={() => openModal('foreshadowBoard')}
       />
       <div className="ml-auto flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={() => openModal('authorGrowth', { tab: 'sprint' })}
+          disabled={!bookId}
+          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-primary)] bg-[var(--surface-primary)] px-2 text-[11px] font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-tertiary)] disabled:cursor-not-allowed disabled:opacity-40"
+          title="打开本地写作冲刺"
+        >
+          <Rocket size={13} /> 冲刺
+        </button>
+        <button
+          type="button"
+          onClick={() => openModal('authorGrowth', { tab: 'weekly' })}
+          disabled={!bookId}
+          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-primary)] bg-[var(--surface-primary)] px-2 text-[11px] font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-tertiary)] disabled:cursor-not-allowed disabled:opacity-40"
+          title="打开作者周报和成长卡片"
+        >
+          <CalendarDays size={13} /> 周报
+        </button>
+        <button
+          type="button"
+          onClick={() => openModal('authorGrowth', { tab: 'submission' })}
+          disabled={!bookId}
+          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-primary)] bg-[var(--surface-primary)] px-2 text-[11px] font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-tertiary)] disabled:cursor-not-allowed disabled:opacity-40"
+          title="打开投稿准备助手"
+        >
+          <Send size={13} /> 投稿准备
+        </button>
         <button
           type="button"
           onClick={() => openModal('chapterReview')}

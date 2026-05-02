@@ -65,7 +65,7 @@ describe('IPC channel registry', () => {
     expect(counts).toEqual({
       db: 104,
       book: 3,
-      ai: 34,
+      ai: 38,
       director: 12,
       visual: 2,
       mcp: 9,

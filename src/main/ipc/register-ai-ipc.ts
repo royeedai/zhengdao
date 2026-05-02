@@ -1,10 +1,12 @@
 import { ipcMain } from 'electron'
 import * as aiAssistantRepo from '../database/ai-assistant-repo'
+import * as deconstructionReportRepo from '../database/deconstruction-report-repo'
 import * as storyBibleRepo from '../database/story-bible-repo'
 import { completeOfficialAi, getOfficialAiProfiles, streamOfficialAi } from '../ai/official-ai-service'
 import { executeOfficialSkill, submitOfficialSkillFeedback } from '../ai/skill-execute-service'
 import { getProviderStatus as probeProviderStatus } from '../ai/provider-status'
 import type { AiBridgeCompleteRequest } from '../../shared/ai'
+import type { CreateAiDeconstructionReportInput } from '../../shared/deconstruction-report'
 import type { SkillFeedbackPayload } from '../../shared/skill-feedback'
 import type { CaptureStoryFactsInput, StoryFactProposalStatus } from '../../shared/story-bible'
 import { activeGeminiStreamSessions, getGeminiCliService, hasProUser, zhengdaoAuth } from './state'
@@ -89,6 +91,21 @@ export function registerAiIpc(): void {
   ipcMain.handle('ai:createDraft', (_, data) => aiAssistantRepo.createAiDraft(data))
   ipcMain.handle('ai:setDraftStatus', (_, id: number, status: aiAssistantRepo.AiDraftStatus) =>
     aiAssistantRepo.setAiDraftStatus(id, status)
+  )
+
+  // Local deconstruction reports store only source notes, hashes, structured output,
+  // and short evidence excerpts. Full authorized samples are never persisted here.
+  ipcMain.handle('ai:createDeconstructionReport', (_, input: CreateAiDeconstructionReportInput) =>
+    deconstructionReportRepo.createDeconstructionReport(input)
+  )
+  ipcMain.handle('ai:listDeconstructionReports', (_, bookId: number) =>
+    deconstructionReportRepo.listDeconstructionReports(bookId)
+  )
+  ipcMain.handle('ai:getDeconstructionReport', (_, id: number) =>
+    deconstructionReportRepo.getDeconstructionReport(id)
+  )
+  ipcMain.handle('ai:deleteDeconstructionReport', (_, id: number) =>
+    deconstructionReportRepo.deleteDeconstructionReport(id)
   )
 
   // Story Bible fact proposals + compact generation context.

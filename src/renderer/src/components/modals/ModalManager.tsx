@@ -30,6 +30,7 @@ const AiSettingsModal = lazy(() => import('./AiSettingsModal'))
 const AppSettingsModal = lazy(() => import('./AppSettingsModal'))
 const ChapterReviewModal = lazy(() => import('./ChapterReviewModal'))
 const PublishCheckModal = lazy(() => import('./PublishCheckModal'))
+const AuthorGrowthModal = lazy(() => import('./AuthorGrowthModal'))
 const FormatTemplateModal = lazy(() => import('./FormatTemplateModal'))
 const DialogueRewriteModal = lazy(() => import('./DialogueRewriteModal'))
 const WorldConsistencyModal = lazy(() => import('./WorldConsistencyModal'))
@@ -73,6 +74,7 @@ function renderModal(type: ModalType) {
     case 'appSettings': return <AppSettingsModal />
     case 'chapterReview': return <ChapterReviewModal />
     case 'publishCheck': return <PublishCheckModal />
+    case 'authorGrowth': return <AuthorGrowthModal />
     case 'formatTemplate': return <FormatTemplateModal />
     case 'dialogueRewrite': return <DialogueRewriteModal />
     case 'worldConsistency': return <WorldConsistencyModal />

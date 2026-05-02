@@ -2,7 +2,17 @@ export const MARKET_SCAN_SKILL_ID = 'layer3.webnovel.market-scan'
 export const DECONSTRUCT_SKILL_ID = 'layer3.webnovel.deconstruct'
 
 export type WebnovelSourceType = 'manual' | 'authorized_export'
-export type DeconstructFocus = 'hook' | 'pacing' | 'trope' | 'character' | 'retention'
+export type DeconstructFocus =
+  | 'hook'
+  | 'pacing'
+  | 'trope'
+  | 'character'
+  | 'emotion'
+  | 'promise'
+  | 'retention'
+  | 'craft'
+export type DeconstructAnalysisDepth = 'quick' | 'standard' | 'deep'
+export type DeconstructGenreTemplate = 'urban' | 'xianxia' | 'mystery' | 'romance' | 'other'
 
 export interface MarketScanEntryDraft {
   title: string
@@ -36,6 +46,37 @@ export interface DeconstructSkillInput {
   workTitle: string
   chapters: DeconstructChapterDraft[]
   focus: DeconstructFocus[]
+  analysisDepth?: DeconstructAnalysisDepth
+  platform?: string
+  genreTemplate?: DeconstructGenreTemplate
+  learningGoal?: string
+  targetProject?: {
+    premise?: string
+    audience?: string
+    currentProblem?: string
+  }
+}
+
+export interface DeconstructEvidence {
+  chapterId?: string
+  chapterTitle?: string
+  quote: string
+  reason?: string
+}
+
+export interface DeconstructCraftCard {
+  dimension: DeconstructFocus
+  observation: string
+  whyItWorks: string
+  adaptForOwnWork: string
+  doNotCopy: string
+  evidence: DeconstructEvidence[]
+  confidence: number
+}
+
+export interface ReferenceApplicationPatch {
+  genre_rules: string
+  rhythm_rules: string
 }
 
 export interface ParseResult<T> {
@@ -121,6 +162,15 @@ export function buildDeconstructInput(params: {
   workTitle: string
   raw: string
   focus?: DeconstructFocus[]
+  analysisDepth?: DeconstructAnalysisDepth
+  platform?: string
+  genreTemplate?: DeconstructGenreTemplate
+  learningGoal?: string
+  targetProject?: {
+    premise?: string
+    audience?: string
+    currentProblem?: string
+  }
 }): BuildResult<DeconstructSkillInput> {
   const errors: string[] = []
   const sourceError = validateSourceNote(params.sourceNote)
@@ -139,8 +189,11 @@ export function buildDeconstructInput(params: {
   })
 
   const focus: DeconstructFocus[] =
-    params.focus && params.focus.length > 0 ? params.focus : ['hook', 'pacing', 'trope', 'retention']
+    params.focus && params.focus.length > 0
+      ? params.focus
+      : ['hook', 'pacing', 'character', 'emotion', 'promise', 'retention', 'craft']
   if (errors.length > 0) return { input: null, errors: uniqueErrors(errors) }
+  const targetProject = compactTargetProject(params.targetProject)
   return {
     input: {
       projectId: String(params.projectId),
@@ -148,7 +201,12 @@ export function buildDeconstructInput(params: {
       sourceNote: params.sourceNote.trim(),
       workTitle: params.workTitle.trim(),
       chapters: parsed.value,
-      focus
+      focus,
+      analysisDepth: params.analysisDepth ?? 'standard',
+      ...(params.platform?.trim() ? { platform: params.platform.trim() } : {}),
+      genreTemplate: params.genreTemplate ?? 'other',
+      ...(params.learningGoal?.trim() ? { learningGoal: params.learningGoal.trim() } : {}),
+      ...(targetProject ? { targetProject } : {})
     },
     errors: []
   }
@@ -161,6 +219,155 @@ export function formatReferenceDraft(value: unknown): string {
   } catch {
     return String(value)
   }
+}
+
+export function hashDeconstructSource(input: Pick<DeconstructSkillInput, 'sourceNote' | 'workTitle' | 'chapters' | 'focus'>): string {
+  const stable = JSON.stringify({
+    sourceNote: input.sourceNote,
+    workTitle: input.workTitle,
+    focus: input.focus,
+    chapters: input.chapters.map((chapter) => ({
+      id: chapter.id,
+      title: chapter.title,
+      order: chapter.order,
+      content: chapter.content
+    }))
+  })
+  let hash = 0x811c9dc5
+  for (let index = 0; index < stable.length; index += 1) {
+    hash ^= stable.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return `local-${(hash >>> 0).toString(16).padStart(8, '0')}`
+}
+
+export function extractCraftCards(output: unknown): DeconstructCraftCard[] {
+  if (!isRecord(output) || !Array.isArray(output.craftCards)) return []
+  return output.craftCards.filter(isCraftCard)
+}
+
+export function collectDeconstructEvidence(output: unknown): DeconstructEvidence[] {
+  const evidence: DeconstructEvidence[] = []
+  const pushEvidence = (items: unknown) => {
+    if (!Array.isArray(items)) return
+    for (const item of items) {
+      if (!isRecord(item)) continue
+      const quote = typeof item.quote === 'string' ? item.quote.trim() : ''
+      if (!quote) continue
+      evidence.push({
+        ...(typeof item.chapterId === 'string' ? { chapterId: item.chapterId } : {}),
+        ...(typeof item.chapterTitle === 'string' ? { chapterTitle: item.chapterTitle } : {}),
+        quote: quote.slice(0, 180),
+        ...(typeof item.reason === 'string' ? { reason: item.reason } : {})
+      })
+    }
+  }
+
+  for (const card of extractCraftCards(output)) {
+    pushEvidence(card.evidence)
+  }
+
+  if (isRecord(output)) {
+    const structureMap = isRecord(output.structureMap) ? output.structureMap : null
+    if (structureMap && isRecord(structureMap.opening)) pushEvidence(structureMap.opening.evidence)
+    if (structureMap && Array.isArray(structureMap.chapters)) {
+      structureMap.chapters.forEach((chapter) => {
+        if (isRecord(chapter)) pushEvidence(chapter.evidence)
+      })
+    }
+    const emotionRetentionMap = isRecord(output.emotionRetentionMap) ? output.emotionRetentionMap : null
+    if (emotionRetentionMap && Array.isArray(emotionRetentionMap.beats)) {
+      emotionRetentionMap.beats.forEach((beat) => {
+        if (isRecord(beat)) pushEvidence(beat.evidence)
+      })
+    }
+  }
+
+  const seen = new Set<string>()
+  return evidence.filter((item) => {
+    const key = `${item.chapterId || ''}:${item.quote}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+export function buildReferenceApplicationPatch(
+  output: unknown,
+  selectedCardIndexes: number[],
+  currentProfile?: { genre_rules?: string | null; rhythm_rules?: string | null } | null
+): ReferenceApplicationPatch {
+  const cards = extractCraftCards(output)
+  const selected = selectedCardIndexes
+    .map((index) => cards[index])
+    .filter((card): card is DeconstructCraftCard => Boolean(card))
+
+  const lines = selected.map((card, index) =>
+    [
+      `${index + 1}. [${dimensionLabel(card.dimension)}] ${card.adaptForOwnWork}`,
+      `   原理: ${card.whyItWorks}`,
+      `   禁止: ${card.doNotCopy}`
+    ].join('\n')
+  )
+  const block = lines.length > 0 ? `\n\n[授权拆文抽象技法]\n${lines.join('\n')}` : ''
+
+  const pacingLines = selected
+    .filter((card) => ['hook', 'pacing', 'emotion', 'promise', 'retention', 'craft'].includes(card.dimension))
+    .map((card) => `- ${dimensionLabel(card.dimension)}: ${card.adaptForOwnWork}`)
+  const rhythmBlock = pacingLines.length > 0 ? `\n\n[授权拆文节奏参考]\n${pacingLines.join('\n')}` : ''
+
+  return {
+    genre_rules: `${currentProfile?.genre_rules || ''}${block}`.trim(),
+    rhythm_rules: `${currentProfile?.rhythm_rules || ''}${rhythmBlock}`.trim()
+  }
+}
+
+function compactTargetProject(params?: DeconstructSkillInput['targetProject']): DeconstructSkillInput['targetProject'] | undefined {
+  if (!params) return undefined
+  const targetProject = {
+    ...(params.premise?.trim() ? { premise: params.premise.trim() } : {}),
+    ...(params.audience?.trim() ? { audience: params.audience.trim() } : {}),
+    ...(params.currentProblem?.trim() ? { currentProblem: params.currentProblem.trim() } : {})
+  }
+  return Object.keys(targetProject).length > 0 ? targetProject : undefined
+}
+
+const CRAFT_DIMENSIONS = new Set<DeconstructFocus>([
+  'hook',
+  'pacing',
+  'trope',
+  'character',
+  'emotion',
+  'promise',
+  'retention',
+  'craft'
+])
+
+function isCraftCard(value: unknown): value is DeconstructCraftCard {
+  if (!isRecord(value)) return false
+  if (!CRAFT_DIMENSIONS.has(value.dimension as DeconstructFocus)) return false
+  return (
+    typeof value.observation === 'string' &&
+    typeof value.whyItWorks === 'string' &&
+    typeof value.adaptForOwnWork === 'string' &&
+    typeof value.doNotCopy === 'string' &&
+    Array.isArray(value.evidence) &&
+    typeof value.confidence === 'number'
+  )
+}
+
+function dimensionLabel(dimension: DeconstructFocus): string {
+  const labels: Record<DeconstructFocus, string> = {
+    hook: '开篇钩子',
+    pacing: '章节节奏',
+    trope: '题材套路',
+    character: '人物功能',
+    emotion: '情绪爽点',
+    promise: '期待管理',
+    retention: '留存风险',
+    craft: '可迁移技法'
+  }
+  return labels[dimension]
 }
 
 function normalizeMarketJson(value: unknown): ParseResult<MarketScanEntryDraft[]> {
