@@ -27,6 +27,7 @@ export type DirectorCanonContext = {
   storyBible?: StoryBibleSnapshot
   workProfile?: {
     styleGuide?: string
+    styleFingerprint?: string
     genreRules?: string
     contentBoundaries?: string
     rhythmRules?: string

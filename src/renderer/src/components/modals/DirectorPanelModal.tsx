@@ -54,6 +54,7 @@ async function buildDirectorCanonContext(bookId: number): Promise<DirectorCanonC
         content_boundaries?: string
         rhythm_rules?: string
         asset_rules?: string
+        style_fingerprint?: string
       }
     | null
   const storyBible = (await window.api.aiGetStoryBible(bookId).catch(() => null)) as StoryBibleSnapshot | null
@@ -68,6 +69,7 @@ async function buildDirectorCanonContext(bookId: number): Promise<DirectorCanonC
     storyBible: storyBible || undefined,
     workProfile: {
       styleGuide: profile?.style_guide || '',
+      styleFingerprint: profile?.style_fingerprint || '',
       genreRules: profile?.genre_rules || '',
       contentBoundaries: profile?.content_boundaries || '',
       rhythmRules: profile?.rhythm_rules || '',

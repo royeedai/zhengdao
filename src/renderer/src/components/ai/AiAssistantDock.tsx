@@ -412,6 +412,11 @@ export function AiAssistantPanel() {
               setSeededSkillKey(null)
               setInput(input)
             }}
+            onRunQuickAction={(action) => {
+              if (!action.input) return
+              setSeededSkillKey(null)
+              void send(undefined, action.input)
+            }}
           >
             <StoryFactProposalPanel
               proposals={storyFacts}

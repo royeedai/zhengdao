@@ -131,6 +131,7 @@ export function buildDesktopCanonPack(input: {
     bookId: input.bookId,
     style: {
       styleGuide: profile?.style_guide || undefined,
+      styleFingerprint: profile?.style_fingerprint || undefined,
       genreRules: profile?.genre_rules || undefined,
       contentBoundaries: profile?.content_boundaries || undefined,
       assetRules: profile?.asset_rules || undefined,

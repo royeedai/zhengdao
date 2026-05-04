@@ -22,6 +22,7 @@ export function composeSkillPrompt(input: {
   const systemBlocks = [
     input.skill.system_prompt.trim(),
     section('本作品文风', profile?.style_guide),
+    section('作者风格指纹', formatStyleFingerprintForPrompt(profile?.style_fingerprint)),
     section('题材规则', profile?.genre_rules),
     section('内容边界', profile?.content_boundaries),
     section('资产生成规则', profile?.asset_rules),
@@ -77,6 +78,7 @@ export function composeAssistantChatPrompt(input: {
       '如果用户要求生成正文、章节、角色、设定、伏笔或剧情节点，应给出可预览内容，并提醒正式写入仍需草稿篮确认。'
     ].join('\n'),
     section('本作品文风', profile?.style_guide),
+    section('作者风格指纹', formatStyleFingerprintForPrompt(profile?.style_fingerprint)),
     section('题材规则', profile?.genre_rules),
     section('内容边界', profile?.content_boundaries),
     section('全局故事圣经', formatStoryBibleForPrompt(input.storyBible)),
@@ -97,6 +99,33 @@ export function composeAssistantChatPrompt(input: {
   return {
     systemPrompt: systemBlocks.join('\n\n'),
     userPrompt: userBlocks.filter(Boolean).join('\n\n')
+  }
+}
+
+export function formatStyleFingerprintForPrompt(value?: string | null): string {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    const compact = {
+      syntax: parsed.syntax,
+      diction: parsed.diction,
+      voice: parsed.voice,
+      rhythm: parsed.rhythm,
+      dialogue: parsed.dialogue,
+      avoid: parsed.avoid,
+      preserve: parsed.preserve,
+      fingerprint: parsed.fingerprint
+    }
+    return [
+      JSON.stringify(compact, null, 2),
+      '使用规则：保留作者句法、偏好词、语体和人物口吻；不要把生成或去 AI 味结果改成统一腔调。'
+    ].join('\n')
+  } catch {
+    return [
+      raw.slice(0, 1600),
+      '使用规则：保留作者句法、偏好词、语体和人物口吻；不要把生成或去 AI 味结果改成统一腔调。'
+    ].join('\n')
   }
 }
 

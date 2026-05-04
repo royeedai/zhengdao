@@ -42,6 +42,7 @@ const profile: AiWorkProfile = {
   asset_rules: '角色必须包含阵营和一句动机。',
   rhythm_rules: '每 1200 字至少推进一个冲突。',
   context_policy: 'smart_minimal',
+  style_fingerprint: '{"voice":"短句推进，偏具体动作","diction":["压下","发烫"],"avoid":["空泛抒情"]}',
   created_at: '',
   updated_at: ''
 }
@@ -166,6 +167,7 @@ describe('buildDesktopCanonPack', () => {
       userConfirmedOnly: true
     })
     expect(pack.style.styleGuide).toBe('短句，强节奏。')
+    expect(pack.style.styleFingerprint).toContain('短句推进')
     expect(pack.scene.currentChapter?.title).toBe('第七章 宴会')
     expect(pack.assets.characters[0]).toMatchObject({ id: '1', name: '林凡' })
     expect(pack.retrieval.mode).toBe('local_keyword')
@@ -210,6 +212,8 @@ describe('composeSkillPrompt', () => {
 
     expect(prompt.systemPrompt).toContain('你是网文助手。')
     expect(prompt.systemPrompt).toContain('短句，强节奏。')
+    expect(prompt.systemPrompt).toContain('作者风格指纹')
+    expect(prompt.systemPrompt).toContain('短句推进')
     expect(prompt.systemPrompt).toContain('不要改写已经确认的主线设定。')
     expect(prompt.systemPrompt).toContain('全局故事圣经')
     expect(prompt.systemPrompt).toContain('"name": "林凡"')
@@ -256,6 +260,8 @@ describe('composeAssistantChatPrompt', () => {
 
     expect(prompt.systemPrompt).toContain('普通对话')
     expect(prompt.systemPrompt).toContain('自动识别')
+    expect(prompt.systemPrompt).toContain('作者风格指纹')
+    expect(prompt.systemPrompt).toContain('短句推进')
     expect(prompt.systemPrompt).toContain('不要直接写入作品')
     expect(prompt.systemPrompt).toContain('草稿篮确认')
     expect(prompt.systemPrompt).toContain('续写正文')

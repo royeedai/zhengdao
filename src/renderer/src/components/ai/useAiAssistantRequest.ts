@@ -31,6 +31,7 @@ import {
 import { toAiChapterDraft, toInlineAiDraft } from './inline-draft'
 import { draftTitle, normalizeAssistantDrafts, withLocalRagChip } from './ai-assistant-helpers'
 import { scanNarrativeQuality } from '@/utils/ai/workflow/quality-filter'
+import { isRemoveAiToneQuickActionInput } from './chapter-quick-actions'
 
 /**
  * SPLIT-006 phase 4 — AI request orchestration hook.
@@ -66,6 +67,28 @@ export function resolveAssistantRequestMaxTokens(input: {
   return DEFAULT_ASSISTANT_MAX_TOKENS
 }
 
+type RemoveAiToneSkillOutput = {
+  issues?: unknown[]
+  rewritten?: string
+  protectedSpansApplied?: unknown[]
+  secondPassAudit?: unknown[]
+  metadata?: Record<string, unknown>
+}
+
+type RemoveAiToneSkillResult = {
+  runId?: string
+  output?: unknown
+  modelUsed?: string
+  usage?: {
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+    costUsd: number
+  }
+  error?: string
+  code?: string
+}
+
 export interface AiAssistantMessage {
   id: number
   role: 'user' | 'assistant' | 'system'
@@ -73,6 +96,43 @@ export interface AiAssistantMessage {
   streaming?: boolean
   streamingLabel?: string
   metadata?: Record<string, unknown>
+}
+
+export interface RemoveAiToneQuickActionApi {
+  aiAddMessage: (
+    conversationId: number,
+    role: 'user' | 'assistant' | 'system',
+    content: string,
+    metadata?: unknown
+  ) => Promise<AiAssistantMessage | { id: number }>
+  aiExecuteSkill: (
+    skillId: string,
+    input: Record<string, unknown>,
+    options?: { modelHint?: 'fast' | 'balanced' | 'heavy' }
+  ) => Promise<RemoveAiToneSkillResult>
+  aiCreateDraft: (data: Record<string, unknown>) => Promise<AiDraftRow>
+}
+
+export interface RemoveAiToneQuickActionInput {
+  text: string
+  bookId: number
+  conversationId: number
+  currentChapter: { id: number; content?: string | null } | null
+  selectionChapterId: number | null
+  selectionText: string
+  selectionFrom: number | null
+  selectionTo: number | null
+  profile: AiWorkProfile | null
+  contextChips: AiAssistantContext['chips']
+  intent: AssistantIntent
+  api: RemoveAiToneQuickActionApi
+}
+
+export interface RemoveAiToneQuickActionResult {
+  userMessage: AiAssistantMessage | { id: number }
+  assistantMessage: AiAssistantMessage | { id: number }
+  draft: AiDraftRow
+  output: RemoveAiToneSkillOutput
 }
 
 export interface AiDraftRow {
@@ -96,7 +156,7 @@ export interface UseAiAssistantRequestDeps {
   skills: AiSkillTemplate[]
   overrides: AiSkillOverride[]
   assistantIntent: AssistantIntent
-  currentChapter: { id: number } | null
+  currentChapter: { id: number; content?: string | null } | null
   volumes: Array<{ id: number }>
   aiAssistantSelectionChapterId: number | null
   aiAssistantSelectionText: string
@@ -119,6 +179,163 @@ export interface UseAiAssistantRequestDeps {
 export interface UseAiAssistantRequestReturn {
   send: (explicitSkill?: AiSkillTemplate, explicitInput?: string) => Promise<void>
   validateSkillBeforeSend: (skill: AiSkillTemplate | null) => string | null
+}
+
+export async function runRemoveAiToneQuickAction(
+  input: RemoveAiToneQuickActionInput
+): Promise<RemoveAiToneQuickActionResult> {
+  const target = resolveRemoveAiToneTarget(input)
+  const genre = coerceSkillGenre(input.profile?.genre)
+  const metadataBase = {
+    skill_key: 'remove_ai_tone',
+    skill_id: 'layer2.deslop',
+    mode: 'skill',
+    intent_reason: input.intent.reason,
+    intent_confidence: input.intent.confidence,
+    context_chips: input.contextChips
+  }
+  const userMessage = await input.api.aiAddMessage(
+    input.conversationId,
+    'user',
+    input.text,
+    metadataBase
+  )
+  const skillResult = await input.api.aiExecuteSkill(
+    'layer2.deslop',
+    {
+      text: target.text,
+      genre,
+      mode: 'rewrite',
+      styleFingerprint: input.profile?.style_fingerprint || undefined
+    },
+    { modelHint: 'balanced' }
+  )
+  if (skillResult.error) throw new Error(skillResult.error)
+
+  const output = (skillResult.output || {}) as RemoveAiToneSkillOutput
+  const rewritten = String(output.rewritten || '').trim()
+  if (!rewritten) throw new Error('layer2.deslop 未返回可替换文本')
+
+  const qualityGate = {
+    skill_id: 'layer2.deslop',
+    decision: (output.secondPassAudit?.length || 0) > 0 ? 'needs_revision' : 'pass',
+    issue_count: output.issues?.length || 0,
+    second_pass_issue_count: output.secondPassAudit?.length || 0,
+    metadata: output.metadata || {}
+  }
+  const assistantMetadata = {
+    ...metadataBase,
+    skill_run_id: skillResult.runId || null,
+    model_used: skillResult.modelUsed || null,
+    usage: skillResult.usage || null,
+    quality_gate: qualityGate,
+    quality_issues: output.issues || [],
+    protected_spans_applied: output.protectedSpansApplied || [],
+    second_pass_audit: output.secondPassAudit || []
+  }
+  const assistantMessage = await input.api.aiAddMessage(
+    input.conversationId,
+    'assistant',
+    formatRemoveAiToneAssistantMessage(output, rewritten),
+    assistantMetadata
+  )
+  const payload = {
+    kind: 'replace_text',
+    content: rewritten,
+    original_text: target.text,
+    selection_chapter_id: target.chapterId,
+    selection_from: target.from,
+    selection_to: target.to,
+    retry_input: input.text,
+    quality_gate: qualityGate,
+    skill_run_id: skillResult.runId || null,
+    quality_issues: output.issues || [],
+    protected_spans_applied: output.protectedSpansApplied || [],
+    second_pass_audit: output.secondPassAudit || []
+  }
+  const draft = await input.api.aiCreateDraft({
+    book_id: input.bookId,
+    conversation_id: input.conversationId,
+    message_id: typeof assistantMessage.id === 'number' ? assistantMessage.id : undefined,
+    kind: 'replace_text',
+    title: target.scope === 'selection' ? '去 AI 味替换草稿（选区）' : '去 AI 味替换草稿（本章）',
+    payload,
+    target_ref: `chapter:${target.chapterId}`
+  })
+
+  return { userMessage, assistantMessage, draft, output }
+}
+
+function resolveRemoveAiToneTarget(input: RemoveAiToneQuickActionInput): {
+  scope: 'selection' | 'chapter'
+  chapterId: number
+  text: string
+  from: number
+  to: number
+} {
+  const currentChapter = input.currentChapter
+  const hasSelection =
+    currentChapter &&
+    input.selectionChapterId === currentChapter.id &&
+    input.selectionText.trim().length > 0
+  if (hasSelection && currentChapter) {
+    if (input.selectionFrom == null || input.selectionTo == null) {
+      throw new Error('当前选区缺少位置锚点，请重新选中文本后再去 AI 味。')
+    }
+    return {
+      scope: 'selection',
+      chapterId: currentChapter.id,
+      text: input.selectionText.trim(),
+      from: input.selectionFrom,
+      to: input.selectionTo
+    }
+  }
+
+  if (!currentChapter) {
+    throw new Error('请先打开目标章节，再使用“去 AI 味”。')
+  }
+  const text = plainTextFromChapterContent(currentChapter.content || '').trim()
+  if (!text) {
+    throw new Error('当前章节正文为空，无法去 AI 味。')
+  }
+  return {
+    scope: 'chapter',
+    chapterId: currentChapter.id,
+    text,
+    from: 0,
+    to: text.length
+  }
+}
+
+function coerceSkillGenre(value: string | null | undefined): string {
+  return ['webnovel', 'script', 'fiction', 'academic', 'professional'].includes(value || '')
+    ? String(value)
+    : 'webnovel'
+}
+
+function plainTextFromChapterContent(value: string): string {
+  if (!/<[a-z][\s\S]*>/i.test(value)) return value
+  return value
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+}
+
+function formatRemoveAiToneAssistantMessage(output: RemoveAiToneSkillOutput, rewritten: string): string {
+  const issueCount = output.issues?.length || 0
+  const secondPassCount = output.secondPassAudit?.length || 0
+  const protectedCount = output.protectedSpansApplied?.length || 0
+  return [
+    `已运行 layer2.deslop，发现 ${issueCount} 个问题，保护片段 ${protectedCount} 个。`,
+    secondPassCount > 0 ? `二次回读仍提示 ${secondPassCount} 个残留，请应用前快速过一眼。` : '',
+    '已生成 replace_text 草稿，应用前仍需在草稿篮确认。',
+    '',
+    rewritten.slice(0, 1200)
+  ]
+    .filter(Boolean)
+    .join('\n')
 }
 
 export function useAiAssistantRequest(deps: UseAiAssistantRequestDeps): UseAiAssistantRequestReturn {
@@ -173,6 +390,39 @@ export function useAiAssistantRequest(deps: UseAiAssistantRequestDeps): UseAiAss
     deps.setInput('')
 
     try {
+      if (isRemoveAiToneQuickActionInput(text)) {
+        const result = await runRemoveAiToneQuickAction({
+          text,
+          bookId: deps.bookId,
+          conversationId: deps.conversationId,
+          currentChapter: deps.currentChapter,
+          selectionChapterId: deps.aiAssistantSelectionChapterId,
+          selectionText: deps.aiAssistantSelectionText,
+          selectionFrom: deps.aiAssistantSelectionFrom,
+          selectionTo: deps.aiAssistantSelectionTo,
+          profile: deps.profile,
+          contextChips: deps.context.chips,
+          intent: {
+            mode: 'skill',
+            skillKey: 'remove_ai_tone',
+            confidence: 1,
+            reason: '章节快捷操作：去 AI 味'
+          },
+          api: window.api
+        })
+        deps.setMessages((current) => [
+          ...current,
+          result.userMessage as AiAssistantMessage,
+          result.assistantMessage as AiAssistantMessage
+        ])
+        const inlineDraft = toInlineAiDraft(result.draft, deps.currentChapter?.id, text)
+        if (inlineDraft) deps.setInlineAiDraft(inlineDraft)
+        const chapterDraft = toAiChapterDraft(result.draft, text)
+        if (chapterDraft) deps.setAiChapterDraft(chapterDraft)
+        await deps.refreshConversation(deps.conversationId)
+        return
+      }
+
       const config = await getResolvedGlobalAiConfig()
       const aiConfig = config
         ? { ...(config as AiCallerConfig), bookId: deps.bookId, ragMode: 'auto' as const }

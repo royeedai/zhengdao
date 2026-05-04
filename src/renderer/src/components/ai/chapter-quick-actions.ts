@@ -16,6 +16,11 @@ export const REMOVE_AI_TONE_SELECTION_INPUT =
 export const REMOVE_AI_TONE_CHAPTER_INPUT =
   '使用 layer2.deslop Skill 对当前章节正文做"去 AI 味"扫描；保护数字 / 命令 / 引用 / BibTeX / 公式不动；输出 issues + rewritten + secondPassAudit。改写后的草稿进草稿篮等待我确认。'
 
+export function isRemoveAiToneQuickActionInput(value: string | null | undefined): boolean {
+  const text = String(value || '').trim()
+  return text === REMOVE_AI_TONE_SELECTION_INPUT || text === REMOVE_AI_TONE_CHAPTER_INPUT
+}
+
 export type ChapterQuickAction = {
   key: string
   label: string

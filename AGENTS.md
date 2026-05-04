@@ -18,6 +18,7 @@
 - 关键页面、信息架构、核心交互、核心接口、状态流转、关键异常路径未确认前，不进入大规模实现
 - brownfield / change / reverse-spec 必须先审计共享基础设施约定，再锁当前 lane 的局部契约
 - 复用共享抽象、统一包装层或新增 entrypoint 前，必须先核对真实 schema / route / wrapper 契约
+- 修改账号、云同步、AI 草稿篮、权限/点数、移动端共享行为或客户端错误处理前，必须先阅读 workspace `docs/client-platform-governance.md` 和本仓 `docs/client-architecture.md`，并检查是否需要同步 Agent X client contracts。
 
 ### 3. 自适应治理
 

@@ -151,6 +151,7 @@ export type AiCanonPack = {
   bookId: number
   style: {
     styleGuide?: string
+    styleFingerprint?: string
     genreRules?: string
     contentBoundaries?: string
     assetRules?: string
