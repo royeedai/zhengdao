@@ -38,6 +38,7 @@ const BOARD_OPTIONS: Array<{ id: WritingIntelBoard; label: string }> = [
   { id: 'reading', label: '阅读榜' },
   { id: 'new_book', label: '新书榜' },
   { id: 'peak', label: '巅峰榜' },
+  { id: 'monthly_ticket', label: '月票榜' },
   { id: 'custom', label: '自定义' }
 ]
 
@@ -98,6 +99,21 @@ function StatTile({ label, value, detail }: { label: string; value: string; deta
       <div className="text-lg font-bold text-[var(--text-primary)]">{value}</div>
       <div className="mt-1 text-[11px] text-[var(--text-muted)]">{label}</div>
       {detail && <div className="mt-1 truncate text-[10px] text-[var(--text-secondary)]">{detail}</div>}
+    </div>
+  )
+}
+
+function AuthorSignalCard({ signal }: { signal: AuthorSignal }) {
+  const toneClass = signal.tone === 'risk'
+    ? 'border-[var(--warning-border)] bg-[var(--warning-surface)] text-[var(--warning-primary)]'
+    : signal.tone === 'opportunity'
+      ? 'border-[var(--success-border)] bg-[var(--success-surface)] text-[var(--success-primary)]'
+      : 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+  return (
+    <div className={`rounded-md border px-3 py-2 ${toneClass}`}>
+      <div className="text-[11px] font-semibold opacity-80">{signal.label}</div>
+      <div className="mt-1 truncate text-sm font-bold">{signal.value}</div>
+      <div className="mt-1 line-clamp-2 text-[11px] leading-4 opacity-80">{signal.detail}</div>
     </div>
   )
 }
@@ -211,6 +227,9 @@ export default function WritingIntelModal() {
       .filter((insight) => !category || insight.category === category)
       .slice(0, 8)
   }, [category, overview?.insights])
+  const authorSignals = useMemo(() => buildAuthorSignals(visibleStats, trends, rankings), [rankings, trends, visibleStats])
+  const hasIntelData = (overview?.genreStats.length ?? 0) > 0 || rankings.length > 0 || trends.length > 0
+  const staleSnapshot = isSnapshotStale(latestSnapshot?.capturedAt)
 
   async function refresh() {
     setLoading(true)
@@ -339,6 +358,11 @@ export default function WritingIntelModal() {
               <AlertCircle size={14} /> {error}
             </div>
           )}
+          {!error && staleSnapshot && (
+            <div className="mb-4 flex items-center gap-2 rounded-md border border-[var(--warning-border)] bg-[var(--warning-surface)] px-3 py-2 text-xs text-[var(--warning-primary)]">
+              <Clock3 size={14} /> 当前情报超过 3 天未更新，适合作为方向参考，不建议当作实时榜单判断。
+            </div>
+          )}
 
           <div className="grid gap-3 md:grid-cols-4">
             <StatTile label="数据源" value={formatNumber(overview?.sources.length ?? 0)} detail={overview?.sources[0]?.sourceLabel} />
@@ -346,6 +370,35 @@ export default function WritingIntelModal() {
             <StatTile label="榜单条目" value={formatNumber(rankings.length)} detail={BOARD_OPTIONS.find((item) => item.id === board)?.label} />
             <StatTile label="黑马 / 新上榜" value={formatNumber(trends.length)} detail={CHANNEL_OPTIONS.find((item) => item.id === channel)?.label} />
           </div>
+
+          {!loading && !hasIntelData && (
+            <div className="mt-4 rounded-md border border-dashed border-[var(--border-primary)] bg-[var(--surface-primary)] px-4 py-6 text-center">
+              <BarChart3 size={22} className="mx-auto text-[var(--accent-secondary)]" />
+              <div className="mt-3 text-sm font-bold text-[var(--text-primary)]">暂无已发布榜单快照</div>
+              <div className="mt-1 text-xs text-[var(--text-muted)]">自动采集发布后会在这里显示题材、榜位和上升信号。</div>
+              <button
+                type="button"
+                onClick={() => pushModal('marketScanDeconstruct')}
+                className="mt-4 inline-flex h-8 items-center justify-center gap-2 rounded-md border border-[var(--accent-border)] bg-[var(--accent-surface)] px-3 text-xs font-semibold text-[var(--accent-secondary)] transition hover:brightness-105"
+              >
+                <FileSearch size={13} /> 授权样本分析
+              </button>
+            </div>
+          )}
+
+          {hasIntelData && (
+            <section className="mt-4">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="text-sm font-bold">作者判断</h3>
+                <Sparkles size={14} className="text-[var(--accent-secondary)]" />
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                {authorSignals.map((signal) => (
+                  <AuthorSignalCard key={signal.label} signal={signal} />
+                ))}
+              </div>
+            </section>
+          )}
 
           <div className="mt-4 grid min-h-0 gap-4 lg:grid-cols-[280px_minmax(0,1fr)_300px]">
             <section className="min-w-0">
@@ -445,4 +498,63 @@ export default function WritingIntelModal() {
       </div>
     </div>
   )
+}
+
+type AuthorSignal = {
+  label: string
+  value: string
+  detail: string
+  tone: 'opportunity' | 'risk' | 'monitor'
+}
+
+function buildAuthorSignals(
+  stats: WritingIntelGenreStat[],
+  trends: WritingIntelRankingEntry[],
+  rankings: WritingIntelRankingEntry[]
+): AuthorSignal[] {
+  const opportunity = [...stats].sort((left, right) => {
+    const leftScore = left.promotionCount * 40 + left.risingCount * 20 + left.newEntryCount * 10 + left.averageReads
+    const rightScore = right.promotionCount * 40 + right.risingCount * 20 + right.newEntryCount * 10 + right.averageReads
+    return rightScore - leftScore
+  })[0]
+  const crowded = [...stats].sort((left, right) => {
+    const leftScore = (left.saturation === 'high' ? 100 : 0) + left.bookCount
+    const rightScore = (right.saturation === 'high' ? 100 : 0) + right.bookCount
+    return rightScore - leftScore
+  })[0]
+  const rising = trends[0] ?? rankings.find((entry) => entry.isNew || (entry.rankDelta ?? 0) > 0) ?? null
+
+  return [
+    {
+      label: '优先观察',
+      value: opportunity ? opportunity.category : '等待题材统计',
+      detail: opportunity
+        ? `${opportunity.opportunityLabel}，新上榜 ${opportunity.newEntryCount}，上升 ${opportunity.risingCount}，新书晋升 ${opportunity.promotionCount}。`
+        : '需要至少一个已发布快照。',
+      tone: 'opportunity'
+    },
+    {
+      label: '避开同质化',
+      value: crowded ? crowded.category : '暂无拥挤题材',
+      detail: crowded
+        ? `${crowded.bookCount} 本在榜，头部 #${crowded.topRank ?? '-'}；切入时先换职业、关系或代价。`
+        : '暂未看到明显高供给题材。',
+      tone: 'risk'
+    },
+    {
+      label: '拆解样本',
+      value: rising ? rising.title : '暂无上升样本',
+      detail: rising
+        ? `${rising.category} · ${rankDeltaLabel(rising)}，先拆标题承诺、前三屏压力和更新节奏。`
+        : '连续快照不足时，先看当前榜首和题材数量。',
+      tone: 'monitor'
+    }
+  ]
+}
+
+function isSnapshotStale(value: string | null | undefined): boolean {
+  if (!value) return false
+  const capturedAt = new Date(value).getTime()
+  if (!Number.isFinite(capturedAt)) return false
+  return Date.now() - capturedAt > 3 * 24 * 60 * 60 * 1000
 }
