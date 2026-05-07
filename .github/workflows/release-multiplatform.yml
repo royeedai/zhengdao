@@ -48,6 +48,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.release_tag }}
+      - name: Checkout backend contracts
+        shell: bash
+        env:
+          AGENTX_BACKEND_READ_TOKEN: ${{ secrets.AGENTX_BACKEND_READ_TOKEN }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${AGENTX_BACKEND_READ_TOKEN}@github.com/royeedai-labs/agentx-backend.git" ../agentx-backend
 
       - uses: actions/setup-node@v4
         with:
@@ -119,6 +125,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.release_tag }}
+      - name: Checkout backend contracts
+        shell: bash
+        env:
+          AGENTX_BACKEND_READ_TOKEN: ${{ secrets.AGENTX_BACKEND_READ_TOKEN }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${AGENTX_BACKEND_READ_TOKEN}@github.com/royeedai-labs/agentx-backend.git" ../agentx-backend
 
       - uses: actions/setup-node@v4
         with:
@@ -186,6 +198,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.release_tag }}
+      - name: Checkout backend contracts
+        shell: bash
+        env:
+          AGENTX_BACKEND_READ_TOKEN: ${{ secrets.AGENTX_BACKEND_READ_TOKEN }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${AGENTX_BACKEND_READ_TOKEN}@github.com/royeedai-labs/agentx-backend.git" ../agentx-backend
 
       - uses: actions/setup-node@v4
         with:
