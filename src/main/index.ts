@@ -69,10 +69,16 @@ function createWindow(): BrowserWindow {
     }
   })
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow!.show()
-    attachUpdaterWindow(mainWindow!)
-  })
+  let mainWindowShown = false
+  const revealMainWindow = (): void => {
+    if (!mainWindow || mainWindow.isDestroyed() || mainWindowShown) return
+    mainWindowShown = true
+    mainWindow.show()
+    attachUpdaterWindow(mainWindow)
+  }
+
+  mainWindow.once('ready-to-show', revealMainWindow)
+  mainWindow.webContents.once('did-finish-load', revealMainWindow)
 
   mainWindow.on('close', (event) => {
     if (!mainWindow || !shouldHideMainWindowToTray(process.platform)) return

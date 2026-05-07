@@ -6,10 +6,10 @@ This file is generated from renderer entrypoints. Do not hand-edit ledger rows; 
 
 ## Coverage Summary
 
-- Total UX surfaces: 56
+- Total UX surfaces: 57
 - Fixed workspace/page surfaces: 15
-- Modal surfaces from ModalType: 41
-- ModalManager mapped cases: 41
+- Modal surfaces from ModalType: 42
+- ModalManager mapped cases: 42
 - CommandPalette commands: 23
 - Missing ModalManager cases: none
 - Extra ModalManager cases: none
@@ -80,7 +80,8 @@ This file is generated from renderer entrypoints. Do not hand-edit ledger rows; 
 | SURF-MODAL-038 | P1 | modal | 自动导演主链 | src/renderer/src/components/modals/DirectorPanelModal.tsx | openModal('directorPanel') / pushModal('directorPanel') | 规划章节推进并以草稿篮确认生成内容 | 输入目标、运行中、草稿预览、确认/拒绝、失败 | 长链 AI 需要强步骤感和强确认边界 | Unified Dialog shell + Raycast Action Panel + Linear contextual actions | not_started | before: required; after: required |
 | SURF-MODAL-039 | P2 | modal | 视觉资产工作室 | src/renderer/src/components/modals/VisualStudioModal.tsx | openModal('visualStudio') / pushModal('visualStudio') | 生成/管理封面和视觉资产 | 配置、生成中、预览、保存、失败 | 视觉资产属于低频高价值工作流，需要减少干扰写作主路径 | Unified Dialog shell + Raycast Action Panel + Linear contextual actions | not_started | before: required; after: required |
 | SURF-MODAL-040 | P2 | modal | MCP 设置 | src/renderer/src/components/modals/McpSettingsModal.tsx | openModal('mcpSettings') / pushModal('mcpSettings') | 配置外部工具/服务连接 | 空配置、已配置、检测、失败 | 技术配置需要错误可解释和默认安全 | Unified Dialog shell + Raycast Action Panel + Linear contextual actions | not_started | before: required; after: required |
-| SURF-MODAL-041 | P2 | modal | marketScanDeconstruct | src/renderer/src/components/modals/MarketScanDeconstructModal.tsx | openModal('marketScanDeconstruct') / pushModal('marketScanDeconstruct') | 完成该弹窗承载的作品管理、分析或设置任务 | 入口、空数据、有数据、编辑、保存、错误、关闭 | 需要按统一 Dialog shell、主次操作和状态反馈重新审计 | Unified Dialog shell + Raycast Action Panel + Linear contextual actions | not_started | before: required; after: required |
+| SURF-MODAL-041 | P2 | modal | writingIntel | src/renderer/src/components/modals/WritingIntelModal.tsx | openModal('writingIntel') / pushModal('writingIntel') | 完成该弹窗承载的作品管理、分析或设置任务 | 入口、空数据、有数据、编辑、保存、错误、关闭 | 需要按统一 Dialog shell、主次操作和状态反馈重新审计 | Unified Dialog shell + Raycast Action Panel + Linear contextual actions | not_started | before: required; after: required |
+| SURF-MODAL-042 | P2 | modal | marketScanDeconstruct | src/renderer/src/components/modals/MarketScanDeconstructModal.tsx | openModal('marketScanDeconstruct') / pushModal('marketScanDeconstruct') | 完成该弹窗承载的作品管理、分析或设置任务 | 入口、空数据、有数据、编辑、保存、错误、关闭 | 需要按统一 Dialog shell、主次操作和状态反馈重新审计 | Unified Dialog shell + Raycast Action Panel + Linear contextual actions | not_started | before: required; after: required |
 
 ## Command Inventory
 
