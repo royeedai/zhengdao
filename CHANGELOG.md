@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The project follows Semantic Versioning for release numbers. Release entries use a simple `Added / Changed / Fixed / Docs / Release` structure so the app package, Git tag, GitHub Release and changelog can stay aligned.
 
+## v1.9.4 - 2026-05-07
+
+### Release
+
+- 写作情报与客户端稳定性更新
+
 ## v1.9.3 - 2026-05-02
 
 ### Release
