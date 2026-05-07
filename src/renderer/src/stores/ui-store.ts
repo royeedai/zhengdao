@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import type { ModalType } from '@/types'
 import { isThemeId, resolveThemeMode, type ThemeId } from '@/utils/themes'
 import { syncCurrentTitlebarOverlay } from '@/utils/window-shell'
 import {
@@ -29,8 +28,10 @@ import {
   type AiAssistantLauncherPosition,
   type AiAssistantPanelRect
 } from '@/components/ai/panel-layout'
-import { createInitialSaveStatus, type ChapterSaveStatus } from '../utils/daily-workbench'
-import type { AssistantSurface } from '../../../shared/ai-book-creation'
+import { createInitialSaveStatus } from '../utils/daily-workbench'
+import type { AiAssistantOpenOptions, AiChapterDraft, InlineAiDraft, UIStore } from './ui-store-types'
+
+export type { AiChapterDraft, InlineAiDraft } from './ui-store-types'
 
 const THEME_STORAGE_KEY = 'write-ui-theme'
 const BOTTOM_PANEL_OPEN_STORAGE_KEY = 'write-bottom-panel-open'
@@ -462,146 +463,6 @@ if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
   } else if (typeof media.addListener === 'function') {
     media.addListener(onSystemThemeChange)
   }
-}
-
-type TypewriterPosition = 'center' | 'upper' | 'lower'
-
-type AiAssistantOpenOptions = {
-  input?: string
-  autoSend?: boolean
-  surface?: AssistantSurface
-}
-
-export type InlineAiDraft = {
-  id: number
-  title: string
-  payload: Record<string, unknown>
-  chapterId: number
-  conversationId: number | null
-  retryInput: string
-}
-
-export type AiChapterDraft = {
-  id: number
-  title: string
-  content: string
-  summary: string
-  volumeId: number | null
-  volumeTitle: string
-  conversationId: number | null
-  retryInput: string
-}
-
-type AiAssistantCommand = {
-  id: number
-  input: string
-  autoSend: boolean
-  surface?: AssistantSurface
-}
-
-interface ModalEntry {
-  type: ModalType
-  data: Record<string, unknown> | null
-}
-
-interface UIStore {
-  leftPanelOpen: boolean
-  leftPanelWidth: number
-  rightPanelOpen: boolean
-  rightPanelWidth: number
-  rightPanelTab: RightPanelTab
-  bottomPanelOpen: boolean
-  bottomPanelHeight: number
-  workspaceLayoutPresetId: WorkspaceLayoutPresetId
-  workspaceLayoutPanelSizes: WorkspaceLayoutPanelSizes
-  customWorkspaceLayoutPresets: WorkspaceLayoutPresetDefinition[]
-  workspaceLayoutMigrated: boolean
-  topbarToolsCollapsed: boolean
-  blackRoomMode: boolean
-  blackRoomTextColor: 'green' | 'white'
-
-  focusMode: boolean
-  typewriterPosition: TypewriterPosition
-  smartTypewriter: boolean
-
-  splitView: boolean
-  splitChapterId: number | null
-
-  aiAssistantOpen: boolean
-  aiAssistantPanelRect: AiAssistantPanelRect
-  aiAssistantLauncherPosition: AiAssistantLauncherPosition
-  aiAssistantSelectionText: string
-  aiAssistantSelectionChapterId: number | null
-  aiAssistantSelectionFrom: number | null
-  aiAssistantSelectionTo: number | null
-  aiAssistantCommand: AiAssistantCommand | null
-  inlineAiDraft: InlineAiDraft | null
-  aiChapterDraft: AiChapterDraft | null
-  chapterSaveStatus: ChapterSaveStatus
-
-  activeModal: ModalType
-  modalData: Record<string, unknown> | null
-  modalStack: ModalEntry[]
-
-  toggleLeftPanel: () => void
-  setLeftPanelWidth: (width: number) => void
-  toggleRightPanel: () => void
-  setRightPanelWidth: (width: number) => void
-  setRightPanelTab: (tab: RightPanelTab) => void
-  setBottomPanelOpen: (open: boolean) => void
-  toggleBottomPanel: () => void
-  setBottomPanelHeight: (height: number) => void
-  resetBottomPanelHeight: () => void
-  setWorkspaceLayoutPanelSizes: (sizes: Partial<WorkspaceLayoutPanelSizes>) => void
-  applyWorkspaceLayoutPreset: (presetId: WorkspaceLayoutPresetId) => void
-  saveCurrentWorkspaceLayoutPreset: (name: string) => WorkspaceLayoutPresetDefinition | null
-  deleteCustomWorkspaceLayoutPreset: (presetId: WorkspaceLayoutPresetId) => void
-  markWorkspaceLayoutMigrated: () => void
-  setTopbarToolsCollapsed: (collapsed: boolean) => void
-  toggleTopbarToolsCollapsed: () => void
-  setBlackRoomMode: (flag: boolean) => void
-  toggleBlackRoomTextColor: () => void
-
-  toggleFocusMode: () => void
-  setTypewriterPosition: (pos: TypewriterPosition) => void
-  toggleSmartTypewriter: () => void
-
-  toggleSplitView: () => void
-  setSplitChapterId: (id: number | null) => void
-
-  openAiAssistant: (options?: AiAssistantOpenOptions | string | null) => void
-  closeAiAssistant: () => void
-  consumeAiAssistantCommand: (id: number) => void
-  setAiAssistantPanelRect: (rect: AiAssistantPanelRect) => void
-  setAiAssistantLauncherPosition: (position: AiAssistantLauncherPosition) => void
-  setAiAssistantSelection: (data: {
-    text: string
-    chapterId: number | null
-    from: number | null
-    to: number | null
-  }) => void
-  setInlineAiDraft: (draft: InlineAiDraft | null) => void
-  clearInlineAiDraft: (draftId?: number | null) => void
-  setAiChapterDraft: (draft: AiChapterDraft | null) => void
-  updateAiChapterDraft: (
-    updates: Partial<Pick<AiChapterDraft, 'title' | 'content' | 'summary' | 'volumeId' | 'volumeTitle'>>
-  ) => void
-  clearAiChapterDraft: (draftId?: number | null) => void
-  setChapterSaveStatus: (status: ChapterSaveStatus) => void
-  markChapterDirty: (chapterId: number) => void
-  markChapterSaving: (chapterId: number) => void
-  markChapterSaved: (chapterId: number, savedAt?: string) => void
-  markChapterSaveError: (chapterId: number, error: string) => void
-
-  theme: ThemeId
-  setTheme: (theme: string) => void
-
-  openModal: (type: ModalType, data?: Record<string, unknown> | null) => void
-  closeModal: () => void
-  pushModal: (type: ModalType, data?: Record<string, unknown> | null) => void
-
-  onboardingTourSignal: number
-  triggerOnboardingTour: () => void
 }
 
 export const useUIStore = create<UIStore>((set, get) => ({

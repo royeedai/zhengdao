@@ -8,7 +8,7 @@
  *     from the contract change
  *
  * `ElectronAPI` (the renderer-facing window.api shape) stays in
- * preload/index.ts because deriving it from `typeof api` is the only
+ * preload/api.ts because deriving it from `typeof api` is the only
  * way to keep the method signatures in lockstep with the const that
  * `contextBridge.exposeInMainWorld('api', api)` actually exposes.
  *

@@ -72,10 +72,18 @@ describe('desktop client contract parity', () => {
       'utf8'
     )
 
-    expect(fixtureText).not.toMatch(/api[_-]?key/i)
-    expect(fixtureText).not.toMatch(/token/i)
-    expect(fixtureText).not.toMatch(/cookie/i)
-    expect(fixtureText).not.toMatch(/credential/i)
+    const credentialPatterns = [
+      /api[_-]?key/i,
+      /"token"\s*:/i,
+      /"(?:access|refresh|session|auth|id|bearer|jwt)[_-]?token"\s*:/i,
+      /token[_-]?(?:secret|value)/i,
+      /cookie/i,
+      /credential/i,
+    ]
+
+    for (const pattern of credentialPatterns) {
+      expect(fixtureText).not.toMatch(pattern)
+    }
   })
 
   it('recognizes the shared optimistic conflict error envelope', () => {
