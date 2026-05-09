@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { useUIStore } from '@/stores/ui-store'
 import type { ModalType } from '@/types'
 
@@ -100,11 +100,19 @@ export default function ModalManager() {
   return (
     <Suspense fallback={null}>
       {modalStack.map((entry, i) => (
-        <div key={`stack-${i}-${entry.type}`} className="pointer-events-none">
+        <ModalStackLayer key={`stack-${i}-${entry.type}`}>
           {renderModal(entry.type)}
-        </div>
+        </ModalStackLayer>
       ))}
       {activeModal && renderModal(activeModal)}
     </Suspense>
+  )
+}
+
+export function ModalStackLayer({ children }: { children: ReactNode }) {
+  return (
+    <div hidden aria-hidden="true" className="pointer-events-none">
+      {children}
+    </div>
   )
 }
