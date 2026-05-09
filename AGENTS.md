@@ -2,7 +2,17 @@
 
 作为负责本项目的 AI 智能体，执行任何任务前必须遵守以下原则。本文件优先级高于模型默认习惯、IDE 模板和执行偏好。
 
-> 本文件是 AI-OS v9 分发的唯一交付宪法。AI-OS 仓库自身维护指导见 `docs/maintainers.md`，完整工件 schema 见 `docs/artifacts.md`。
+> 本文件是 AI-OS v9 分发在桌面端的唯一交付宪法。完整工件 schema 与 v9 体系细节由 AI-OS 框架仓自身维护，本仓不再单独镜像。
+
+## 工作区硬规则镜像（仅指针，不复制正文）
+
+桌面端属于工作区 `royeedai-labs` 控制仓的子仓，下列工作区硬规则对本仓**全量适用**，仅以指针形式镜像：
+
+- **Commercial Payment Rule** — 工作区 `AGENTS.md § Commercial Payment Rule`：禁止接入面向用户的外部支付 checkout；Pro / Team / AI 点数仅通过 CDK 兑换或后台管理员发放；其它付费物品以 AI 点数兑换，单价配置在后台/Admin。
+- **Website Content Rule** — 工作区 `AGENTS.md § Website Content Rule`：官网无独立博客；官方文章、release notes、产品更新进入社区面板并以「官方发布」标识。本仓不直接落实，但桌面端嵌入 / 跳转网站时不得绕过该约束。
+- **Client Platform Rule** — 工作区 `AGENTS.md § Client Platform Rule` + 工作区 `docs/client-platform-governance.md` + 工作区 `docs/data-ownership.md`：桌面端为 AGPL Electron 客户端，移动端为闭源 Expo/RN 客户端；共享行为通过 backend-owned client contracts、golden fixtures 与 parity 测试表达，不复制代码。
+- **Visual Token Authority** — 工作区 `docs/design-system.md` + `docs/client-platform-governance.md § Visual Token Authority`：本仓的 `src/renderer/src/index.css` 中 `:root` / `[data-theme='light']` / `[data-theme='dark']` 块是跨端视觉 token 的权威源；任何对验证子集（`--accent-primary` `--brand-primary` `--bg-primary` `--text-primary` 等，详见 spec § Verified keys）的修改都必须同 PR 更新 `docs/design-system.md`、官网 `tailwind.config.ts` / `globals.css` 与移动 `src/theme/tokens.ts`，并通过 `scripts/verify-design-tokens.sh`。本仓的 `AppBrand`/`BrandMark` 实际色值与字距是 `docs/design-system.md § Brand Display Lock` 的基线，修改前必须同步更新 spec。
+- **AI Documentation Layering** — 工作区 `AGENTS.md § AI Documentation Layering`：保持本 `AGENTS.md` 为 L0；长工作流 / 工件 schema / 迁移说明等长文档由 AI-OS 框架仓托管或落地到 `docs/`；`CLAUDE.md` 保持单行指针。
 
 ## 五条核心要求
 
@@ -105,8 +115,8 @@
 
 ## 更多
 
-- 工件 schema：`docs/artifacts.md`
-- 迁移说明：`docs/migrate-to-v9.md`
-- AI Delivery Constitution Spec：`docs/constitution-spec.md`
-- 与 spec-kit / Kiro / Claude Code 共存：`docs/interop/`
-- AI-OS 仓库维护指导：`docs/maintainers.md`
+- 桌面端客户端架构契约：`docs/client-architecture.md`
+- 桌面端 AI 操作 UX 准则：`docs/ai-operation-ux.md`
+- 跨仓客户端平台治理（合同/parity/数据归属）：根工作区 `docs/client-platform-governance.md` 与 `docs/data-ownership.md`
+- 跨仓视觉设计契约：根工作区 `docs/design-system.md`（本仓 `src/renderer/src/index.css` 是 token 权威源；改动需同步官网、移动并跑根工作区 `scripts/verify-design-tokens.sh`）
+- 工件 schema、迁移说明、constitution-spec、interop 与 AI-OS 维护指导由 AI-OS 框架仓自身托管；本仓不复制，按需在框架仓中查阅。

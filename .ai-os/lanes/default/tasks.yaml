@@ -84,7 +84,9 @@ milestones:
     title: "以失败测试锁定平台壳层与品牌标题规则"
     milestone: M4
     parent: null
-    status: pending
+    status: done
+    reconciled_at: "2026-05-09"
+    reconciled_reason: "Shell tests landed and Windows shell branding shipped through v1.1.0..v1.9.5; reclassified from pending to done. See workspace .ai-os/lanes/architecture-governance-2026q2/RECONCILIATION-2026-05-09.md."
     owner: AI
     risk: medium
     priority: P0
@@ -124,7 +126,9 @@ milestones:
     title: "实现主窗口壳层、菜单移除和顶栏视觉收口"
     milestone: M4
     parent: null
-    status: pending
+    status: done
+    reconciled_at: "2026-05-09"
+    reconciled_reason: "Shipped via commit d1daaaa 'feat: polish desktop shell and release assets' and downstream v1.1+ releases. Reclassified from pending to done. See workspace .ai-os/lanes/architecture-governance-2026q2/RECONCILIATION-2026-05-09.md."
     owner: AI
     risk: medium
     priority: P0
@@ -171,7 +175,9 @@ milestones:
     title: "生成正式图标资源并接入 builder 与打包 smoke"
     milestone: M4
     parent: null
-    status: pending
+    status: done
+    reconciled_at: "2026-05-09"
+    reconciled_reason: "resources/icon.{svg,ico,icns,png} ship in repo; electron-builder integration in place; multiple v1.x releases produced signed artefacts. Reclassified from pending to done. See workspace .ai-os/lanes/architecture-governance-2026q2/RECONCILIATION-2026-05-09.md."
     owner: AI
     risk: medium
     priority: P1
@@ -462,7 +468,9 @@ tasks:
     title: "初始化 Git 仓库、推送 GitHub 并发布首版"
     milestone: M3
     parent: null
-    status: in_progress
+    status: done
+    reconciled_at: "2026-05-09"
+    reconciled_reason: "Repo lives at https://github.com/royeedai-labs/zhengdao with tags v1.1.0..v1.9.5 published. Reclassified from in_progress to done. See workspace .ai-os/lanes/architecture-governance-2026q2/RECONCILIATION-2026-05-09.md."
     owner: AI
     risk: high
     priority: P0

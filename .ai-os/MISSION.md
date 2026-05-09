@@ -9,7 +9,7 @@
 - **产品定位**：沉浸式桌面端网文创作软件，面向长篇小说 / 网文作者提供创作、结构管理、角色与剧情资产管理、AI 辅助写作和发布前本地工作流。
 - **项目类型**：Electron 桌面应用
 - **主要语言与框架**：TypeScript、Electron、electron-vite、React、Zustand、better-sqlite3、Tailwind CSS、Vitest。
-- **仓库地址**：`https://github.com/royeedai/zhengdao`
+- **仓库地址**：`https://github.com/royeedai-labs/zhengdao`
 - **主要使用者**：网文作者、小说创作者、维护桌面端发布包和 AI 创作能力的开发者。
 - **长期成功标准**：
   - 桌面端核心写作、资产管理和 AI 创作链路稳定可用。
@@ -50,13 +50,18 @@
 - **默认 lane**：`default`
 - **默认交付基线入口**：`.ai-os/lanes/default/MISSION.md`
 - **默认会话恢复入口**：`.ai-os/lanes/default/STATE.md`
-- **现有 lane**：
-  - `default`：Windows 安装版桌面壳层与品牌图标收口
-  - `update-experience-redesign`：应用内更新体验重构与全局“应用设置 / 关于”入口
-  - `gemini-free-ai`：Gemini API Key 免费层与 Gemini CLI 登录双通道
-  - `ai-chat-assistant`：AI 创作助手、会话、草稿篮和 Gemini 3 Pro 流式体验
-  - `license-policy`：开源许可证收紧与授权口径统一
-  - `bookshelf-entry-behavior`：作品入口与总览触发收口
-  - `v13-daily-workbench`：v1.3 可信日更工作台、审稿台与发布前检查包
-  - `settings-workspace-polish`：系统/作品设置拆分、题材模板系统化与工作区交互统一
-  - `desktop-ux-overhaul-2026q2`：桌面端 UX 系统重构，先用源码生成 surface ledger 防遗漏，再分批审计、设计、实现和截图验收
+- **现有 lane**（按 `.ai-os/lanes/<lane>/lane.toml` 状态对齐，2026-05-09 reconciled）：
+  - `default`（active）：Windows 安装版桌面壳层与品牌图标收口
+  - `update-experience-redesign`（active）：应用内更新体验重构与全局“应用设置 / 关于”入口
+  - `gemini-free-ai`（active）：Gemini API Key 免费层与 Gemini CLI 登录双通道
+  - `ai-chat-assistant`（active）：AI 创作助手、会话、草稿篮和 Gemini 3 Pro 流式体验
+  - `license-policy`（active）：开源许可证收紧与授权口径统一
+  - `bookshelf-entry-behavior`（active）：作品入口与总览触发收口
+  - `v13-daily-workbench`（active）：v1.3 可信日更工作台、审稿台与发布前检查包
+  - `settings-workspace-polish`（active）：系统/作品设置拆分、题材模板系统化与工作区交互统一
+  - `desktop-ux-overhaul-2026q2`（active）：桌面端 UX 系统重构，先用源码生成 surface ledger 防遗漏，再分批审计、设计、实现和截图验收
+  - `workspace-header-visual-polish`（active）：工作区头部视觉收口
+  - `workspace-author-layout-optimization`（active）：作者侧工作区布局优化
+  - `client-performance-overhaul-2026q2`（active）：桌面端性能整改
+
+> 上述 lane 全部 `active`。当一个 lane 完工时，先把 `lane.toml` 改为 `done`/`archived`，再在本表移除条目；切勿出现 lane 已收工但 MISSION 仍记为 active 的漂移。lane 状态字典与转移规则参见根工作区 `docs/repository-governance.md § Lane status vocabulary`。

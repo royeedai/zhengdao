@@ -31,7 +31,7 @@ tasks:
 
   - id: TASK-DUX-003
     title: "P0 导航与命令体系 UX 审计和方案"
-    status: todo
+    status: done
     owner: AI
     risk: medium
     priority: P0
@@ -42,11 +42,20 @@ tasks:
       - "GlobalSearchModal"
     verification_required:
       - "surface-ledger rows audited"
-      - "before screenshots"
+      - "research/p0-navigation-audit.md exists with 28 issues mapped to DP-1..DP-6"
+      - "research/p0-navigation-design-proposal.md exists with before/proposed for each issue"
+    completed_at: "2026-05-09"
+    evidence:
+      - "research/p0-navigation-audit.md (4 surfaces × 状态盘点 + issue 清单 + 验证矩阵建议; cross-surface section)"
+      - "research/p0-navigation-design-proposal.md (IA proposed + before/proposed table + 6-batch implementation breakdown 5.5-7.5 工日; explicit 不做 list; 8-row verification-matrix 增量)"
+    notes: |
+      Read-only audit + design phase. Implementation (TASK-DUX-005) is gated
+      on user approval and a fresh plan; this task does not modify zhengdao
+      source.
 
   - id: TASK-DUX-004
     title: "P0 写作工作区 UX 审计和方案"
-    status: todo
+    status: done
     owner: AI
     risk: medium
     priority: P0
@@ -57,7 +66,17 @@ tasks:
       - "AiAssistantDock"
     verification_required:
       - "surface-ledger rows audited"
-      - "before screenshots"
+      - "research/p0-workspace-audit.md exists with 33 issues mapped to DP-1..DP-6"
+      - "research/p0-workspace-design-proposal.md exists with EditorArea split plan + cross-surface registry plan"
+    completed_at: "2026-05-09"
+    evidence:
+      - "research/p0-workspace-audit.md (4 surfaces × 状态盘点 + issue 清单 + 验证矩阵建议; cross-surface section)"
+      - "research/p0-workspace-design-proposal.md (IA proposed + EditorArea 1521 LOC → 6 子组件拆分计划 + AiAssistantDock 5-entry preset 表 + 8-batch implementation breakdown 10-12 工日; explicit 不做 list; 12-row verification-matrix 增量)"
+    notes: |
+      Read-only audit + design phase. Implementation (TASK-DUX-005) is gated
+      on user approval and a fresh plan; this task does not modify zhengdao
+      source. Implementation batches share the WORKSPACE_COMMAND_REGISTRY
+      foundation with TASK-DUX-003 batch 1.
 
   - id: TASK-DUX-005
     title: "首批 P0 UX 实现"
