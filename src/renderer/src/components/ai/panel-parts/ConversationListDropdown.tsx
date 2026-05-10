@@ -1,4 +1,4 @@
-import { MessageSquarePlus, Trash2, X } from 'lucide-react'
+import { MessageSquarePlus, Pencil, Trash2, X } from 'lucide-react'
 import type { ConversationListItem } from '../conversation-list'
 
 /**
@@ -15,6 +15,7 @@ export interface ConversationListDropdownProps {
   onClose: () => void
   onCreate: () => void
   onSelect: (conversationId: number) => void
+  onRename: (conversationId: number, currentTitle: string) => void
   onDelete: (conversationId: number) => void
 }
 
@@ -71,6 +72,14 @@ export function ConversationListDropdown(props: ConversationListDropdownProps): 
               <div className="mt-0.5 truncate text-[10px] text-[var(--text-muted)]">
                 {conversation.updatedAt}
               </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => props.onRename(conversation.id, conversation.label)}
+              title="重命名会话"
+              className="rounded p-1 text-[var(--text-muted)] opacity-70 hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] group-hover:opacity-100"
+            >
+              <Pencil size={13} />
             </button>
             <button
               type="button"

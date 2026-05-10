@@ -13,10 +13,12 @@ import {
   AlertCircle,
   BarChart3,
   Check,
+  Command,
   Lightbulb,
   LayoutDashboard,
   LayoutPanelTop,
-  MoreHorizontal
+  MoreHorizontal,
+  Search
 } from 'lucide-react'
 import { useUIStore } from '@/stores/ui-store'
 import { useBookStore } from '@/stores/book-store'
@@ -194,6 +196,26 @@ export default function TopBar() {
           <WorkspaceActionIcon id={overviewAction.id} size={14} />
           {overviewAction.label}
         </button>
+        <div className="flex items-center gap-1 text-[var(--text-muted)]">
+          <button
+            type="button"
+            onClick={() => openModal('commandPalette')}
+            title="找动作"
+            aria-label="打开命令面板"
+            className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-primary)] rounded transition min-h-8 min-w-8"
+          >
+            <Command size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => openModal('globalSearch')}
+            title="搜内容"
+            aria-label="打开全局搜索"
+            className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-primary)] rounded transition min-h-8 min-w-8"
+          >
+            <Search size={16} />
+          </button>
+        </div>
         <div className="flex items-center space-x-1 ml-2 text-[var(--text-muted)]">
           <button
             onClick={toggleLeftPanel}

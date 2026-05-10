@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import { Loader2, Sparkles } from 'lucide-react'
+import { Check, Loader2, Sparkles } from 'lucide-react'
 import type { AiContextChip, AiSkillTemplate } from '@/utils/ai/assistant-workflow'
 import { buildAssistantMessageDisplay } from '../message-display'
 import { SkillFeedbackForm } from '../SkillFeedbackForm'
@@ -42,6 +42,7 @@ export interface MessageStreamAreaProps {
   onSeedSkill: (skill: AiSkillTemplate, input: string | undefined) => void
   onPrefillInput: (input: string) => void
   onRunQuickAction?: (action: QuickActionItem) => void
+  onToggleContextChip?: (chipId: string) => void
   children?: React.ReactNode
 }
 
@@ -91,12 +92,22 @@ export const MessageStreamArea = forwardRef<HTMLDivElement, MessageStreamAreaPro
 
         <div className="flex flex-wrap gap-1.5">
           {props.contextChips.map((chip) => (
-            <span
+            <button
               key={chip.id}
-              className="rounded-full border border-[var(--border-primary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]"
+              type="button"
+              disabled={!props.onToggleContextChip}
+              onClick={() => props.onToggleContextChip?.(chip.id)}
+              aria-pressed={chip.enabled}
+              title={chip.enabled ? `移除上下文：${chip.label}` : `加入上下文：${chip.label}`}
+              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition disabled:cursor-default ${
+                chip.enabled
+                  ? 'border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)]'
+                  : 'border-[var(--border-primary)] bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:border-[var(--accent-border)] hover:text-[var(--text-secondary)]'
+              }`}
             >
+              {chip.enabled && <Check size={10} />}
               {chip.label}
-            </span>
+            </button>
           ))}
         </div>
 

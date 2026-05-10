@@ -10,7 +10,7 @@ tasks:
       - "artifact-review"
   - id: TASK-PERF-002
     title: "收敛书架封面和章节目录 IPC payload"
-    status: in_progress
+    status: done
     priority: P0
     risk: medium
     affected_components:
@@ -21,9 +21,15 @@ tasks:
       - "chapter-store"
     verification_required:
       - "targeted unit tests"
+    completed_at: "2026-05-09"
+    evidence:
+      - "src/main/database/chapter-repo.ts exports getVolumesWithChapterMeta"
+      - "src/preload/api.ts exposes getVolumesWithChapterMeta"
+      - "src/main/book-cover-service.ts exports zhengdao-cover protocol"
+      - "book-repo and book-cover-service tests assert getBooks payload avoids data:image cover payloads"
   - id: TASK-PERF-003
     title: "降低编辑器输入与保存路径同步工作"
-    status: in_progress
+    status: done
     priority: P0
     risk: medium
     affected_components:
@@ -33,9 +39,13 @@ tasks:
     verification_required:
       - "targeted unit tests"
       - "manual typing smoke"
+    completed_at: "2026-05-09"
+    evidence:
+      - "src/renderer/src/components/editor/EditorArea.tsx schedules draft/content flush work outside the immediate input path"
+      - "CHANGELOG.md v1.8.0 records editor/workspace performance optimization release"
   - id: TASK-PERF-004
     title: "去除 AI 面板重复初始化请求"
-    status: in_progress
+    status: done
     priority: P1
     risk: medium
     affected_components:
@@ -43,9 +53,13 @@ tasks:
       - "useAiAssistantData"
     verification_required:
       - "targeted test or review"
+    completed_at: "2026-05-09"
+    evidence:
+      - "src/renderer/src/components/ai/useAiAssistantData.ts owns book-scoped loading and cancellation"
+      - "CHANGELOG.md v1.8.0 records AI panel/workspace performance optimization release"
   - id: TASK-PERF-005
     title: "重弹窗 lazy loading 与热区 memo"
-    status: in_progress
+    status: done
     priority: P1
     risk: low
     affected_components:
@@ -56,3 +70,7 @@ tasks:
     verification_required:
       - "typecheck"
       - "build"
+    completed_at: "2026-05-09"
+    evidence:
+      - "src/renderer/src/components/modals/ModalManager.tsx lazy-loads modal components"
+      - "CHANGELOG.md v1.8.0 records modal and workspace performance optimization release"

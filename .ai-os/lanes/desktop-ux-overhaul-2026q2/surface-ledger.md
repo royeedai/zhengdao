@@ -10,7 +10,7 @@ This file is generated from renderer entrypoints. Do not hand-edit ledger rows; 
 - Fixed workspace/page surfaces: 15
 - Modal surfaces from ModalType: 42
 - ModalManager mapped cases: 42
-- CommandPalette commands: 23
+- CommandPalette commands: 24
 - Missing ModalManager cases: none
 - Extra ModalManager cases: none
 
@@ -92,6 +92,7 @@ This file is generated from renderer entrypoints. Do not hand-edit ledger rows; 
 | nav-characters | 打开角色总库 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
 | nav-wiki | 打开设定维基 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
 | nav-project-settings | 打开项目设置 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
+| nav-global-search | 搜索作品内容 | no | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
 | nav-foreshadow-board | 打开伏笔看板 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
 | nav-quick-notes | 打开灵感速记 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
 | nav-export | 打开导出面板 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |

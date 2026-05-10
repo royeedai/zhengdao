@@ -1,4 +1,4 @@
-import { Send } from 'lucide-react'
+import { Send, Square } from 'lucide-react'
 import type { AiSkillTemplate } from '@/utils/ai/assistant-workflow'
 import { shouldSubmitAiAssistantInput } from '../input-behavior'
 import {
@@ -30,6 +30,7 @@ export interface AssistantPanelComposerProps {
   value: string
   onChange: (value: string) => void
   onSubmit: () => void
+  onStop: () => void
   loading: boolean
   assistantMode: AssistantInteractionMode
   onAssistantModeChange: (mode: AssistantInteractionMode) => void
@@ -101,12 +102,15 @@ export function AssistantPanelComposer(props: AssistantPanelComposerProps): JSX.
         />
         <button
           type="button"
-          disabled={!props.value.trim() || props.loading}
-          onClick={() => props.onSubmit()}
+          disabled={!props.loading && !props.value.trim()}
+          onClick={() => {
+            if (props.loading) props.onStop()
+            else props.onSubmit()
+          }}
           className="primary-btn self-stretch px-3"
-          title="发送"
+          title={props.loading ? '停止生成' : '发送'}
         >
-          <Send size={15} />
+          {props.loading ? <Square size={15} /> : <Send size={15} />}
         </button>
       </div>
     </div>

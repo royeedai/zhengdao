@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyAssistantContextSelection,
   attachSelectionMetaToDrafts,
   buildAssistantContext,
   buildDesktopCanonPack,
@@ -138,6 +139,32 @@ describe('buildAssistantContext', () => {
     expect(context.contextText).toContain('村口旧井')
     expect(context.contextText).toContain('现实处境')
     expect(context.contextText).toContain('异常钩子')
+  })
+
+  it('keeps manual context disabled until the author selects chips', () => {
+    const context = buildAssistantContext({
+      policy: 'manual',
+      currentChapter: {
+        id: 7,
+        title: '第七章 宴会',
+        plainText: '林凡在宴会反杀，黑色戒指发烫。'
+      },
+      selectedText: '主角抬手压下赵天宇，全场哗然。',
+      characters: [{ id: 1, name: '林凡', description: '主角' }],
+      foreshadowings: [{ id: 1, text: '黑色戒指', status: 'pending' }],
+      plotNodes: [{ id: 1, title: '宴会反杀', description: '公开打脸', chapter_number: 7 }]
+    })
+
+    expect(context.chips.every((chip) => !chip.enabled)).toBe(true)
+    expect(context.contextText).toBe('')
+
+    const selected = applyAssistantContextSelection(context, ['selection', 'characters'])
+
+    expect(selected.contextText).toContain('主角抬手压下赵天宇')
+    expect(selected.contextText).toContain('林凡')
+    expect(selected.contextText).not.toContain('黑色戒指')
+    expect(selected.chips.find((chip) => chip.id === 'selection')?.enabled).toBe(true)
+    expect(selected.chips.find((chip) => chip.id === 'foreshadowings')?.enabled).toBe(false)
   })
 })
 

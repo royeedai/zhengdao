@@ -70,24 +70,51 @@ tasks:
     acceptance: ["AC-AI-001"]
   - id: TASK-AI-CHAT-018
     title: "统一所有活跃 AI 入口到解析后的全局账号配置链路"
-    status: in_progress
+    status: completed
     acceptance: ["AC-AI-016"]
+    completed_at: "2026-05-09"
+    evidence:
+      - "src/renderer/src/components/ai/useAiAssistantRequest.ts (getResolvedGlobalAiConfig preflight)"
+      - "src/renderer/src/components/modals/StyleAnalysisModal.tsx (global config path)"
+      - ".ai-os/lanes/ai-chat-assistant/baseline-log/CR-20260509-ai-chat-backlog-closeout.md"
   - id: TASK-AI-CHAT-019
     title: "实现 manual 上下文勾选与 smart-minimal 上下文裁剪修正"
-    status: pending
+    status: completed
     acceptance: ["AC-AI-005", "AC-AI-017"]
+    completed_at: "2026-05-09"
+    evidence:
+      - "src/renderer/src/components/ai/panel-parts/MessageStreamArea.tsx (context chip toggle UI)"
+      - "src/renderer/src/utils/ai/workflow/context.ts (manual default disabled + smart_minimal relevance filtering)"
+      - "src/renderer/src/utils/ai/__tests__/assistant-workflow.test.ts (manual chip selection coverage)"
   - id: TASK-AI-CHAT-020
     title: "补齐 AI Dock 停止生成、会话标题自动生成与手动重命名"
-    status: pending
+    status: completed
     acceptance: ["AC-AI-018", "AC-AI-019"]
+    completed_at: "2026-05-09"
+    evidence:
+      - "src/renderer/src/components/ai/panel-parts/AssistantPanelComposer.tsx (streaming stop action)"
+      - "src/renderer/src/components/ai/panel-parts/ConversationListDropdown.tsx (rename action)"
+      - "src/renderer/src/components/ai/conversation-list.ts (real title display with fallback)"
+      - "src/main/database/ai-assistant-repo.ts (auto title derivation + update title)"
+      - "src/renderer/src/components/ai/__tests__/conversation-list.test.ts"
   - id: TASK-AI-CHAT-021
     title: "扩展全局账号 provider 连通性检测并收口风格分析触发方式"
-    status: pending
+    status: completed
     acceptance: ["AC-AI-020", "AC-AI-021"]
+    completed_at: "2026-05-09"
+    evidence:
+      - "src/main/ai/provider-status.ts (OpenAI/Gemini/Ollama/custom status probes)"
+      - "src/renderer/src/components/ai/AiGlobalConfigSettings.tsx (global provider detect UI)"
+      - "src/renderer/src/components/modals/StyleAnalysisModal.tsx (manual trigger + book sampling)"
+      - "src/renderer/src/utils/ai/__tests__/global-config-status.test.ts"
   - id: TASK-AI-CHAT-022
     title: "补充 focused tests 与构建验证"
-    status: pending
+    status: completed
     acceptance: ["AC-AI-016", "AC-AI-017", "AC-AI-018", "AC-AI-019", "AC-AI-020", "AC-AI-021"]
+    completed_at: "2026-05-09"
+    evidence:
+      - "npm run typecheck"
+      - "npx vitest run src/renderer/src/utils/ai/__tests__/assistant-workflow.test.ts src/renderer/src/components/ai/__tests__/conversation-list.test.ts src/renderer/src/components/ai/__tests__/use-ai-assistant-request.test.ts src/renderer/src/utils/ai/__tests__/provider-routing.test.ts src/renderer/src/utils/ai/__tests__/global-config-status.test.ts src/main/ai/__tests__/gemini-cli-service.test.ts"
   - id: TASK-AI-CHAT-023
     title: "扩大 AI 面板左右横向缩放命中区"
     status: completed

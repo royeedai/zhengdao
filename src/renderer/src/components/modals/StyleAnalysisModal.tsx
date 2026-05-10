@@ -15,10 +15,50 @@ const METRIC_LABELS = [
   '情感张力'
 ] as const
 
+const BOOK_SAMPLE_MAX_CHAPTERS = 8
+const BOOK_SAMPLE_CHAPTER_CHARS = 1600
+
 function htmlToPlain(html: string) {
   const d = document.createElement('div')
   d.innerHTML = html || ''
   return (d.textContent || '').replace(/\s+/g, ' ').trim()
+}
+
+function clipSample(text: string, maxChars: number): string {
+  const value = text.trim()
+  if (value.length <= maxChars) return value
+  const head = Math.floor(maxChars * 0.6)
+  return `${value.slice(0, head)}\n...[已采样裁剪]...\n${value.slice(value.length - (maxChars - head))}`
+}
+
+function pickSampleIndexes(total: number): number[] {
+  if (total <= BOOK_SAMPLE_MAX_CHAPTERS) return Array.from({ length: total }, (_, index) => index)
+  const candidates = [
+    0,
+    1,
+    2,
+    Math.floor(total / 2) - 1,
+    Math.floor(total / 2),
+    total - 3,
+    total - 2,
+    total - 1
+  ]
+  return [...new Set(candidates.filter((index) => index >= 0 && index < total))]
+}
+
+function sampleBookPlain(rows: ChapterContentRow[]): string {
+  const parts = rows
+    .map((chapter) => {
+      const text = htmlToPlain(chapter.content || '')
+      return text ? { title: chapter.title, text } : null
+    })
+    .filter((part): part is { title: string; text: string } => Boolean(part))
+  return pickSampleIndexes(parts.length)
+    .map((index) => {
+      const chapter = parts[index]
+      return `【${chapter.title}】\n${clipSample(chapter.text, BOOK_SAMPLE_CHAPTER_CHARS)}`
+    })
+    .join('\n\n')
 }
 
 function parseStyleResult(raw: string): {
@@ -82,13 +122,7 @@ export default function StyleAnalysisModal() {
       .getAllChaptersForBook(bookId)
       .then((rows: unknown) => {
         if (cancelled) return
-        const parts = (rows as ChapterContentRow[])
-          .map((chapter) => {
-            const text = htmlToPlain(chapter.content || '')
-            return text ? `【${chapter.title}】\n${text}` : ''
-          })
-          .filter(Boolean)
-        setBookPlain(parts.join('\n\n'))
+        setBookPlain(sampleBookPlain(rows as ChapterContentRow[]))
       })
       .catch(() => {
         if (!cancelled) setBookPlain('')
@@ -114,6 +148,8 @@ export default function StyleAnalysisModal() {
     abortRef.current?.abort()
     abortRef.current = new AbortController()
     const signal = abortRef.current.signal
+    setMetrics({})
+    setSummaryText('')
     setLoading(true)
     try {
       const res = await aiAnalyzeStyle(
@@ -143,14 +179,12 @@ export default function StyleAnalysisModal() {
   }, [chapterPlain, bookPlain, tab])
 
   useEffect(() => {
-    void runAnalyze()
-  }, [runAnalyze])
-
-  useEffect(() => {
     return () => {
       abortRef.current?.abort()
     }
   }, [])
+
+  const hasResult = Boolean(summaryText || Object.keys(metrics).length)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
@@ -197,6 +231,10 @@ export default function StyleAnalysisModal() {
               <Loader2 size={28} className="animate-spin text-[var(--accent-secondary)]" />
               <span className="text-xs">分析中…</span>
             </div>
+          ) : !hasResult ? (
+            <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-4 text-xs leading-relaxed text-[var(--text-secondary)]">
+              选择分析范围后点击下方按钮开始。全书分析只发送章节采样片段，不拼接整本正文。
+            </div>
           ) : (
             <>
               <div className="space-y-3">
@@ -233,7 +271,7 @@ export default function StyleAnalysisModal() {
             className="flex items-center gap-2 rounded bg-[var(--accent-primary)] px-3 py-1.5 text-xs text-[var(--accent-contrast)] transition hover:bg-[var(--accent-secondary)] disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            重新分析
+            {hasResult ? '重新分析' : '开始分析'}
           </button>
         </div>
       </div>

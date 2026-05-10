@@ -314,6 +314,14 @@ export function AiAssistantPanel() {
     await refreshConversation(conversationId)
   }
 
+  const renameConversation = async (targetConversationId: number, currentTitle: string) => {
+    if (loading) return
+    const nextTitle = window.prompt('重命名 AI 会话', currentTitle)?.trim()
+    if (!nextTitle || nextTitle === currentTitle) return
+    await window.api.aiUpdateConversationTitle(targetConversationId, nextTitle)
+    await refreshConversation(conversationId)
+  }
+
   const deleteConversation = async (targetConversationId: number) => {
     if (!bookId || loading) return
     const ok = window.confirm('确认删除这个 AI 会话？会删除该会话的聊天记录和关联草稿，已应用到小说的内容不会回滚。')
@@ -472,6 +480,7 @@ export function AiAssistantPanel() {
             onClose={() => setConversationListOpen(false)}
             onCreate={() => void createConversation()}
             onSelect={(conversationId) => void refreshConversation(conversationId)}
+            onRename={(conversationId, currentTitle) => void renameConversation(conversationId, currentTitle)}
             onDelete={(conversationId) => void deleteConversation(conversationId)}
           />
 
@@ -506,6 +515,11 @@ export function AiAssistantPanel() {
               setSeededSkillKey(null)
               void send(undefined, action.input)
             }}
+            onToggleContextChip={(chipId) =>
+              setEnabledContextChipIds((ids) =>
+                ids.includes(chipId) ? ids.filter((id) => id !== chipId) : [...ids, chipId]
+              )
+            }
           >
             <StoryFactProposalPanel
               proposals={storyFacts}
@@ -535,6 +549,7 @@ export function AiAssistantPanel() {
             value={input}
             onChange={updateComposerInput}
             onSubmit={submitComposer}
+            onStop={() => activeRequestAbortRef.current?.abort()}
             loading={loading}
             assistantMode={assistantMode}
             onAssistantModeChange={setAssistantMode}

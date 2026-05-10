@@ -12,7 +12,7 @@
     "fixedSurfaces": 15,
     "modalTypes": 42,
     "modalCases": 42,
-    "commands": 23
+    "commands": 24
   },
   "surfaces": [
     {
@@ -819,6 +819,13 @@
       "label": "打开项目设置",
       "category": "导航",
       "requiresBook": true,
+      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+    },
+    {
+      "id": "nav-global-search",
+      "label": "搜索作品内容",
+      "category": "导航",
+      "requiresBook": false,
       "source": "src/renderer/src/components/shared/CommandPalette.tsx"
     },
     {

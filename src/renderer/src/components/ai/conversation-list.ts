@@ -13,13 +13,24 @@ export type ConversationListItem = {
   selected: boolean
 }
 
+const DEFAULT_AI_CONVERSATION_TITLE = 'AI 对话'
+
+export function resolveConversationLabel(
+  conversation: Pick<ConversationListRow, 'title'>,
+  fallbackIndex: number
+): string {
+  const title = conversation.title.trim()
+  if (title && title !== DEFAULT_AI_CONVERSATION_TITLE) return title
+  return `会话 ${fallbackIndex}`
+}
+
 export function buildConversationListItems(
   conversations: ConversationListRow[],
   currentConversationId: number | null
 ): ConversationListItem[] {
   return conversations.map((conversation, index) => ({
     id: conversation.id,
-    label: `会话 ${conversations.length - index}`,
+    label: resolveConversationLabel(conversation, conversations.length - index),
     messageCount: Number(conversation.message_count || 0),
     updatedAt: conversation.updated_at,
     selected: conversation.id === currentConversationId

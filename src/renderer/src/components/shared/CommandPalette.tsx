@@ -28,7 +28,7 @@ import type { LucideIcon } from 'lucide-react'
 import { useBookStore } from '@/stores/book-store'
 import { useUIStore } from '@/stores/ui-store'
 
-function formatModShortcut(letter: 'E') {
+function formatModShortcut(letter: 'E' | 'P') {
   if (typeof navigator === 'undefined') return `Ctrl+${letter}`
   const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
   return isMac ? `⌘${letter}` : `Ctrl+${letter}`
@@ -97,6 +97,14 @@ function useCommands(): Command[] {
         icon: SlidersHorizontal,
         requiresBook: true,
         action: () => openModal('projectSettings')
+      },
+      {
+        id: 'nav-global-search',
+        label: '搜索作品内容',
+        category: '导航',
+        shortcut: formatModShortcut('P'),
+        icon: Search,
+        action: () => openModal('globalSearch')
       },
       {
         id: 'nav-foreshadow-board',

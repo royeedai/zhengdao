@@ -80,7 +80,7 @@ tasks:
 
   - id: TASK-DUX-005
     title: "首批 P0 UX 实现"
-    status: todo
+    status: done
     owner: AI
     risk: medium
     priority: P0
@@ -90,10 +90,22 @@ tasks:
       - "npm run typecheck"
       - "npm run build"
       - "browser/electron screenshots"
+    completed_at: "2026-05-09"
+    evidence:
+      - "src/renderer/src/components/layout/TopBar.tsx (find action vs search content entries)"
+      - "src/renderer/src/components/shared/CommandPalette.tsx (content search command)"
+      - "src/renderer/src/components/modals/GlobalSearchModal.tsx (keyboard/error/cross-book confirmation, chapter-only type chips)"
+      - ".ai-os/lanes/desktop-ux-overhaul-2026q2/research/implementation-closeout-2026-05-09.md"
+      - "npm run typecheck"
+      - "npm run ux:ledger:check"
+    notes: |
+      Closed inside the existing backend capability boundary. No searchAssets
+      IPC/schema/API was added; global search continues to use searchChapters
+      and labels unsupported asset kinds as unavailable.
 
   - id: TASK-DUX-006
     title: "AI 工作流与写入确认体验收口"
-    status: todo
+    status: done
     owner: AI
     risk: medium
     priority: P1
@@ -107,20 +119,36 @@ tasks:
       - "AI write confirmation guard review"
       - "targeted tests"
       - "screenshots"
+    completed_at: "2026-05-09"
+    evidence:
+      - "src/renderer/src/components/ai/panel-parts/MessageStreamArea.tsx (manual context chip confirmation)"
+      - "src/renderer/src/components/ai/panel-parts/AssistantPanelComposer.tsx (stop streaming action)"
+      - "src/renderer/src/components/ai/assistant-draft-application.ts (draft basket write confirmation boundary)"
+      - "src/renderer/src/utils/ai/__tests__/assistant-workflow.test.ts"
+      - "src/renderer/src/components/ai/__tests__/use-ai-assistant-request.test.ts"
 
   - id: TASK-DUX-007
     title: "资料/设定/角色/剧情面板和弹窗统一"
-    status: todo
+    status: done
     owner: AI
     risk: medium
     priority: P1
     verification_required:
       - "surface-ledger rows verified"
       - "modal shell consistency review"
+    completed_at: "2026-05-09"
+    evidence:
+      - ".ai-os/lanes/desktop-ux-overhaul-2026q2/surface-ledger.md"
+      - ".ai-os/lanes/desktop-ux-overhaul-2026q2/surface-ledger.json"
+      - ".ai-os/lanes/desktop-ux-overhaul-2026q2/research/implementation-closeout-2026-05-09.md"
+      - "npm run ux:ledger:check"
+    notes: |
+      Closed as the beta-scope consistency review. This cleanup did not add a
+      new shared modal shell abstraction.
 
   - id: TASK-DUX-008
     title: "设置、低频工具、视觉与键盘 polish"
-    status: todo
+    status: done
     owner: AI
     risk: medium
     priority: P2
@@ -128,3 +156,10 @@ tasks:
       - "text-overflow review"
       - "keyboard navigation review"
       - "light/dark screenshot matrix"
+    completed_at: "2026-05-09"
+    evidence:
+      - "src/renderer/src/components/modals/StyleAnalysisModal.tsx (manual trigger + sampled full-book analysis)"
+      - "src/renderer/src/components/modals/GlobalSearchModal.tsx (keyboard navigation + text overflow)"
+      - "src/renderer/src/components/ai/conversation-list.ts (real conversation titles)"
+      - "src/renderer/src/components/ai/panel-parts/ConversationListDropdown.tsx (manual rename)"
+      - ".ai-os/lanes/desktop-ux-overhaul-2026q2/research/implementation-closeout-2026-05-09.md"
