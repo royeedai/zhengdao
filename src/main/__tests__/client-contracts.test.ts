@@ -45,6 +45,29 @@ interface ClientPlatformFixture {
       }
     }
   }
+  toolbox: {
+    catalogResponse: {
+      launchSurfaces: string[]
+      contentPolicy: {
+        noCompetitorCopying: boolean
+        aiWritesRequireDraftBasket: boolean
+      }
+      tools: Array<{
+        slug: string
+        surfaces: string[]
+        aiDraftBoundary: boolean
+      }>
+    }
+    parityResponse: {
+      items: Array<{ competitor: string; coverage: string }>
+    }
+    workspaceResponse: {
+      schemaVersion: string
+      assets: Array<{ assetKind: string; syncStatus: string; contentHash: string }>
+      publications: Array<{ visibility: string; accessRules: { externalCheckout: boolean } }>
+      runs: Array<{ toolSlug: string; requiresDraftBasket: boolean }>
+    }
+  }
 }
 
 function readClientFixture(): ClientPlatformFixture {
@@ -102,5 +125,22 @@ describe('desktop client contract parity', () => {
     expect(fixture.assistant.nonStreamResponse.metadata?.authorThought?.lines).toEqual(
       fixture.assistant.nonStreamResponse.message.metadata?.authorThought?.lines
     )
+  })
+
+  it('recognizes creative toolbox contract coverage for desktop project use', () => {
+    const fixture = readClientFixture()
+    const slugs = new Set(fixture.toolbox.catalogResponse.tools.map((tool) => tool.slug))
+
+    expect(fixture.toolbox.catalogResponse.launchSurfaces).toContain('desktop_project')
+    expect(fixture.toolbox.catalogResponse.contentPolicy.noCompetitorCopying).toBe(true)
+    expect(fixture.toolbox.catalogResponse.contentPolicy.aiWritesRequireDraftBasket).toBe(true)
+    expect([...slugs]).toEqual(expect.arrayContaining(['world-bible', 'rpg-campaign']))
+    expect(fixture.toolbox.parityResponse.items.some((item) => item.competitor === 'world_anvil')).toBe(true)
+    expect(fixture.toolbox.workspaceResponse.assets[0]).toMatchObject({
+      assetKind: 'interactive-map',
+      syncStatus: 'pending'
+    })
+    expect(fixture.toolbox.workspaceResponse.publications[0].accessRules.externalCheckout).toBe(false)
+    expect(fixture.toolbox.workspaceResponse.runs[0].requiresDraftBasket).toBe(true)
   })
 })

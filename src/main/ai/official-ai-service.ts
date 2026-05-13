@@ -15,6 +15,19 @@ type AgentChatResponse = {
 
 const MAX_OFFICIAL_AI_OUTPUT_TOKENS = 6000
 
+async function readOfficialAiError(response: Response): Promise<string> {
+  const text = await response.text()
+  if (response.status === 401) return '登录状态已过期，请重新关联证道账号后使用官方 AI'
+  if (!text) return `证道官方 AI 请求失败 (${response.status})`
+  try {
+    const payload = JSON.parse(text) as { message?: unknown }
+    if (typeof payload.message === 'string' && payload.message.trim()) return payload.message.trim()
+  } catch {
+    return text.slice(0, 200)
+  }
+  return `证道官方 AI 请求失败 (${response.status})`
+}
+
 function modelHintFromRequest(request: AiBridgeCompleteRequest): 'fast' | 'balanced' | 'heavy' {
   if (request.model === 'balanced' || request.model === 'heavy') return request.model
   return 'fast'
@@ -44,9 +57,11 @@ async function apiRequest<T>(path: string, token: string, options: RequestInit =
     }
   }
   if (!response.ok) {
-    const message = typeof payload === 'object' && payload && 'message' in payload
-      ? String((payload as { message?: string }).message)
-      : text
+    const message = response.status === 401
+      ? '登录状态已过期，请重新关联证道账号后使用官方 AI'
+      : typeof payload === 'object' && payload && 'message' in payload
+        ? String((payload as { message?: string }).message)
+        : text
     throw new Error(message || `证道官方 AI 请求失败 (${response.status})`)
   }
   return payload
@@ -139,7 +154,7 @@ export function streamOfficialAi(
         signal: controller.signal
       })
       if (!response.ok) {
-        callbacks.onError(`证道官方 AI 请求失败 (${response.status})：${(await response.text()).slice(0, 200)}`)
+        callbacks.onError(await readOfficialAiError(response))
         return
       }
       if (!response.body) {

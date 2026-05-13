@@ -51,6 +51,11 @@ impact_rules:
       - "npm test -- src/main/__tests__/deep-link.test.ts"
       - "npm run build"
       - "git diff --check"
+  - when: "desktop-auth-callback-duplicate-fix"
+    run:
+      - "npm test -- src/main/__tests__/deep-link.test.ts"
+      - "npm run typecheck"
+      - "git diff --check"
   - when: "desktop-auth-login-url-fix"
     run:
       - "npm test -- src/main/auth/__tests__/zhengdao-auth.test.ts"
@@ -148,6 +153,10 @@ failure_modes:
     scenario: "Windows auth callback launches or reaches the desktop app before SQLite has been initialized"
     expected: "Zhengdao auth callback URLs are queued until main-process startup has initialized the database, registered IPC, and created the main window"
     guard: "src/main/__tests__/deep-link.test.ts plus npm run build"
+  - id: FM-DEF-018A
+    scenario: "Windows delivers the same desktop auth callback URL more than once after the app is ready"
+    expected: "The desktop app handles a one-time login code exactly once and suppresses duplicate callback URLs after success"
+    guard: "src/main/__tests__/deep-link.test.ts plus npm run typecheck"
   - id: FM-DEF-019
     scenario: "AI-generated facts are written directly into characters, timeline, or settings without user confirmation"
     expected: "Assistant output creates pending Story Bible fact proposals; only explicit accept promotes them into canonical assets"

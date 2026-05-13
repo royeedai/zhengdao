@@ -131,4 +131,22 @@ describe('official AI service', () => {
     })
     expect(onError).not.toHaveBeenCalled()
   })
+
+  it('maps streamed 401 responses to a re-login prompt', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: async () => JSON.stringify({ message: 'missing or invalid token' })
+    } as Response)
+    const onError = vi.fn()
+
+    const session = streamOfficialAi(request(1000), 'expired-token', {
+      onToken: vi.fn(),
+      onComplete: vi.fn(),
+      onError
+    })
+    await session.done
+
+    expect(onError).toHaveBeenCalledWith('登录状态已过期，请重新关联证道账号后使用官方 AI')
+  })
 })

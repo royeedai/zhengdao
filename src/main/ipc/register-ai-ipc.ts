@@ -138,7 +138,7 @@ export function registerAiIpc(): void {
     (event, requestId: string, request: AiBridgeCompleteRequest) => {
       if (request.provider === 'zhengdao_official') {
         void (async () => {
-          const session = streamOfficialAi(request, await zhengdaoAuth.getAccessToken(), {
+          const session = streamOfficialAi(request, await zhengdaoAuth.getValidAccessToken(), {
             onToken: (token) => event.sender.send('ai:streamToken', requestId, token),
             onComplete: (content, metadata) => {
               activeGeminiStreamSessions.delete(requestId)
@@ -185,7 +185,7 @@ export function registerAiIpc(): void {
   // Non-streaming completion
   ipcMain.handle('ai:complete', async (_, request: AiBridgeCompleteRequest) => {
     if (request.provider === 'zhengdao_official') {
-      return completeOfficialAi(request, await zhengdaoAuth.getAccessToken())
+      return completeOfficialAi(request, await zhengdaoAuth.getValidAccessToken())
     }
     if (request.provider !== 'gemini_cli') {
       return { content: '', error: '主进程暂只处理 Gemini CLI Provider' }
@@ -197,7 +197,7 @@ export function registerAiIpc(): void {
   ipcMain.handle('ai:getOfficialProfiles', async () => {
     const user = await zhengdaoAuth.getUser()
     if (!hasProUser(user)) return []
-    return getOfficialAiProfiles(await zhengdaoAuth.getAccessToken())
+    return getOfficialAiProfiles(await zhengdaoAuth.getValidAccessToken())
   })
 
   // DI-01 v2 / DI-04 v2: backend Skill execution. Token is injected in main
@@ -210,14 +210,14 @@ export function registerAiIpc(): void {
       input: Record<string, unknown>,
       options?: { modelHint?: 'fast' | 'balanced' | 'heavy' }
     ) => {
-      const token = await zhengdaoAuth.getAccessToken()
+      const token = await zhengdaoAuth.getValidAccessToken()
       return executeOfficialSkill(skillId, input, token, {
         modelHint: options?.modelHint
       })
     }
   )
   ipcMain.handle('ai:submitSkillFeedback', async (_, payload: SkillFeedbackPayload) =>
-    submitOfficialSkillFeedback(payload, await zhengdaoAuth.getAccessToken())
+    submitOfficialSkillFeedback(payload, await zhengdaoAuth.getValidAccessToken())
   )
 
   // Provider liveness probe + bundled gemini-cli login launcher

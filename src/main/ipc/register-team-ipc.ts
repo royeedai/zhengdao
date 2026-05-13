@@ -13,21 +13,21 @@ import type { TeamInvitationRole } from '../../shared/team-collaboration'
  */
 export function registerTeamIpc(): void {
   ipcMain.handle('team:listMine', async () =>
-    teamApi.listMyTeams(await zhengdaoAuth.getAccessToken())
+    teamApi.listMyTeams(await zhengdaoAuth.getValidAccessToken())
   )
   ipcMain.handle(
     'team:create',
     async (_, body: { name: string; plan?: string; seatLimit?: number }) =>
-      teamApi.createTeam(await zhengdaoAuth.getAccessToken(), body)
+      teamApi.createTeam(await zhengdaoAuth.getValidAccessToken(), body)
   )
   ipcMain.handle('team:listMembers', async (_, teamId: string) =>
-    teamApi.listTeamMembers(await zhengdaoAuth.getAccessToken(), teamId)
+    teamApi.listTeamMembers(await zhengdaoAuth.getValidAccessToken(), teamId)
   )
   ipcMain.handle('team:removeMember', async (_, teamId: string, userId: string) =>
-    teamApi.removeTeamMember(await zhengdaoAuth.getAccessToken(), teamId, userId)
+    teamApi.removeTeamMember(await zhengdaoAuth.getValidAccessToken(), teamId, userId)
   )
   ipcMain.handle('team:listInvitations', async (_, teamId: string) =>
-    teamApi.listTeamInvitations(await zhengdaoAuth.getAccessToken(), teamId)
+    teamApi.listTeamInvitations(await zhengdaoAuth.getValidAccessToken(), teamId)
   )
   ipcMain.handle(
     'team:createInvitation',
@@ -35,44 +35,44 @@ export function registerTeamIpc(): void {
       _,
       teamId: string,
       body: { email: string; role?: TeamInvitationRole; expiresInHours?: number }
-    ) => teamApi.createTeamInvitation(await zhengdaoAuth.getAccessToken(), teamId, body)
+    ) => teamApi.createTeamInvitation(await zhengdaoAuth.getValidAccessToken(), teamId, body)
   )
   ipcMain.handle('team:revokeInvitation', async (_, teamId: string, invitationId: string) =>
-    teamApi.revokeTeamInvitation(await zhengdaoAuth.getAccessToken(), teamId, invitationId)
+    teamApi.revokeTeamInvitation(await zhengdaoAuth.getValidAccessToken(), teamId, invitationId)
   )
   ipcMain.handle('team:acceptInvitation', async (_, invitationToken: string) =>
-    teamApi.acceptInvitationByToken(await zhengdaoAuth.getAccessToken(), invitationToken)
+    teamApi.acceptInvitationByToken(await zhengdaoAuth.getValidAccessToken(), invitationToken)
   )
   ipcMain.handle('team:listProjects', async (_, teamId: string) =>
-    teamApi.listTeamProjects(await zhengdaoAuth.getAccessToken(), teamId)
+    teamApi.listTeamProjects(await zhengdaoAuth.getValidAccessToken(), teamId)
   )
   ipcMain.handle('team:linkProject', async (_, teamId: string, projectId: string) =>
-    teamApi.linkTeamProject(await zhengdaoAuth.getAccessToken(), teamId, projectId)
+    teamApi.linkTeamProject(await zhengdaoAuth.getValidAccessToken(), teamId, projectId)
   )
   ipcMain.handle(
     'team:getChapterLock',
     async (_, params: { teamId: string; projectId: string; chapterId: string }) =>
-      teamApi.getChapterLock(await zhengdaoAuth.getAccessToken(), params)
+      teamApi.getChapterLock(await zhengdaoAuth.getValidAccessToken(), params)
   )
   ipcMain.handle(
     'team:acquireChapterLock',
     async (_, params: { teamId: string; projectId: string; chapterId: string }) =>
-      teamApi.acquireChapterLock(await zhengdaoAuth.getAccessToken(), params)
+      teamApi.acquireChapterLock(await zhengdaoAuth.getValidAccessToken(), params)
   )
   ipcMain.handle(
     'team:releaseChapterLock',
     async (_, params: { teamId: string; projectId: string; chapterId: string }) =>
-      teamApi.releaseChapterLock(await zhengdaoAuth.getAccessToken(), params)
+      teamApi.releaseChapterLock(await zhengdaoAuth.getValidAccessToken(), params)
   )
   ipcMain.handle(
     'team:getChapterReview',
     async (_, params: { teamId: string; projectId: string; chapterId: string }) =>
-      teamApi.getChapterReview(await zhengdaoAuth.getAccessToken(), params)
+      teamApi.getChapterReview(await zhengdaoAuth.getValidAccessToken(), params)
   )
   ipcMain.handle(
     'team:submitChapterForReview',
     async (_, params: { teamId: string; projectId: string; chapterId: string }) =>
-      teamApi.submitChapterForReview(await zhengdaoAuth.getAccessToken(), params)
+      teamApi.submitChapterForReview(await zhengdaoAuth.getValidAccessToken(), params)
   )
   ipcMain.handle(
     'team:decideChapterReview',
@@ -86,6 +86,6 @@ export function registerTeamIpc(): void {
         decision: 'approved' | 'rejected'
         reviewComments?: string
       }
-    ) => teamApi.decideChapterReview(await zhengdaoAuth.getAccessToken(), params)
+    ) => teamApi.decideChapterReview(await zhengdaoAuth.getValidAccessToken(), params)
   )
 }

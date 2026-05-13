@@ -22,36 +22,36 @@ const directorProgressSubscriptions = new Map<string, () => void>()
 
 export function registerProFeatureIpc(): void {
   ipcMain.handle('director:startRun', async (_, input: DirectorStartRunInput) =>
-    startDirectorRun(input, await zhengdaoAuth.getAccessToken())
+    startDirectorRun(input, await zhengdaoAuth.getValidAccessToken())
   )
   ipcMain.handle('director:getRun', async (_, runId: string) =>
-    getDirectorRun(runId, await zhengdaoAuth.getAccessToken())
+    getDirectorRun(runId, await zhengdaoAuth.getValidAccessToken())
   )
   ipcMain.handle('director:listRuns', (_, bookId: number) => listDirectorRuns(bookId))
   ipcMain.handle('director:pauseRun', async (_, runId: string) =>
-    pauseDirectorRun(runId, await zhengdaoAuth.getAccessToken())
+    pauseDirectorRun(runId, await zhengdaoAuth.getValidAccessToken())
   )
   ipcMain.handle('director:resumeRun', async (_, runId: string) =>
-    resumeDirectorRun(runId, await zhengdaoAuth.getAccessToken())
+    resumeDirectorRun(runId, await zhengdaoAuth.getValidAccessToken())
   )
   ipcMain.handle('director:cancelRun', async (_, runId: string) =>
-    cancelDirectorRun(runId, await zhengdaoAuth.getAccessToken())
+    cancelDirectorRun(runId, await zhengdaoAuth.getValidAccessToken())
   )
   ipcMain.handle('director:regenerateStep', async (_, runId: string, stepName: DirectorStepName) =>
-    regenerateDirectorStep(runId, stepName, await zhengdaoAuth.getAccessToken())
+    regenerateDirectorStep(runId, stepName, await zhengdaoAuth.getValidAccessToken())
   )
   ipcMain.handle('director:listChapters', async (_, runId: string) =>
-    listDirectorChapters(runId, await zhengdaoAuth.getAccessToken())
+    listDirectorChapters(runId, await zhengdaoAuth.getValidAccessToken())
   )
   ipcMain.handle('director:acceptChapter', async (_, input: DirectorAcceptChapterInput) =>
-    acceptDirectorChapter(input, await zhengdaoAuth.getAccessToken())
+    acceptDirectorChapter(input, await zhengdaoAuth.getValidAccessToken())
   )
   ipcMain.handle('director:rejectChapter', async (_, runId: string, chapterId: string) =>
-    rejectDirectorChapter(runId, chapterId, await zhengdaoAuth.getAccessToken())
+    rejectDirectorChapter(runId, chapterId, await zhengdaoAuth.getValidAccessToken())
   )
   ipcMain.handle('director:subscribeProgress', async (event, runId: string) => {
     const subscriptionId = `director-progress-${Date.now()}-${directorProgressSeq += 1}`
-    const unsubscribe = subscribeDirectorProgress(runId, await zhengdaoAuth.getAccessToken(), {
+    const unsubscribe = subscribeDirectorProgress(runId, await zhengdaoAuth.getValidAccessToken(), {
       onEvent: (payload) => event.sender.send('director:progressEvent', subscriptionId, payload),
       onError: (message) => event.sender.send('director:progressError', subscriptionId, message),
       onDone: () => event.sender.send('director:progressDone', subscriptionId)
@@ -70,7 +70,7 @@ export function registerProFeatureIpc(): void {
   })
 
   ipcMain.handle('visual:generate', async (_, input: VisualGenerateInput) =>
-    generateVisualAssets(input, await zhengdaoAuth.getAccessToken())
+    generateVisualAssets(input, await zhengdaoAuth.getValidAccessToken())
   )
   ipcMain.handle('visual:listAssets', (_, bookId: number) => getVisualAssets(bookId))
 }

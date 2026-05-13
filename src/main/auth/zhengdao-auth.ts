@@ -116,6 +116,16 @@ export interface ZhengdaoUser {
   emailVerified: boolean
 }
 
+class ZhengdaoAuthRequestError extends Error {
+  constructor(
+    readonly status: number,
+    message: string
+  ) {
+    super(message)
+    this.name = 'ZhengdaoAuthRequestError'
+  }
+}
+
 const KEYS = {
   token: 'zhengdao_auth_token',
   user: 'zhengdao_auth_user',
@@ -129,6 +139,10 @@ function parseJson<T>(raw: string | null): T | null {
   } catch {
     return null
   }
+}
+
+function isAuthExpiredError(error: unknown): error is ZhengdaoAuthRequestError {
+  return error instanceof ZhengdaoAuthRequestError && error.status === 401
 }
 
 async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -145,7 +159,10 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
     const message = typeof payload === 'object' && payload && 'message' in payload
       ? String((payload as { message?: string }).message)
       : text
-    throw new Error(message || `证道账号请求失败 (${res.status})`)
+    throw new ZhengdaoAuthRequestError(
+      res.status,
+      res.status === 401 ? '登录状态已过期，请重新关联证道账号' : message || `证道账号请求失败 (${res.status})`
+    )
   }
   return payload
 }
@@ -198,7 +215,13 @@ export class ZhengdaoAuth {
   async getUser(): Promise<ZhengdaoUser | null> {
     const token = await this.getAccessToken()
     if (token) {
-      const refreshed = await this.refreshUser(token).catch(() => null)
+      const refreshed = await this.refreshUser(token).catch(async (error) => {
+        if (isAuthExpiredError(error)) {
+          await this.logout()
+          return null
+        }
+        return null
+      })
       if (refreshed) return refreshed
     }
     return parseJson<ZhengdaoUser>(appStateRepo.getAppState(KEYS.user))
@@ -206,6 +229,21 @@ export class ZhengdaoAuth {
 
   async getAccessToken(): Promise<string | null> {
     return appStateRepo.getAppState(KEYS.token)
+  }
+
+  async getValidAccessToken(): Promise<string | null> {
+    const token = await this.getAccessToken()
+    if (!token) return null
+    try {
+      await this.refreshUser(token)
+      return token
+    } catch (error) {
+      if (isAuthExpiredError(error)) {
+        await this.logout()
+        return null
+      }
+      return token
+    }
   }
 
   async logout(): Promise<void> {

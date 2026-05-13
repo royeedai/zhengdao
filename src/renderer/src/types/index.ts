@@ -233,6 +233,7 @@ export type ModalType =
   | 'visualStudio'
   | 'mcpSettings'
   | 'writingIntel'
+  | 'toolboxHub'
   | 'marketScanDeconstruct'
 
 export interface GenrePreset {

@@ -17,9 +17,20 @@ export function createDeepLinkCoordinator(
   let ready = false
   const queuedUrls: string[] = []
   const queuedUrlSet = new Set<string>()
+  const activeUrlSet = new Set<string>()
+  const completedUrlSet = new Set<string>()
 
   function run(rawUrl: string): void {
-    handleAuthCallback(rawUrl).catch(handleError)
+    if (activeUrlSet.has(rawUrl) || completedUrlSet.has(rawUrl)) return
+    activeUrlSet.add(rawUrl)
+    handleAuthCallback(rawUrl)
+      .then(() => {
+        completedUrlSet.add(rawUrl)
+      })
+      .catch(handleError)
+      .finally(() => {
+        activeUrlSet.delete(rawUrl)
+      })
   }
 
   return {

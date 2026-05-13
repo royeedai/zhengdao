@@ -97,7 +97,7 @@ export class CloudSync {
   }
 
   async syncBook(bookId: number): Promise<SyncBookResult> {
-    const token = await this.auth.getAccessToken()
+    const token = await this.auth.getValidAccessToken()
     if (!token) throw new Error('请先登录证道账号')
     await this.assertSyncEntitlement()
 
@@ -152,7 +152,7 @@ export class CloudSync {
   }
 
   async syncAllBooks(options: { force?: boolean } = {}): Promise<SyncAllBooksResult> {
-    const token = await this.auth.getAccessToken()
+    const token = await this.auth.getValidAccessToken()
     if (!token) return { ok: true, skipped: 'not_authenticated', results: [] }
     const user = await this.auth.getUser()
     if (!this.hasSyncEntitlement(user)) return { ok: true, skipped: 'not_pro', results: [] }
@@ -222,7 +222,7 @@ export class CloudSync {
   }
 
   async listCloudBooks(): Promise<CloudBookFile[]> {
-    const token = await this.auth.getAccessToken()
+    const token = await this.auth.getValidAccessToken()
     if (!token) throw new Error('请先登录证道账号')
     const books = await this.listDesktopCloudBooks(token, true)
     return books.map((book) => ({
@@ -235,7 +235,7 @@ export class CloudSync {
   }
 
   async downloadBook(fileId: string): Promise<unknown> {
-    const token = await this.auth.getAccessToken()
+    const token = await this.auth.getValidAccessToken()
     if (!token) throw new Error('请先登录证道账号')
     const res = await this.getDesktopCloudBook(token, fileId)
     return res.payload
@@ -250,7 +250,7 @@ export class CloudSync {
       return { status: 'archived', bookId }
     }
 
-    const token = await this.auth.getAccessToken()
+    const token = await this.auth.getValidAccessToken()
     if (!token) throw new Error('请先登录证道账号')
     await this.assertSyncEntitlement()
     const res = await apiRequest<{ book: CloudBookSummary }>(`/desktop-sync/books/${encodeURIComponent(cloudBookId)}/archive`, token, {

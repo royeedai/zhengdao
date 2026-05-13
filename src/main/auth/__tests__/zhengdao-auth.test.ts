@@ -162,4 +162,31 @@ describe('ZhengdaoAuth login', () => {
     expect(result).toEqual({ ok: true, loginUrl })
     expect(mocks.openExternal).toHaveBeenCalledWith(loginUrl, { activate: true, logUsage: true })
   })
+
+  it('clears cached auth state when the stored token is rejected', async () => {
+    mocks.appState.set('zhengdao_auth_token', 'expired-token')
+    mocks.appState.set(
+      'zhengdao_auth_user',
+      JSON.stringify({
+        id: 'user-1',
+        email: 'author@example.com',
+        role: 'user',
+        tier: 'pro',
+        pro: true,
+        pointsBalance: 100,
+        emailVerified: true
+      })
+    )
+    mocks.fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      text: async () => JSON.stringify({ message: 'missing or invalid token' })
+    } as Response)
+
+    const user = await (await createAuth()).getUser()
+
+    expect(user).toBeNull()
+    expect(mocks.appState.has('zhengdao_auth_token')).toBe(false)
+    expect(mocks.appState.has('zhengdao_auth_user')).toBe(false)
+  })
 })

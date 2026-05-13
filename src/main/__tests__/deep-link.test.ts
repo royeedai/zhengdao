@@ -55,6 +55,33 @@ describe('deep link coordinator', () => {
     expect(handled).toEqual(['zhengdao://auth/callback?state=s&code=c'])
   })
 
+  it('deduplicates repeated callback URLs while they are being handled and after success', async () => {
+    const handled: string[] = []
+    let resolveCallback!: () => void
+    const callbackFinished = new Promise<void>((resolve) => {
+      resolveCallback = resolve
+    })
+    const coordinator = createDeepLinkCoordinator(
+      async (url) => {
+        handled.push(url)
+        await callbackFinished
+      },
+      () => undefined
+    )
+
+    coordinator.markReady()
+    coordinator.handle('zhengdao://auth/callback?state=s&code=c')
+    coordinator.handle('zhengdao://auth/callback?state=s&code=c')
+    expect(handled).toEqual(['zhengdao://auth/callback?state=s&code=c'])
+
+    resolveCallback()
+    await callbackFinished
+    await Promise.resolve()
+    coordinator.handle('zhengdao://auth/callback?state=s&code=c')
+
+    expect(handled).toEqual(['zhengdao://auth/callback?state=s&code=c'])
+  })
+
   it('routes callback failures to the error handler', async () => {
     const errors: unknown[] = []
     const error = new Error('exchange failed')
@@ -69,6 +96,7 @@ describe('deep link coordinator', () => {
 
     coordinator.markReady()
     coordinator.handle('zhengdao://auth/callback?state=s&code=c')
+    await Promise.resolve()
     await Promise.resolve()
 
     expect(errors).toEqual([error])

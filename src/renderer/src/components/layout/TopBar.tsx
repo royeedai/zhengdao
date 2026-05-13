@@ -14,6 +14,7 @@ import {
   BarChart3,
   Check,
   Command,
+  Boxes,
   Lightbulb,
   LayoutDashboard,
   LayoutPanelTop,
@@ -51,6 +52,8 @@ function WorkspaceActionIcon({ id, size = 14 }: { id: WorkspaceToolActionId; siz
       return <Lightbulb size={size} />
     case 'projectSettings':
       return <Settings size={size} />
+    case 'toolboxHub':
+      return <Boxes size={size} />
   }
 }
 

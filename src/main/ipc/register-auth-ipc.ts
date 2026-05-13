@@ -13,7 +13,7 @@ export function registerAuthIpc(): void {
   ipcMain.handle('auth:logout', async () => {
     await zhengdaoAuth.logout()
   })
-  ipcMain.handle('auth:getAccessToken', async () => zhengdaoAuth.getAccessToken())
+  ipcMain.handle('auth:getAccessToken', async () => zhengdaoAuth.getValidAccessToken())
   ipcMain.handle('auth:openUpgradePage', async () => zhengdaoAuth.openUpgradePage())
   ipcMain.handle('auth:openAccountPage', async () => zhengdaoAuth.openAccountPage())
   ipcMain.handle('auth:openCommunityFeedbackPage', async () => zhengdaoAuth.openCommunityFeedbackPage())

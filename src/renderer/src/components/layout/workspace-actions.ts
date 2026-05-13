@@ -8,8 +8,9 @@ export type WorkspaceToolActionId =
   | 'foreshadowBoard'
   | 'quickNotes'
   | 'projectSettings'
+  | 'toolboxHub'
 
-export type WorkspaceToolActionGroupId = 'current-work' | 'writing-aids'
+export type WorkspaceToolActionGroupId = 'current-work' | 'writing-aids' | 'toolbox'
 
 export interface WorkspaceToolAction {
   id: WorkspaceToolActionId
@@ -98,12 +99,23 @@ export const WORKSPACE_TOOL_ACTIONS: WorkspaceToolAction[] = [
     group: 'writing-aids',
     showInPrimaryBar: true,
     primaryTone: 'accent'
+  },
+  {
+    id: 'toolboxHub',
+    label: '工具箱',
+    menuLabel: '创作工具箱',
+    title: '创作工具箱 Hub',
+    modal: 'toolboxHub',
+    group: 'toolbox',
+    showInPrimaryBar: true,
+    primaryTone: 'accent'
   }
 ]
 
 const WORKSPACE_TOOL_GROUP_LABELS: Record<WorkspaceToolActionGroupId, string> = {
   'current-work': '当前作品',
-  'writing-aids': '写作辅助'
+  'writing-aids': '写作辅助',
+  toolbox: '创作工具箱'
 }
 
 export function getPrimaryWorkspaceToolActions(): WorkspaceToolAction[] {
@@ -111,7 +123,7 @@ export function getPrimaryWorkspaceToolActions(): WorkspaceToolAction[] {
 }
 
 export function getWorkspaceToolActionGroups(): WorkspaceToolActionGroup[] {
-  const groupIds: WorkspaceToolActionGroupId[] = ['current-work', 'writing-aids']
+  const groupIds: WorkspaceToolActionGroupId[] = ['current-work', 'writing-aids', 'toolbox']
   return groupIds
     .map((id) => ({
       id,

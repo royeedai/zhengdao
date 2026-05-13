@@ -11,7 +11,8 @@ describe('workspace tool actions', () => {
       'fullCharacters',
       'settings',
       'stats',
-      'projectSettings'
+      'projectSettings',
+      'toolboxHub'
     ])
 
     const groupedIds = getWorkspaceToolActionGroups().flatMap((group) => group.actions.map((action) => action.id))
@@ -21,6 +22,7 @@ describe('workspace tool actions', () => {
   it('keeps action labels and modal targets in one metadata source', () => {
     const overview = WORKSPACE_TOOL_ACTIONS.find((action) => action.id === 'bookOverview')
     const projectSettings = WORKSPACE_TOOL_ACTIONS.find((action) => action.id === 'projectSettings')
+    const toolboxHub = WORKSPACE_TOOL_ACTIONS.find((action) => action.id === 'toolboxHub')
 
     expect(overview).toMatchObject({
       label: '总览',
@@ -31,6 +33,14 @@ describe('workspace tool actions', () => {
     expect(projectSettings).toMatchObject({
       label: '作品设置',
       modal: 'projectSettings',
+      showInPrimaryBar: true,
+      primaryTone: 'accent'
+    })
+    expect(toolboxHub).toMatchObject({
+      label: '工具箱',
+      menuLabel: '创作工具箱',
+      modal: 'toolboxHub',
+      group: 'toolbox',
       showInPrimaryBar: true,
       primaryTone: 'accent'
     })
