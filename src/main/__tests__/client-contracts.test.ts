@@ -134,7 +134,7 @@ describe('desktop client contract parity', () => {
     expect(fixture.toolbox.catalogResponse.launchSurfaces).toContain('desktop_project')
     expect(fixture.toolbox.catalogResponse.contentPolicy.noCompetitorCopying).toBe(true)
     expect(fixture.toolbox.catalogResponse.contentPolicy.aiWritesRequireDraftBasket).toBe(true)
-    expect([...slugs]).toEqual(expect.arrayContaining(['world-bible', 'rpg-campaign']))
+    expect(Array.from(slugs)).toEqual(expect.arrayContaining(['world-bible', 'rpg-campaign']))
     expect(fixture.toolbox.parityResponse.items.some((item) => item.competitor === 'world_anvil')).toBe(true)
     expect(fixture.toolbox.workspaceResponse.assets[0]).toMatchObject({
       assetKind: 'interactive-map',
