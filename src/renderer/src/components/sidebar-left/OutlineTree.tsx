@@ -8,7 +8,8 @@ import {
   Plus,
   Users,
   BookOpen,
-  GripVertical
+  GripVertical,
+  MoreHorizontal
 } from 'lucide-react'
 import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
@@ -82,6 +83,7 @@ const SortableChapterItem = memo(function SortableChapterItem({
   onSelect,
   onDoubleClickRename,
   onContextMenu,
+  onActionMenu,
   finishRename,
   cancelEdit
 }: {
@@ -93,6 +95,7 @@ const SortableChapterItem = memo(function SortableChapterItem({
   onSelect: () => void
   onDoubleClickRename: () => void
   onContextMenu: (e: React.MouseEvent) => void
+  onActionMenu: (e: React.MouseEvent<HTMLButtonElement>) => void
   finishRename: () => void
   cancelEdit: () => void
 }) {
@@ -149,6 +152,15 @@ const SortableChapterItem = memo(function SortableChapterItem({
           {ch.title}
         </span>
       )}
+      <button
+        type="button"
+        aria-label={`${ch.title} 章节操作`}
+        title="章节操作"
+        onClick={onActionMenu}
+        className="ml-auto shrink-0 rounded p-1 text-[var(--text-muted)] opacity-0 transition hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] group-hover:opacity-100 focus:opacity-100"
+      >
+        <MoreHorizontal size={14} />
+      </button>
     </div>
   )
 })
@@ -276,6 +288,7 @@ export default function OutlineTree() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const [activeTab, setActiveTab] = useState<LeftTab>('outline')
   const [collapsedVols, setCollapsedVols] = useState<Set<number>>(new Set())
+  const [loadedCollapsedKey, setLoadedCollapsedKey] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<{ type: 'vol' | 'ch'; id: number; originalTitle: string } | null>(null)
   const [editText, setEditText] = useState('')
   const [contextMenu, setContextMenu] = useState<{
@@ -288,6 +301,7 @@ export default function OutlineTree() {
     () => new Set(volumes.map((volume) => volume.id).filter((id) => !collapsedVols.has(id))),
     [collapsedVols, volumes]
   )
+  const collapsedStorageKey = `write:outline:collapsed-volumes:${bookId}`
 
   const toggleVol = (id: number) => {
     setCollapsedVols((current) => {
@@ -320,6 +334,17 @@ export default function OutlineTree() {
     e.stopPropagation()
     const point = clampOutlineMenuPosition(
       { x: e.clientX, y: e.clientY },
+      { width: window.innerWidth, height: window.innerHeight }
+    )
+    setContextMenu({ ...point, type, id })
+  }
+
+  const handleActionMenu = (event: React.MouseEvent<HTMLButtonElement>, type: 'vol' | 'ch', id: number) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const rect = event.currentTarget.getBoundingClientRect()
+    const point = clampOutlineMenuPosition(
+      { x: rect.left, y: rect.bottom + 4 },
       { width: window.innerWidth, height: window.innerHeight }
     )
     setContextMenu({ ...point, type, id })
@@ -368,6 +393,27 @@ export default function OutlineTree() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [contextMenu])
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(collapsedStorageKey)
+      const parsed = raw ? JSON.parse(raw) : []
+      setCollapsedVols(new Set(Array.isArray(parsed) ? parsed.filter((id) => Number.isInteger(id)) : []))
+    } catch {
+      setCollapsedVols(new Set())
+    } finally {
+      setLoadedCollapsedKey(collapsedStorageKey)
+    }
+  }, [collapsedStorageKey])
+
+  useEffect(() => {
+    if (loadedCollapsedKey !== collapsedStorageKey) return
+    try {
+      window.localStorage.setItem(collapsedStorageKey, JSON.stringify(Array.from(collapsedVols)))
+    } catch {
+      // Collapse persistence is a convenience; navigation must keep working if storage is unavailable.
+    }
+  }, [collapsedStorageKey, collapsedVols, loadedCollapsedKey])
 
   if (activeTab === 'characters') {
     return (
@@ -435,6 +481,15 @@ export default function OutlineTree() {
                 ) : (
                   <span className="font-medium truncate">{vol.title}</span>
                 )}
+                <button
+                  type="button"
+                  aria-label={`${vol.title} 卷操作`}
+                  title="卷操作"
+                  onClick={(event) => handleActionMenu(event, 'vol', vol.id)}
+                  className="ml-auto shrink-0 rounded p-1 text-[var(--text-muted)] opacity-0 transition hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] group-hover:opacity-100 focus:opacity-100"
+                >
+                  <MoreHorizontal size={14} />
+                </button>
               </div>
               {expandedVols.has(vol.id) && (
                 <div className="pl-7 space-y-0.5">
@@ -453,6 +508,7 @@ export default function OutlineTree() {
                         onSelect={() => selectChapter(ch.id)}
                         onDoubleClickRename={() => startRename('ch', ch.id, ch.title)}
                         onContextMenu={(e) => handleContextMenu(e, 'ch', ch.id)}
+                        onActionMenu={(event) => handleActionMenu(event, 'ch', ch.id)}
                         finishRename={finishRename}
                         cancelEdit={() => setEditingId(null)}
                       />

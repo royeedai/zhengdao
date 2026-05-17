@@ -1,4 +1,10 @@
 import type { ModalType } from '@/types'
+import {
+  getWorkspaceToolCommands,
+  type WorkspaceToolGroupId,
+  type WorkspaceCommandDef,
+  type WorkspaceCommandId
+} from '@/commands/workspace-command-registry'
 
 export type WorkspaceToolActionId =
   | 'bookOverview'
@@ -10,10 +16,11 @@ export type WorkspaceToolActionId =
   | 'projectSettings'
   | 'toolboxHub'
 
-export type WorkspaceToolActionGroupId = 'current-work' | 'writing-aids' | 'toolbox'
+export type WorkspaceToolActionGroupId = WorkspaceToolGroupId
 
 export interface WorkspaceToolAction {
   id: WorkspaceToolActionId
+  commandId: WorkspaceCommandId
   label: string
   menuLabel: string
   title: string
@@ -29,88 +36,36 @@ export interface WorkspaceToolActionGroup {
   actions: WorkspaceToolAction[]
 }
 
-export const WORKSPACE_TOOL_ACTIONS: WorkspaceToolAction[] = [
-  {
-    id: 'bookOverview',
-    label: '总览',
-    menuLabel: '总览',
-    title: '书籍总览',
-    modal: 'bookOverview',
-    group: 'current-work',
-    showInPrimaryBar: false,
-    primaryTone: 'accent'
-  },
-  {
-    id: 'fullCharacters',
-    label: '角色总库',
-    menuLabel: '角色总库',
-    title: '角色总库',
-    modal: 'fullCharacters',
-    group: 'current-work',
-    showInPrimaryBar: true,
-    primaryTone: 'neutral'
-  },
-  {
-    id: 'settings',
-    label: '设定维基',
-    menuLabel: '设定维基',
-    title: '设定维基',
-    modal: 'settings',
-    group: 'current-work',
-    showInPrimaryBar: true,
-    primaryTone: 'neutral'
-  },
-  {
-    id: 'stats',
-    label: '数据',
-    menuLabel: '数据中心',
-    title: '写作数据中心',
-    modal: 'stats',
-    group: 'current-work',
-    showInPrimaryBar: true,
-    primaryTone: 'neutral'
-  },
-  {
-    id: 'foreshadowBoard',
-    label: '伏笔看板',
-    menuLabel: '伏笔看板',
-    title: '伏笔看板',
-    modal: 'foreshadowBoard',
-    group: 'writing-aids',
-    showInPrimaryBar: false,
-    primaryTone: 'neutral'
-  },
-  {
-    id: 'quickNotes',
-    label: '灵感速记',
-    menuLabel: '灵感速记',
-    title: '灵感速记',
-    modal: 'quickNotes',
-    group: 'writing-aids',
-    showInPrimaryBar: false,
-    primaryTone: 'neutral'
-  },
-  {
-    id: 'projectSettings',
-    label: '作品设置',
-    menuLabel: '作品设置',
-    title: '作品设置',
-    modal: 'projectSettings',
-    group: 'writing-aids',
-    showInPrimaryBar: true,
-    primaryTone: 'accent'
-  },
-  {
-    id: 'toolboxHub',
-    label: '工具箱',
-    menuLabel: '创作工具箱',
-    title: '创作工具箱 Hub',
-    modal: 'toolboxHub',
-    group: 'toolbox',
-    showInPrimaryBar: true,
-    primaryTone: 'accent'
+const COMMAND_TO_TOOL_ID: Partial<Record<WorkspaceCommandId, WorkspaceToolActionId>> = {
+  'nav.bookOverview': 'bookOverview',
+  'nav.fullCharacters': 'fullCharacters',
+  'nav.wiki': 'settings',
+  'nav.stats': 'stats',
+  'nav.foreshadowBoard': 'foreshadowBoard',
+  'nav.quickNotes': 'quickNotes',
+  'nav.projectSettings': 'projectSettings',
+  'nav.toolboxHub': 'toolboxHub'
+}
+
+function toWorkspaceToolAction(command: WorkspaceCommandDef): WorkspaceToolAction {
+  const id = COMMAND_TO_TOOL_ID[command.id]
+  if (!id || !command.workspaceTool || !command.modal) {
+    throw new Error(`Command ${command.id} is not a workspace tool action`)
   }
-]
+  return {
+    id,
+    commandId: command.id,
+    label: command.label,
+    menuLabel: command.menuLabel ?? command.label,
+    title: command.menuLabel ?? command.label,
+    modal: command.modal,
+    group: command.workspaceTool.group,
+    showInPrimaryBar: command.workspaceTool.showInPrimaryBar,
+    primaryTone: command.workspaceTool.primaryTone
+  }
+}
+
+export const WORKSPACE_TOOL_ACTIONS: WorkspaceToolAction[] = getWorkspaceToolCommands().map(toWorkspaceToolAction)
 
 const WORKSPACE_TOOL_GROUP_LABELS: Record<WorkspaceToolActionGroupId, string> = {
   'current-work': '当前作品',

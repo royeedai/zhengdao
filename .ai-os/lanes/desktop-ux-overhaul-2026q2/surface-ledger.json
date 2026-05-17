@@ -5,14 +5,14 @@
     "src/renderer/src/components/layout/TopBar.tsx",
     "src/renderer/src/types/index.ts",
     "src/renderer/src/components/modals/ModalManager.tsx",
-    "src/renderer/src/components/shared/CommandPalette.tsx"
+    "src/renderer/src/commands/workspace-command-registry.ts"
   ],
   "counts": {
-    "surfaces": 57,
+    "surfaces": 58,
     "fixedSurfaces": 15,
-    "modalTypes": 42,
-    "modalCases": 42,
-    "commands": 24
+    "modalTypes": 43,
+    "modalCases": 43,
+    "commands": 35
   },
   "surfaces": [
     {
@@ -787,6 +787,20 @@
     {
       "id": "SURF-MODAL-042",
       "kind": "modal",
+      "title": "toolboxHub",
+      "modal": "toolboxHub",
+      "component": "ToolboxHubModal",
+      "source": "src/renderer/src/components/modals/ToolboxHubModal.tsx",
+      "entry": "openModal('toolboxHub') / pushModal('toolboxHub')",
+      "userTask": "完成该弹窗承载的作品管理、分析或设置任务",
+      "states": "入口、空数据、有数据、编辑、保存、错误、关闭",
+      "issue": "需要按统一 Dialog shell、主次操作和状态反馈重新审计",
+      "pattern": "Unified Dialog shell + Raycast Action Panel + Linear contextual actions",
+      "priority": "P2"
+    },
+    {
+      "id": "SURF-MODAL-043",
+      "kind": "modal",
       "title": "marketScanDeconstruct",
       "modal": "marketScanDeconstruct",
       "component": "MarketScanDeconstructModal",
@@ -801,172 +815,249 @@
   ],
   "commands": [
     {
-      "id": "nav-characters",
-      "label": "打开角色总库",
+      "id": "nav.bookshelf",
+      "label": "返回书架",
       "category": "导航",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "nav-wiki",
-      "label": "打开设定维基",
-      "category": "导航",
-      "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
-    },
-    {
-      "id": "nav-project-settings",
-      "label": "打开项目设置",
-      "category": "导航",
-      "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
-    },
-    {
-      "id": "nav-global-search",
-      "label": "搜索作品内容",
+      "id": "nav.commandPalette",
+      "label": "找动作",
       "category": "导航",
       "requiresBook": false,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "nav-foreshadow-board",
-      "label": "打开伏笔看板",
+      "id": "nav.globalSearch",
+      "label": "搜内容",
+      "category": "导航",
+      "requiresBook": false,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "nav.bookOverview",
+      "label": "总览",
       "category": "导航",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "nav-quick-notes",
-      "label": "打开灵感速记",
+      "id": "nav.fullCharacters",
+      "label": "角色总库",
       "category": "导航",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "nav-export",
+      "id": "nav.wiki",
+      "label": "设定维基",
+      "category": "导航",
+      "requiresBook": true,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "nav.stats",
+      "label": "数据",
+      "category": "导航",
+      "requiresBook": true,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "nav.foreshadowBoard",
+      "label": "伏笔看板",
+      "category": "导航",
+      "requiresBook": true,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "nav.quickNotes",
+      "label": "灵感速记",
+      "category": "导航",
+      "requiresBook": true,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "nav.projectSettings",
+      "label": "作品设置",
+      "category": "导航",
+      "requiresBook": true,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "nav.toolboxHub",
+      "label": "工具箱",
+      "category": "导航",
+      "requiresBook": true,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "nav.writingIntel",
+      "label": "写作情报中心",
+      "category": "导航",
+      "requiresBook": true,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "nav.marketScan",
+      "label": "扫榜拆文",
+      "category": "导航",
+      "requiresBook": true,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "nav.director",
+      "label": "自动导演主链",
+      "category": "导航",
+      "requiresBook": true,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "nav.visualStudio",
+      "label": "视觉资产工作室",
+      "category": "导航",
+      "requiresBook": true,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "nav.mcp",
+      "label": "MCP 设置",
+      "category": "导航",
+      "requiresBook": false,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "nav.export",
       "label": "打开导出面板",
       "category": "导航",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "nav-import",
+      "id": "nav.import",
       "label": "外部导入章节",
       "category": "导航",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "edit-volume",
+      "id": "edit.newVolume",
       "label": "新建卷",
       "category": "编辑",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "edit-chapter",
+      "id": "edit.newChapter",
       "label": "新建章节",
       "category": "编辑",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "edit-character",
+      "id": "edit.newCharacter",
       "label": "新建角色",
       "category": "编辑",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "ai-assistant",
+      "id": "ai.assistant",
       "label": "打开 AI 创作助手",
       "category": "AI",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "ai-settings",
+      "id": "ai.settings",
       "label": "AI 能力与上下文",
       "category": "AI",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "view-left",
-      "label": "切换左侧面板",
+      "id": "view.left",
+      "label": "切换左侧目录",
       "category": "视图",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "view-right",
-      "label": "切换右侧面板",
+      "id": "view.right",
+      "label": "切换右侧辅助",
       "category": "视图",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "view-bottom",
+      "id": "view.bottom",
       "label": "切换底部沙盘",
       "category": "视图",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "view-blackroom",
+      "id": "view.blackroom",
       "label": "进入小黑屋",
       "category": "视图",
       "requiresBook": true,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "theme-system",
+      "id": "theme.system",
       "label": "跟随系统外观",
       "category": "主题",
       "requiresBook": false,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "theme-light",
+      "id": "theme.light",
       "label": "冷白浅色",
       "category": "主题",
       "requiresBook": false,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "theme-dark",
+      "id": "theme.dark",
       "label": "夜间深色",
       "category": "主题",
       "requiresBook": false,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "theme-green",
+      "id": "theme.green",
       "label": "墨绿夜",
       "category": "主题",
       "requiresBook": false,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "theme-blue",
+      "id": "theme.blue",
       "label": "深蓝夜",
       "category": "主题",
       "requiresBook": false,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "theme-warm",
+      "id": "theme.warm",
       "label": "暖灰",
       "category": "主题",
       "requiresBook": false,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     },
     {
-      "id": "theme-oled",
+      "id": "theme.oled",
       "label": "纯黑OLED",
       "category": "主题",
       "requiresBook": false,
-      "source": "src/renderer/src/components/shared/CommandPalette.tsx"
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
+    },
+    {
+      "id": "app.settings",
+      "label": "打开应用设置",
+      "category": "应用",
+      "requiresBook": false,
+      "source": "src/renderer/src/commands/workspace-command-registry.ts"
     }
   ]
 }

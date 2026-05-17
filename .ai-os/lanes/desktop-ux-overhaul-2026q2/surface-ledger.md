@@ -6,11 +6,11 @@ This file is generated from renderer entrypoints. Do not hand-edit ledger rows; 
 
 ## Coverage Summary
 
-- Total UX surfaces: 57
+- Total UX surfaces: 58
 - Fixed workspace/page surfaces: 15
-- Modal surfaces from ModalType: 42
-- ModalManager mapped cases: 42
-- CommandPalette commands: 24
+- Modal surfaces from ModalType: 43
+- ModalManager mapped cases: 43
+- CommandPalette commands: 35
 - Missing ModalManager cases: none
 - Extra ModalManager cases: none
 
@@ -81,7 +81,8 @@ This file is generated from renderer entrypoints. Do not hand-edit ledger rows; 
 | SURF-MODAL-039 | P2 | modal | 视觉资产工作室 | src/renderer/src/components/modals/VisualStudioModal.tsx | openModal('visualStudio') / pushModal('visualStudio') | 生成/管理封面和视觉资产 | 配置、生成中、预览、保存、失败 | 视觉资产属于低频高价值工作流，需要减少干扰写作主路径 | Unified Dialog shell + Raycast Action Panel + Linear contextual actions | not_started | before: required; after: required |
 | SURF-MODAL-040 | P2 | modal | MCP 设置 | src/renderer/src/components/modals/McpSettingsModal.tsx | openModal('mcpSettings') / pushModal('mcpSettings') | 配置外部工具/服务连接 | 空配置、已配置、检测、失败 | 技术配置需要错误可解释和默认安全 | Unified Dialog shell + Raycast Action Panel + Linear contextual actions | not_started | before: required; after: required |
 | SURF-MODAL-041 | P2 | modal | writingIntel | src/renderer/src/components/modals/WritingIntelModal.tsx | openModal('writingIntel') / pushModal('writingIntel') | 完成该弹窗承载的作品管理、分析或设置任务 | 入口、空数据、有数据、编辑、保存、错误、关闭 | 需要按统一 Dialog shell、主次操作和状态反馈重新审计 | Unified Dialog shell + Raycast Action Panel + Linear contextual actions | not_started | before: required; after: required |
-| SURF-MODAL-042 | P2 | modal | marketScanDeconstruct | src/renderer/src/components/modals/MarketScanDeconstructModal.tsx | openModal('marketScanDeconstruct') / pushModal('marketScanDeconstruct') | 完成该弹窗承载的作品管理、分析或设置任务 | 入口、空数据、有数据、编辑、保存、错误、关闭 | 需要按统一 Dialog shell、主次操作和状态反馈重新审计 | Unified Dialog shell + Raycast Action Panel + Linear contextual actions | not_started | before: required; after: required |
+| SURF-MODAL-042 | P2 | modal | toolboxHub | src/renderer/src/components/modals/ToolboxHubModal.tsx | openModal('toolboxHub') / pushModal('toolboxHub') | 完成该弹窗承载的作品管理、分析或设置任务 | 入口、空数据、有数据、编辑、保存、错误、关闭 | 需要按统一 Dialog shell、主次操作和状态反馈重新审计 | Unified Dialog shell + Raycast Action Panel + Linear contextual actions | not_started | before: required; after: required |
+| SURF-MODAL-043 | P2 | modal | marketScanDeconstruct | src/renderer/src/components/modals/MarketScanDeconstructModal.tsx | openModal('marketScanDeconstruct') / pushModal('marketScanDeconstruct') | 完成该弹窗承载的作品管理、分析或设置任务 | 入口、空数据、有数据、编辑、保存、错误、关闭 | 需要按统一 Dialog shell、主次操作和状态反馈重新审计 | Unified Dialog shell + Raycast Action Panel + Linear contextual actions | not_started | before: required; after: required |
 
 ## Command Inventory
 
@@ -89,48 +90,64 @@ This file is generated from renderer entrypoints. Do not hand-edit ledger rows; 
 
 | Command ID | Label | Requires book | Source | Audit note |
 | --- | --- | --- | --- | --- |
-| nav-characters | 打开角色总库 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| nav-wiki | 打开设定维基 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| nav-project-settings | 打开项目设置 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| nav-global-search | 搜索作品内容 | no | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| nav-foreshadow-board | 打开伏笔看板 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| nav-quick-notes | 打开灵感速记 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| nav-export | 打开导出面板 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| nav-import | 外部导入章节 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
+| nav.bookshelf | 返回书架 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.commandPalette | 找动作 | no | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.globalSearch | 搜内容 | no | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.bookOverview | 总览 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.fullCharacters | 角色总库 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.wiki | 设定维基 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.stats | 数据 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.foreshadowBoard | 伏笔看板 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.quickNotes | 灵感速记 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.projectSettings | 作品设置 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.toolboxHub | 工具箱 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.writingIntel | 写作情报中心 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.marketScan | 扫榜拆文 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.director | 自动导演主链 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.visualStudio | 视觉资产工作室 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.mcp | MCP 设置 | no | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.export | 打开导出面板 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| nav.import | 外部导入章节 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
 
 ### 编辑
 
 | Command ID | Label | Requires book | Source | Audit note |
 | --- | --- | --- | --- | --- |
-| edit-volume | 新建卷 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| edit-chapter | 新建章节 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| edit-character | 新建角色 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
+| edit.newVolume | 新建卷 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| edit.newChapter | 新建章节 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| edit.newCharacter | 新建角色 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
 
 ### AI
 
 | Command ID | Label | Requires book | Source | Audit note |
 | --- | --- | --- | --- | --- |
-| ai-assistant | 打开 AI 创作助手 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| ai-settings | AI 能力与上下文 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
+| ai.assistant | 打开 AI 创作助手 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| ai.settings | AI 能力与上下文 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
 
 ### 视图
 
 | Command ID | Label | Requires book | Source | Audit note |
 | --- | --- | --- | --- | --- |
-| view-left | 切换左侧面板 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| view-right | 切换右侧面板 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| view-bottom | 切换底部沙盘 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| view-blackroom | 进入小黑屋 | yes | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
+| view.left | 切换左侧目录 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| view.right | 切换右侧辅助 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| view.bottom | 切换底部沙盘 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| view.blackroom | 进入小黑屋 | yes | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
 
 ### 主题
 
 | Command ID | Label | Requires book | Source | Audit note |
 | --- | --- | --- | --- | --- |
-| theme-system | 跟随系统外观 | no | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| theme-light | 冷白浅色 | no | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| theme-dark | 夜间深色 | no | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| theme-green | 墨绿夜 | no | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| theme-blue | 深蓝夜 | no | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| theme-warm | 暖灰 | no | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
-| theme-oled | 纯黑OLED | no | src/renderer/src/components/shared/CommandPalette.tsx | should map to a visible UI entry or documented keyboard path |
+| theme.system | 跟随系统外观 | no | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| theme.light | 冷白浅色 | no | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| theme.dark | 夜间深色 | no | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| theme.green | 墨绿夜 | no | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| theme.blue | 深蓝夜 | no | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| theme.warm | 暖灰 | no | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+| theme.oled | 纯黑OLED | no | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
+
+### 应用
+
+| Command ID | Label | Requires book | Source | Audit note |
+| --- | --- | --- | --- | --- |
+| app.settings | 打开应用设置 | no | src/renderer/src/commands/workspace-command-registry.ts | should map to a visible UI entry or documented keyboard path |
 

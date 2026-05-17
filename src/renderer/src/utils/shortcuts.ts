@@ -10,7 +10,7 @@ export const SHORTCUT_ACTIONS: ShortcutAction[] = [
   { id: 'find', label: '查找替换', defaultKeys: 'Ctrl+F', category: '编辑' },
   { id: 'export', label: '导出', defaultKeys: 'Ctrl+E', category: '文件' },
   { id: 'commandPalette', label: '命令面板', defaultKeys: 'Ctrl+K', category: '导航' },
-  { id: 'globalSearch', label: '全局搜索', defaultKeys: 'Ctrl+Shift+F', category: '导航' },
+  { id: 'globalSearch', label: '全局搜索', defaultKeys: 'Ctrl+P', category: '导航' },
   { id: 'blackRoom', label: '小黑屋模式', defaultKeys: 'F11', category: '视图' },
   { id: 'bottomPanel', label: '底部沙盘', defaultKeys: 'Ctrl+`', category: '视图' },
   { id: 'splitView', label: '分屏编辑', defaultKeys: 'Ctrl+\\', category: '视图' }

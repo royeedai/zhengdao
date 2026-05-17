@@ -1,5 +1,5 @@
 import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
-import { Bot, PenTool, Plus, Search, LayoutGrid, List, Trash2, ImagePlus, RefreshCw } from 'lucide-react'
+import { Bot, Command, FileSearch, PenTool, Plus, Search, LayoutGrid, List, Trash2, ImagePlus, RefreshCw } from 'lucide-react'
 import { useBookStore } from '@/stores/book-store'
 import { useUIStore } from '@/stores/ui-store'
 import { useToastStore } from '@/stores/toast-store'
@@ -18,8 +18,21 @@ export default function BookshelfPage() {
   const openModal = useUIStore((s) => s.openModal)
   const openAiAssistant = useUIStore((s) => s.openAiAssistant)
   const addToast = useToastStore((s) => s.addToast)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [sortBy, setSortBy] = useState<SortBy>('updated')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    try {
+      return localStorage.getItem('write-bookshelf-view') === 'list' ? 'list' : 'grid'
+    } catch {
+      return 'grid'
+    }
+  })
+  const [sortBy, setSortBy] = useState<SortBy>(() => {
+    try {
+      const stored = localStorage.getItem('write-bookshelf-sort') as SortBy | null
+      return stored && ['updated', 'created', 'words', 'title'].includes(stored) ? stored : 'updated'
+    } catch {
+      return 'updated'
+    }
+  })
   const [searchQuery, setSearchQuery] = useState('')
   const titlebarSafeArea = getCurrentTitlebarSafeArea()
 
@@ -33,6 +46,22 @@ export default function BookshelfPage() {
   useEffect(() => {
     loadBooks()
   }, [loadBooks])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('write-bookshelf-view', viewMode)
+    } catch {
+      void 0
+    }
+  }, [viewMode])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('write-bookshelf-sort', sortBy)
+    } catch {
+      void 0
+    }
+  }, [sortBy])
 
   const sortedBooks = [...books].sort((a, b) => {
     switch (sortBy) {
@@ -94,6 +123,22 @@ export default function BookshelfPage() {
         <div className="no-drag">
           <AppBrand />
         </div>
+        <div className="no-drag hidden items-center gap-2 text-[var(--text-muted)] md:flex">
+          <button
+            type="button"
+            onClick={() => openModal('commandPalette')}
+            className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[var(--border-secondary)] bg-[var(--surface-secondary)] px-2.5 py-1 text-[11px] font-semibold transition hover:border-[var(--accent-border)] hover:bg-[var(--accent-surface)] hover:text-[var(--accent-secondary)]"
+          >
+            <Command size={14} /> ⌘K 找动作
+          </button>
+          <button
+            type="button"
+            onClick={() => openModal('globalSearch')}
+            className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[var(--border-secondary)] bg-[var(--surface-secondary)] px-2.5 py-1 text-[11px] font-semibold transition hover:border-[var(--accent-border)] hover:bg-[var(--accent-surface)] hover:text-[var(--accent-secondary)]"
+          >
+            <FileSearch size={14} /> ⌘P 搜内容
+          </button>
+        </div>
         <div className="no-drag flex items-center gap-2">
           <button
             onClick={() => openModal('newBook')}
@@ -119,14 +164,14 @@ export default function BookshelfPage() {
               className="mb-3 inline-flex items-center px-6 py-3 border border-[var(--accent-border)] bg-[var(--accent-surface)] hover:bg-[var(--bg-tertiary)] text-[var(--accent-secondary)] rounded-xl text-base font-bold transition"
             >
               <Bot size={18} className="mr-2" />
-              打开 AI 起书
+              以一段灵感开新作品
             </button>
             <button
               onClick={() => openModal('newBook')}
               className="px-6 py-3 bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-[var(--accent-contrast)] rounded-xl text-base font-bold transition shadow-lg shadow-[0_10px_24px_rgba(63,111,159,0.16)]"
             >
               <Plus size={18} className="inline mr-2 -mt-0.5" />
-              新建你的第一部作品
+              自己起一份空白稿
             </button>
           </div>
         ) : (
@@ -176,7 +221,29 @@ export default function BookshelfPage() {
               </div>
             </div>
             {filteredBooks.length === 0 ? (
-              <p className="text-center text-[var(--text-muted)] text-sm py-12">没有匹配的作品</p>
+              <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-primary)] px-6 py-12 text-center">
+                <Search size={28} className="mx-auto mb-3 text-[var(--text-muted)]" />
+                <h3 className="text-base font-bold text-[var(--text-primary)]">未找到匹配作品</h3>
+                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                  没有标题或作者包含“{searchQuery}”的作品。
+                </p>
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="rounded-md border border-[var(--border-secondary)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--accent-border)] hover:bg-[var(--accent-surface)] hover:text-[var(--accent-secondary)]"
+                  >
+                    清空搜索
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openBookshelfAssistant}
+                    className="rounded-md bg-[var(--accent-primary)] px-3 py-2 text-xs font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-secondary)]"
+                  >
+                    用“{searchQuery}”起一本新作品
+                  </button>
+                </div>
+              </div>
             ) : viewMode === 'list' ? (
               <div className="space-y-2">
                 <div

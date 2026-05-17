@@ -374,9 +374,11 @@ function extractModalCases(modalManagerSource) {
   return cases
 }
 
-function extractCommands(commandPaletteSource) {
-  const commandBlocks = commandPaletteSource
-    .split(/\n\s*\{\n\s*id:\s+'/)
+function extractCommands(commandRegistrySource) {
+  const registryMatch = commandRegistrySource.match(/WORKSPACE_COMMAND_REGISTRY:[\s\S]*?=\s*\[([\s\S]*?)\]\n\nconst actions/)
+  const registryBody = registryMatch?.[1] ?? commandRegistrySource
+  const commandBlocks = registryBody
+    .split(/\n\s*\{\s*id:\s+'/)
     .slice(1)
     .map((chunk) => `id: '${chunk}`)
 
@@ -391,7 +393,7 @@ function extractCommands(commandPaletteSource) {
         label,
         category,
         requiresBook: /requiresBook:\s*true/.test(block),
-        source: 'src/renderer/src/components/shared/CommandPalette.tsx'
+        source: 'src/renderer/src/commands/workspace-command-registry.ts'
       }
     })
     .filter(Boolean)
@@ -503,15 +505,15 @@ function renderMarkdown({ surfaces, commands, modalTypes, modalCases }) {
 
 async function main() {
   const checkOnly = process.argv.includes('--check')
-  const [typesSource, modalManagerSource, commandPaletteSource] = await Promise.all([
+  const [typesSource, modalManagerSource, commandRegistrySource] = await Promise.all([
     readRepoFile('src/renderer/src/types/index.ts'),
     readRepoFile('src/renderer/src/components/modals/ModalManager.tsx'),
-    readRepoFile('src/renderer/src/components/shared/CommandPalette.tsx')
+    readRepoFile('src/renderer/src/commands/workspace-command-registry.ts')
   ])
 
   const modalTypes = extractModalTypes(typesSource)
   const modalCases = extractModalCases(modalManagerSource)
-  const commands = extractCommands(commandPaletteSource)
+  const commands = extractCommands(commandRegistrySource)
   const modalSurfaces = buildModalSurfaces(modalTypes, modalCases)
   const surfaces = [...fixedSurfaces, ...modalSurfaces]
   const payload = {
@@ -521,7 +523,7 @@ async function main() {
       'src/renderer/src/components/layout/TopBar.tsx',
       'src/renderer/src/types/index.ts',
       'src/renderer/src/components/modals/ModalManager.tsx',
-      'src/renderer/src/components/shared/CommandPalette.tsx'
+      'src/renderer/src/commands/workspace-command-registry.ts'
     ],
     counts: {
       surfaces: surfaces.length,

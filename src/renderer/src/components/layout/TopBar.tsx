@@ -29,7 +29,6 @@ import AccountSettingsMenu from '@/components/shared/AccountSettingsMenu'
 import { getCurrentTitlebarSafeArea } from '@/utils/window-shell'
 import { BUILTIN_WORKSPACE_LAYOUT_PRESETS, type WorkspaceLayoutPresetId } from '@/utils/workspace-layout'
 import {
-  WORKSPACE_TOOL_ACTIONS,
   getPrimaryWorkspaceToolActions,
   getWorkspaceToolActionGroups,
   type WorkspaceToolAction,
@@ -131,9 +130,11 @@ export default function TopBar() {
   }, [layoutMenuOpen])
   const currentBook = books.find((b) => b.id === currentBookId)
   const titlebarSafeArea = getCurrentTitlebarSafeArea()
-  const overviewAction = WORKSPACE_TOOL_ACTIONS.find((action) => action.id === 'bookOverview')!
   const primaryToolActions = getPrimaryWorkspaceToolActions()
   const toolActionGroups = getWorkspaceToolActionGroups()
+  const activeLayoutPreset = [...BUILTIN_WORKSPACE_LAYOUT_PRESETS, ...customWorkspaceLayoutPresets].find(
+    (preset) => preset.id === workspaceLayoutPresetId
+  )
 
   const closeToolsAndOpenModal = (modal: Parameters<typeof openModal>[0]) => {
     setToolMenuOpen(false)
@@ -190,33 +191,26 @@ export default function TopBar() {
           <span className="truncate">《{currentBook?.title || '未命名'}》</span>
           <ArrowUpRight size={12} className="text-[var(--text-muted)]" />
         </button>
-        <button
-          type="button"
-          onClick={() => openWorkspaceAction(overviewAction)}
-          title={overviewAction.title}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[var(--accent-border)] bg-[var(--accent-surface)] text-[var(--accent-secondary)] hover:border-[var(--accent-primary)] hover:bg-[var(--bg-tertiary)] transition no-drag"
-        >
-          <WorkspaceActionIcon id={overviewAction.id} size={14} />
-          {overviewAction.label}
-        </button>
-        <div className="flex items-center gap-1 text-[var(--text-muted)]">
+        <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
           <button
             type="button"
             onClick={() => openModal('commandPalette')}
-            title="找动作"
+            title="找动作（⌘K / Ctrl+K）"
             aria-label="打开命令面板"
-            className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-primary)] rounded transition min-h-8 min-w-8"
+            className="flex min-h-8 shrink-0 items-center gap-1.5 rounded-md border border-[var(--border-secondary)] bg-[var(--surface-secondary)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--accent-border)] hover:bg-[var(--accent-surface)] hover:text-[var(--accent-secondary)]"
           >
             <Command size={16} />
+            <span className="hidden lg:inline">找动作</span>
           </button>
           <button
             type="button"
             onClick={() => openModal('globalSearch')}
-            title="搜内容"
+            title="搜内容（⌘P / Ctrl+P）"
             aria-label="打开全局搜索"
-            className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-primary)] rounded transition min-h-8 min-w-8"
+            className="flex min-h-8 shrink-0 items-center gap-1.5 rounded-md border border-[var(--border-secondary)] bg-[var(--surface-secondary)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--accent-border)] hover:bg-[var(--accent-surface)] hover:text-[var(--accent-secondary)]"
           >
             <Search size={16} />
+            <span className="hidden lg:inline">搜内容</span>
           </button>
         </div>
         <div className="flex items-center space-x-1 ml-2 text-[var(--text-muted)]">
@@ -254,10 +248,13 @@ export default function TopBar() {
               aria-label="布局预设"
               aria-haspopup="menu"
               aria-expanded={layoutMenuOpen}
-              title="布局预设"
-              className="p-1.5 hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-primary)] rounded transition min-h-8 min-w-8"
+              title={`布局：${activeLayoutPreset?.label ?? '自定义'}`}
+              className="flex min-h-8 max-w-[142px] items-center gap-1.5 rounded-md border border-[var(--border-secondary)] bg-[var(--surface-secondary)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--accent-border)] hover:bg-[var(--accent-surface)] hover:text-[var(--accent-secondary)]"
             >
               <LayoutPanelTop size={16} />
+              <span className="hidden max-w-[86px] truncate xl:inline">
+                {activeLayoutPreset?.label ?? '布局'}
+              </span>
             </button>
             {layoutMenuOpen && (
               <div
